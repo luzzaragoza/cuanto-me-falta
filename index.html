@@ -191,12 +191,15 @@
   @keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(195,146,0,0)}30%{box-shadow:0 0 0 3px rgba(195,146,0,.9)}}
   .mat.flash{animation:flash 1s ease}
   @keyframes spop-in{from{opacity:0;transform:translateY(-7px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes spop-out{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-7px) scale(.96)}}
   @keyframes panel-in{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes panel-out{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-9px)}}
 
   .panel{background:#FBFAF7;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;
     margin:-2px 6px 0;padding:11px 14px 13px;transform-origin:top center}
   .panel-in{animation:panel-in .22s cubic-bezier(.2,.85,.3,1)}
-  @media (prefers-reduced-motion:reduce){.spop.show,.panel-in,.mat.flash{animation:none}}
+  .panel-out{animation:panel-out .17s cubic-bezier(.4,0,1,1) forwards;pointer-events:none;overflow:hidden}
+  @media (prefers-reduced-motion:reduce){.spop.show,.spop.closing,.panel-in,.panel-out,.mat.flash{animation:none}}
   .panel .row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:3px 0}
   .panel .lab{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.04em;
     text-transform:uppercase;flex:0 0 auto;width:104px;padding-top:4px}
@@ -214,6 +217,7 @@
   .spop{position:fixed;z-index:60;min-width:240px;max-width:286px;background:#fff;border:1px solid var(--line);
     border-radius:14px;box-shadow:0 16px 44px rgba(0,0,0,.20);padding:6px;display:none}
   .spop.show{display:block;transform-origin:top center;animation:spop-in .17s cubic-bezier(.2,.85,.3,1)}
+  .spop.closing{animation:spop-out .15s ease forwards;pointer-events:none}
   .sp-head{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);padding:8px 10px 6px}
   .sp-opt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:0;
     border-radius:10px;padding:9px 10px;cursor:pointer;font-family:var(--sans)}
@@ -236,6 +240,7 @@
     padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);-moz-appearance:textfield;appearance:textfield}
   .sp-nota input::-webkit-outer-spin-button,.sp-nota input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .sp-nota input:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold)}
+  .sp-nota input:focus::placeholder{color:transparent}   /* al entrar a la casilla, se va el "—" */
   .sp-rename{flex-direction:column;align-items:stretch;gap:6px}
   .sp-rename input{width:100%;text-align:left;font-size:13.5px;font-weight:600}
 
@@ -571,11 +576,21 @@ function goTo(c){
   if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 }
+const reduceMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function toggleCorrel(c){
   closeStatePop();
-  if(openSet.has(c)) openSet.delete(c); else { justOpened.add(c); openSet.add(c); }
-  render();
-  if(openSet.has(c)){const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  if(openSet.has(c)){                                  // CERRAR
+    openSet.delete(c);
+    const wrap=document.getElementById(idOf(c))?.parentElement;
+    const pan=wrap&&wrap.querySelector('.panel');
+    if(pan && !reduceMotion()){
+      pan.classList.remove('panel-in'); pan.classList.add('panel-out');
+      pan.addEventListener('animationend',()=>render(),{once:true});
+    } else render();
+  } else {                                             // ABRIR
+    justOpened.add(c); openSet.add(c); render();
+    const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
 }
 
 /* ---- popover de estado ---- */
@@ -604,7 +619,7 @@ function openStatePop(c, anchor){
   if(ni) ni.oninput=()=>setNota(c, ni.value);
   const oi=pop.querySelector('#sp-opt-in');
   if(oi){ oi.onclick=ev=>ev.stopPropagation(); oi.oninput=()=>setOptName(c, oi.value); }
-  pop.classList.remove('show'); void pop.offsetWidth;   // reinicia la animación de entrada
+  pop.classList.remove('show','closing'); void pop.offsetWidth;   // reinicia la animación de entrada
   pop.classList.add('show');
   positionPop(pop, anchor);
 }
@@ -633,7 +648,16 @@ function setState(c,k){
   if(k==='aprobada') openStatePop(c, document.getElementById(idOf(c)));
   else closeStatePop();
 }
-function closeStatePop(){ const pop=document.getElementById('spop'); if(pop) pop.classList.remove('show'); popCod=null; }
+function closeStatePop(){
+  popCod=null;
+  const pop=document.getElementById('spop');
+  if(!pop || !pop.classList.contains('show')) return;
+  if(reduceMotion()){ pop.classList.remove('show','closing'); return; }
+  pop.classList.add('closing');
+  pop.addEventListener('animationend',function h(){
+    if(pop.classList.contains('closing')) pop.classList.remove('show','closing');  // si se reabrió, no ocultar
+  }, {once:true});
+}
 function bindStatePop(){
   document.addEventListener('click',e=>{
     // cerrar el tooltip (i) del promedio si se toca afuera
