@@ -75,6 +75,11 @@
     opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease;z-index:60;pointer-events:none}
   .info-i .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink)}
   .info-i:hover .tip,.info-i:focus-visible .tip,.info-i.open .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  /* variante "ayuda" (?) de la barra de herramientas: tooltip anclado a la derecha para no cortarse */
+  .info-i.help{width:20px;height:20px;font-style:normal;font-size:12px;cursor:help}
+  .info-i.help .tip{left:auto;right:0;width:250px;transform:translateX(0) translateY(4px)}
+  .info-i.help:hover .tip,.info-i.help:focus-visible .tip,.info-i.help.open .tip{transform:translateX(0) translateY(0)}
+  .info-i.help .tip::after{left:auto;right:12px;transform:none}
   .bignum .sep{width:1px;align-self:stretch;background:var(--line);margin:6px 0}
   .bar{height:16px;border-radius:9px;overflow:hidden;display:flex;background:#EBE7DE;border:1px solid var(--line);margin-top:22px}
   .bar i{display:block;height:100%;transition:width .4s cubic-bezier(.2,.7,.2,1)}
@@ -98,7 +103,6 @@
   .lg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--soft);font-weight:500}
   .sw{width:13px;height:13px;border-radius:4px;border:1px solid rgba(0,0,0,.08)}
   .sw.p{background:#EBE7DE} .sw.c{background:var(--cu)} .sw.f{background:var(--fi)} .sw.a{background:var(--ap)}
-  .hint{font-size:12.5px;color:var(--soft)}
   .reset{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--soft);background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
   .reset:hover{border-color:var(--ink);color:var(--ink)}
   .actions{position:relative;margin-left:auto}
@@ -193,13 +197,11 @@
   @keyframes spop-in{from{opacity:0;transform:translateY(-7px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
   @keyframes spop-out{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-7px) scale(.96)}}
   @keyframes panel-in{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes panel-out{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-9px)}}
 
   .panel{background:#FBFAF7;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;
     margin:-2px 6px 0;padding:11px 14px 13px;transform-origin:top center}
   .panel-in{animation:panel-in .22s cubic-bezier(.2,.85,.3,1)}
-  .panel-out{animation:panel-out .17s cubic-bezier(.4,0,1,1) forwards;pointer-events:none;overflow:hidden}
-  @media (prefers-reduced-motion:reduce){.spop.show,.spop.closing,.panel-in,.panel-out,.mat.flash{animation:none}}
+  @media (prefers-reduced-motion:reduce){.spop.show,.spop.closing,.panel-in,.mat.flash{animation:none}}
   .panel .row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:3px 0}
   .panel .lab{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.04em;
     text-transform:uppercase;flex:0 0 auto;width:104px;padding-top:4px}
@@ -285,7 +287,6 @@
       <span class="lg"><span class="sw c"></span>Cursando</span>
       <span class="lg"><span class="sw f"></span>Pend. de final</span>
     </div>
-    <span class="hint">Tocá una materia para marcar su estado · usá el botón de la derecha para ver correlativas</span>
     <div class="actions">
       <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
@@ -299,6 +300,7 @@
         <button role="menuitem" id="m-reset" class="danger"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reiniciar todo</button>
       </div>
     </div>
+    <button class="info-i help" type="button" aria-label="¿Cómo se usa?" onclick="event.stopPropagation();this.classList.toggle('open')">?<span class="tip" role="tooltip"><strong>Tocá una materia</strong> para elegir su estado (y cargarle la nota si está aprobada). Con el <strong>botón de organigrama</strong> de la derecha ves sus correlativas.</span></button>
     <input id="pimport" type="file" accept="application/json,.json" hidden>
   </div>
 
@@ -579,18 +581,9 @@ function goTo(c){
 const reduceMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function toggleCorrel(c){
   closeStatePop();
-  if(openSet.has(c)){                                  // CERRAR
-    openSet.delete(c);
-    const wrap=document.getElementById(idOf(c))?.parentElement;
-    const pan=wrap&&wrap.querySelector('.panel');
-    if(pan && !reduceMotion()){
-      pan.classList.remove('panel-in'); pan.classList.add('panel-out');
-      pan.addEventListener('animationend',()=>render(),{once:true});
-    } else render();
-  } else {                                             // ABRIR
-    justOpened.add(c); openSet.add(c); render();
-    const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }
+  if(openSet.has(c)) openSet.delete(c); else { justOpened.add(c); openSet.add(c); }   // cierre instantáneo; solo anima al abrir
+  render();
+  if(openSet.has(c)){const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 
 /* ---- popover de estado ---- */
@@ -697,7 +690,7 @@ function stats(){
   if(notas.length){
     const mean=notas.reduce((a,b)=>a+b,0)/notas.length;
     avgEl.textContent=(Math.round(mean*100)/100).toString();
-    capEl.textContent='promedio · '+notas.length+' con nota';
+    capEl.textContent='promedio · '+notas.length+(notas.length===1?' materia con nota':' materias con nota');
   } else { avgEl.textContent='—'; capEl.textContent='promedio'; }
   milestones();
 }
@@ -858,7 +851,14 @@ function buildSummary(){
     </div>
     <div class="ps-foot">Generado el ${fecha} · ¿Cuánto me falta?</div>`;
 }
-function printSummary(){ buildSummary(); window.print(); }
+function printSummary(){
+  buildSummary();
+  // la foto es un data URL: hay que esperar a que decodifique, si no el PDF sale sin avatar
+  const img=document.querySelector('#print-summary .ps-av img');
+  const go=()=>window.print();
+  if(img){ const p = img.decode ? img.decode() : Promise.resolve(); p.then(go).catch(go); }
+  else go();
+}
 
 function bindActions(){
   const menu=document.getElementById('menu'), btn=document.getElementById('menuBtn');
