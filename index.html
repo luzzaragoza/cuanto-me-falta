@@ -165,6 +165,8 @@
     border:1px solid var(--line);background:#fff;color:var(--soft)}
   .mat .cbtn:hover{border-color:var(--lk);color:var(--lk);background:var(--lk-bg)}
   .mat .cbtn.open{border-color:var(--lk);color:#fff;background:var(--lk)}
+  .mat .nbadge{flex:0 0 auto;min-width:25px;height:24px;padding:0 7px;border-radius:7px;display:grid;place-items:center;
+    font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ap-tx);background:#fff;border:1px solid var(--ap)}
   .mat .x{flex:0 0 auto;color:#C9C2B5;font-size:15px;font-weight:700;width:24px;height:24px;border-radius:6px;display:none;place-items:center}
   .mat.custom .x{display:grid} .mat .x:hover{color:var(--cu);background:var(--cu-bg)}
 
@@ -192,6 +194,33 @@
   .chip.unlock:hover{border-color:var(--hb)}
   .panel .none{flex:1;text-align:center;font-size:14px;color:var(--soft);padding-top:2px}
 
+  /* popover de estado (un toque elige; a futuro suma promoción + notas) */
+  .spop{position:fixed;z-index:60;min-width:240px;max-width:286px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 16px 44px rgba(0,0,0,.20);padding:6px;display:none}
+  .spop.show{display:block}
+  .sp-head{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);padding:8px 10px 6px}
+  .sp-opt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:0;
+    border-radius:10px;padding:9px 10px;cursor:pointer;font-family:var(--sans)}
+  .sp-opt:hover{background:var(--paper)}
+  .sp-opt.sel{background:var(--paper)}
+  .sp-dot{width:24px;height:24px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+    font-size:13px;font-weight:700;border:2px solid #CFC9BD;color:transparent;background:var(--paper)}
+  .sp-dot.cursando{border-color:var(--cu);background:var(--cu);color:#fff}
+  .sp-dot.final{border-color:var(--fi);background:var(--fi);color:#fff}
+  .sp-dot.aprobada{border-color:var(--ap);background:var(--ap);color:#fff}
+  .sp-name{flex:1;display:flex;flex-direction:column;line-height:1.25;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .sp-name small{font-size:11px;font-weight:400;color:var(--soft);margin-top:1px}
+  .sp-chk{flex:0 0 auto;color:var(--gold);opacity:0;display:grid;place-items:center}
+  .sp-opt.sel .sp-chk{opacity:1}
+  .sp-sep{height:1px;background:var(--line);margin:5px 8px}
+  .sp-nota{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px 7px}
+  .sp-nota label{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .sp-nota label span{font-weight:400;color:var(--soft);font-size:11px}
+  .sp-nota input{width:64px;text-align:center;font-family:var(--sans);font-size:15px;font-weight:600;
+    padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);-moz-appearance:textfield}
+  .sp-nota input::-webkit-outer-spin-button,.sp-nota input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .sp-nota input:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold)}
+
   .foot{margin-top:40px;text-align:center;font-size:11.5px;color:var(--soft)}
   .watermark{position:fixed;right:14px;bottom:11px;z-index:5;pointer-events:none;
     font-family:var(--serif);font-style:italic;font-weight:600;font-size:13px;color:var(--ink);opacity:.22;letter-spacing:.01em}
@@ -212,7 +241,7 @@
       <div class="bignum">
         <div class="stat"><span class="num"><span id="pct">0</span><small>%</small></span><span class="cap">aprobado</span></div>
         <div class="sep"></div>
-        <div class="stat"><span class="num" id="avg">—</span><span class="cap">promedio</span></div>
+        <div class="stat"><span class="num" id="avg">—</span><span class="cap" id="avg-cap">promedio</span></div>
       </div>
       <div class="bar"><i class="b-ap" id="bar-ap"></i><i class="b-fi" id="bar-fi"></i><i class="b-cu" id="bar-cu"></i></div>
       <div class="counts">
@@ -276,6 +305,7 @@
   </div>
 </div>
 
+<div class="spop" id="spop" role="menu"></div>
 <div id="print-summary"></div>
 <div class="watermark">¿cuánto me falta?</div>
 
@@ -399,10 +429,16 @@ const CORREL = {
   '3.4.098':['3.4.214'],
 };
 
-const CYCLE=['pendiente','aprobada','cursando','final'];  // 1er toque => aprobada
 const TICK={pendiente:'',cursando:'•',final:'◐',aprobada:'✓'};
+const STATE_OPTS=[
+  {k:'pendiente',label:'Pendiente',desc:'Todavía no la empecé'},
+  {k:'cursando',label:'Cursando',desc:'La estoy cursando ahora'},
+  {k:'final',label:'Pendiente de final',desc:'Aprobé la cursada, me falta rendir'},
+  {k:'aprobada',label:'Aprobada',desc:'Final aprobado'},
+];
+let popCod=null;
 const KEY='plan-uade-v3';
-let DB={states:{},custom:[]};
+let DB={states:{},custom:[],notas:{}};
 let openSet=new Set();
 
 // Guarda con window.storage si existe (preview de Claude); si no, usa localStorage (archivo/hosting).
@@ -427,7 +463,7 @@ async function load(){
       try{ const v=await STORE.get(old); if(v){ const d=JSON.parse(v); DB.states=d.states||{}; DB.custom=d.custom||[]; break; } }catch(e){}
     }
   }
-  DB.states=DB.states||{}; DB.custom=DB.custom||[];
+  DB.states=DB.states||{}; DB.custom=DB.custom||[]; DB.notas=DB.notas||{};
 }
 async function save(){ try{ await STORE.set(KEY, JSON.stringify(DB)); }catch(e){ console.error(e); } }
 
@@ -475,16 +511,18 @@ function matWrap(m){
     ? `<button class="cbtn ${openSet.has(m.cod)?'open':''}" title="Ver correlativas" aria-label="Ver correlativas">
          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v3M6 16v-2.5h12V16"/></svg>
        </button>` : '';
+  const nota = (st(m.cod)==='aprobada' && DB.notas[m.cod]!=null)
+    ? `<span class="nbadge" title="Nota final">${DB.notas[m.cod]}</span>` : '';
   el.innerHTML=`<span class="tick">${TICK[st(m.cod)]}</span>
     <span class="info"><span class="cod">${isCustom?'—':m.cod}</span><span class="nom">${m.nom}</span></span>
-    ${cbtn}<span class="x" title="Quitar">×</span>`;
+    ${nota}${cbtn}<span class="x" title="Quitar">×</span>`;
 
   el.onclick=(e)=>{
     if(e.target.closest('.x')) return;
     if(e.target.closest('.cbtn')){ e.stopPropagation(); toggleCorrel(m.cod); return; }
-    cycle(m.cod);
+    openStatePop(m.cod, el);
   };
-  el.onkeydown=(e)=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault(); cycle(m.cod);} };
+  el.onkeydown=(e)=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault(); openStatePop(m.cod, el);} };
   if(isCustom) el.querySelector('.x').onclick=(e)=>{e.stopPropagation(); removeMat(m.cod);};
   wrap.appendChild(el);
 
@@ -512,12 +550,66 @@ function goTo(c){
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 }
 function toggleCorrel(c){
+  closeStatePop();
   if(openSet.has(c)) openSet.delete(c); else openSet.add(c);
   render();
   if(openSet.has(c)){const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 
-function cycle(c){ DB.states[c]=CYCLE[(CYCLE.indexOf(st(c))+1)%4]; save(); render(); }
+/* ---- popover de estado ---- */
+const CHECK_SVG='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+function openStatePop(c, anchor){
+  popCod=c;
+  const pop=document.getElementById('spop');
+  const opts=STATE_OPTS.map(o=>`<button class="sp-opt ${st(c)===o.k?'sel':''}" data-k="${o.k}">
+        <span class="sp-dot ${o.k}">${TICK[o.k]}</span>
+        <span class="sp-name">${o.label}<small>${o.desc}</small></span>
+        <span class="sp-chk">${CHECK_SVG}</span>
+      </button>`).join('');
+  const notaBlock = st(c)==='aprobada' ? `<div class="sp-sep"></div>
+      <div class="sp-nota">
+        <label for="sp-nota-in">Nota final <span>(opcional)</span></label>
+        <input id="sp-nota-in" type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="—" value="${DB.notas[c]??''}">
+      </div>` : '';
+  pop.innerHTML='<div class="sp-head">Estado de la materia</div>'+opts+notaBlock;
+  pop.querySelectorAll('.sp-opt').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); setState(c,b.dataset.k); });
+  const ni=pop.querySelector('#sp-nota-in');
+  if(ni) ni.oninput=()=>setNota(c, ni.value);
+  pop.classList.add('show');
+  positionPop(pop, anchor);
+}
+function setNota(c, v){
+  v=String(v).trim();
+  if(v===''){ delete DB.notas[c]; }
+  else { let n=Math.round(parseFloat(v.replace(',','.'))); if(isNaN(n)) return; DB.notas[c]=Math.max(1,Math.min(10,n)); }
+  save(); render();
+}
+function positionPop(pop, anchor){
+  const r=anchor.getBoundingClientRect(), M=10;
+  const pw=pop.offsetWidth, ph=pop.offsetHeight;
+  let left=Math.min(r.left, window.innerWidth-M-pw); left=Math.max(M,left);
+  let top=r.bottom+6;
+  if(top+ph>window.innerHeight-M) top=Math.max(M, r.top-6-ph);
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+}
+function setState(c,k){
+  DB.states[c]=k; save(); render();
+  if(k==='aprobada') openStatePop(c, document.getElementById(idOf(c)));
+  else closeStatePop();
+}
+function closeStatePop(){ const pop=document.getElementById('spop'); if(pop) pop.classList.remove('show'); popCod=null; }
+function bindStatePop(){
+  document.addEventListener('click',e=>{
+    if(!popCod) return;
+    if(!e.target.closest('.spop') && !e.target.closest('.mat')) closeStatePop();
+  });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeStatePop(); });
+  window.addEventListener('scroll',()=>{
+    if(!popCod) return;
+    const a=document.getElementById(idOf(popCod)), pop=document.getElementById('spop');
+    if(a && pop.classList.contains('show')) positionPop(pop, a);
+  }, true);
+}
 function removeMat(c){
   DB.custom=DB.custom.filter(x=>x.cod!==c); delete DB.states[c];
   openSet.delete(c); save(); render();
@@ -535,6 +627,14 @@ function stats(){
   document.getElementById('bar-ap').style.width=pc(ap);
   document.getElementById('bar-fi').style.width=pc(fi);
   document.getElementById('bar-cu').style.width=pc(cu);
+  // promedio: solo materias aprobadas con nota cargada
+  const notas=all.filter(m=>st(m.cod)==='aprobada' && DB.notas[m.cod]!=null).map(m=>DB.notas[m.cod]);
+  const avgEl=document.getElementById('avg'), capEl=document.getElementById('avg-cap');
+  if(notas.length){
+    const mean=notas.reduce((a,b)=>a+b,0)/notas.length;
+    avgEl.textContent=(Math.round(mean*100)/100).toString();
+    capEl.textContent='promedio · '+notas.length+' con nota';
+  } else { avgEl.textContent='—'; capEl.textContent='promedio'; }
   milestones();
 }
 function milestones(){
@@ -551,7 +651,7 @@ function milestones(){
 
 async function doReset(){
   if(!confirm('¿Reiniciar todo? Se borran estados y materias agregadas (tu perfil se conserva).'))return;
-  DB={states:{},custom:[],profile:DB.profile}; openSet.clear(); await save(); render();
+  DB={states:{},custom:[],notas:{},profile:DB.profile}; openSet.clear(); await save(); render();
 }
 
 /* ---- perfil (nombre + foto) ---- */
@@ -624,7 +724,7 @@ function slugName(){
 }
 function exportJSON(){
   const data={app:'plan-uade',version:3,exportedAt:new Date().toISOString(),
-    profile:DB.profile||{name:'',photo:''}, states:DB.states||{}, custom:DB.custom||[]};
+    profile:DB.profile||{name:'',photo:''}, states:DB.states||{}, custom:DB.custom||[], notas:DB.notas||{}};
   download('plan-uade-'+slugName()+'.json', JSON.stringify(data,null,2), 'application/json');
 }
 function importJSON(file){
@@ -635,7 +735,7 @@ function importJSON(file){
       alert('No pude leer el archivo. Tiene que ser un .json exportado desde acá.'); return;
     }
     if(!confirm('Esto reemplaza tu progreso actual por el del archivo. ¿Seguir?')) return;
-    DB.states=d.states||{}; DB.custom=d.custom||[];
+    DB.states=d.states||{}; DB.custom=d.custom||[]; DB.notas=d.notas||{};
     if(d.profile) DB.profile=d.profile;
     openSet.clear(); save(); render(); renderHeader();
   };
@@ -708,7 +808,7 @@ function bindActions(){
 (async()=>{
   await load();
   const firstTime = (DB.profile===undefined);
-  render(); renderHeader(); bindProfile(); bindActions();
+  render(); renderHeader(); bindProfile(); bindActions(); bindStatePop();
   if(firstTime) openProfile(true);
 })();
 </script>
