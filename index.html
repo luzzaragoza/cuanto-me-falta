@@ -64,6 +64,17 @@
   .stat .num{display:inline-flex;align-items:baseline;font-family:var(--serif);font-weight:900;font-size:clamp(48px,10vw,76px);line-height:.8;letter-spacing:-.03em;color:var(--ink)}
   .stat .num small{font-size:.4em;font-weight:700;color:var(--soft);margin-left:3px}
   .stat .cap{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft);font-weight:700;margin-top:9px}
+  .info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:6px;padding:0;
+    border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--soft);
+    font-family:var(--serif);font-style:italic;font-size:10px;font-weight:700;line-height:1;cursor:help;position:relative;vertical-align:middle}
+  .info-i:hover,.info-i:focus-visible{color:var(--ink);border-color:var(--soft);outline:none}
+  .info-i .tip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(4px);
+    width:232px;background:var(--ink);color:var(--paper);text-transform:none;letter-spacing:normal;
+    font-family:var(--sans);font-weight:500;font-size:11.5px;line-height:1.45;text-align:left;
+    padding:10px 12px;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.2);
+    opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease;z-index:60;pointer-events:none}
+  .info-i .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink)}
+  .info-i:hover .tip,.info-i:focus .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .bignum .sep{width:1px;align-self:stretch;background:var(--line);margin:6px 0}
   .bar{height:16px;border-radius:9px;overflow:hidden;display:flex;background:#EBE7DE;border:1px solid var(--line);margin-top:22px}
   .bar i{display:block;height:100%;transition:width .4s cubic-bezier(.2,.7,.2,1)}
@@ -178,9 +189,13 @@
   .mat.aprobada .tick{border-color:var(--ap);background:var(--ap);color:#fff} .mat.aprobada .nom{color:var(--ap-tx)}
   @keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(195,146,0,0)}30%{box-shadow:0 0 0 3px rgba(195,146,0,.9)}}
   .mat.flash{animation:flash 1s ease}
+  @keyframes spop-in{from{opacity:0;transform:translateY(-7px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes panel-in{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
 
   .panel{background:#FBFAF7;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;
-    margin:-2px 6px 0;padding:11px 14px 13px}
+    margin:-2px 6px 0;padding:11px 14px 13px;transform-origin:top center}
+  .panel-in{animation:panel-in .22s cubic-bezier(.2,.85,.3,1)}
+  @media (prefers-reduced-motion:reduce){.spop.show,.panel-in,.mat.flash{animation:none}}
   .panel .row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:3px 0}
   .panel .lab{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.04em;
     text-transform:uppercase;flex:0 0 auto;width:104px;padding-top:4px}
@@ -197,7 +212,7 @@
   /* popover de estado (un toque elige; a futuro suma promoción + notas) */
   .spop{position:fixed;z-index:60;min-width:240px;max-width:286px;background:#fff;border:1px solid var(--line);
     border-radius:14px;box-shadow:0 16px 44px rgba(0,0,0,.20);padding:6px;display:none}
-  .spop.show{display:block}
+  .spop.show{display:block;transform-origin:top center;animation:spop-in .17s cubic-bezier(.2,.85,.3,1)}
   .sp-head{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);padding:8px 10px 6px}
   .sp-opt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:0;
     border-radius:10px;padding:9px 10px;cursor:pointer;font-family:var(--sans)}
@@ -241,7 +256,7 @@
       <div class="bignum">
         <div class="stat"><span class="num"><span id="pct">0</span><small>%</small></span><span class="cap">aprobado</span></div>
         <div class="sep"></div>
-        <div class="stat"><span class="num" id="avg">—</span><span class="cap" id="avg-cap">promedio</span></div>
+        <div class="stat"><span class="num" id="avg">—</span><span class="cap"><span id="avg-cap">promedio</span><button class="info-i" type="button" aria-label="Cómo se calcula el promedio">i<span class="tip" role="tooltip">Promedio <strong>sin aplazos</strong>: se calcula solo con materias aprobadas que tengan nota cargada. Puede no coincidir con el promedio oficial de la facultad, que sí incluye los aplazos.</span></button></span></div>
       </div>
       <div class="bar"><i class="b-ap" id="bar-ap"></i><i class="b-fi" id="bar-fi"></i><i class="b-cu" id="bar-cu"></i></div>
       <div class="counts">
@@ -440,6 +455,7 @@ let popCod=null;
 const KEY='plan-uade-v3';
 let DB={states:{},custom:[],notas:{}};
 let openSet=new Set();
+let justOpened=new Set();   // correlativas recién abiertas → para animar solo al abrir
 
 // Guarda con window.storage si existe (preview de Claude); si no, usa localStorage (archivo/hosting).
 const STORE=(()=>{
@@ -511,11 +527,9 @@ function matWrap(m){
     ? `<button class="cbtn ${openSet.has(m.cod)?'open':''}" title="Ver correlativas" aria-label="Ver correlativas">
          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v3M6 16v-2.5h12V16"/></svg>
        </button>` : '';
-  const nota = (st(m.cod)==='aprobada' && DB.notas[m.cod]!=null)
-    ? `<span class="nbadge" title="Nota final">${DB.notas[m.cod]}</span>` : '';
   el.innerHTML=`<span class="tick">${TICK[st(m.cod)]}</span>
     <span class="info"><span class="cod">${isCustom?'—':m.cod}</span><span class="nom">${m.nom}</span></span>
-    ${nota}${cbtn}<span class="x" title="Quitar">×</span>`;
+    ${cbtn}<span class="x" title="Quitar">×</span>`;
 
   el.onclick=(e)=>{
     if(e.target.closest('.x')) return;
@@ -526,7 +540,7 @@ function matWrap(m){
   if(isCustom) el.querySelector('.x').onclick=(e)=>{e.stopPropagation(); removeMat(m.cod);};
   wrap.appendChild(el);
 
-  if(hasCorrel && openSet.has(m.cod)) wrap.appendChild(panel(a,d));
+  if(hasCorrel && openSet.has(m.cod)) wrap.appendChild(panel(a,d,m.cod));
   return wrap;
 }
 
@@ -536,22 +550,23 @@ function chips(list,type){
   if(!list.length) return '<span class="none">—</span>';
   return `<div class="chips">${list.map(c=>`<button class="chip ${type}" data-go="${c}">${nameOf(c)}</button>`).join('')}</div>`;
 }
-function panel(a,d){
+function panel(a,d,cod){
   const p=document.createElement('div'); p.className='panel';
+  if(cod && justOpened.has(cod)){ p.classList.add('panel-in'); justOpened.delete(cod); }
   p.innerHTML=`<div class="row"><span class="lab need">${ARROW_L} Necesitás</span>${chips(a,'need')}</div>
                <div class="row"><span class="lab unlock">${ARROW_R} Habilita</span>${chips(d,'unlock')}</div>`;
   p.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>goTo(ch.dataset.go));
   return p;
 }
 function goTo(c){
-  openSet.add(c); render();
+  justOpened.add(c); openSet.add(c); render();
   const el=document.getElementById(idOf(c));
   if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 }
 function toggleCorrel(c){
   closeStatePop();
-  if(openSet.has(c)) openSet.delete(c); else openSet.add(c);
+  if(openSet.has(c)) openSet.delete(c); else { justOpened.add(c); openSet.add(c); }
   render();
   if(openSet.has(c)){const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
@@ -575,6 +590,7 @@ function openStatePop(c, anchor){
   pop.querySelectorAll('.sp-opt').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); setState(c,b.dataset.k); });
   const ni=pop.querySelector('#sp-nota-in');
   if(ni) ni.oninput=()=>setNota(c, ni.value);
+  pop.classList.remove('show'); void pop.offsetWidth;   // reinicia la animación de entrada
   pop.classList.add('show');
   positionPop(pop, anchor);
 }
