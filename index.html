@@ -74,7 +74,7 @@
     padding:10px 12px;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.2);
     opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease;z-index:60;pointer-events:none}
   .info-i .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink)}
-  .info-i:hover .tip,.info-i:focus .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  .info-i:hover .tip,.info-i:focus-visible .tip,.info-i.open .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .bignum .sep{width:1px;align-self:stretch;background:var(--line);margin:6px 0}
   .bar{height:16px;border-radius:9px;overflow:hidden;display:flex;background:#EBE7DE;border:1px solid var(--line);margin-top:22px}
   .bar i{display:block;height:100%;transition:width .4s cubic-bezier(.2,.7,.2,1)}
@@ -128,7 +128,8 @@
   .ps-av img{width:100%;height:100%;object-fit:cover}
   .ps-name{font-family:var(--serif);font-weight:900;font-size:26px;line-height:1;letter-spacing:-.02em}
   .ps-sub{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);font-weight:600;margin-top:6px}
-  .ps-pct{margin-left:auto;font-family:var(--serif);font-weight:900;font-size:46px;line-height:.8;text-align:right}
+  .ps-figs{margin-left:auto;display:flex;gap:26px;align-items:flex-start}
+  .ps-pct{font-family:var(--serif);font-weight:900;font-size:46px;line-height:.8;text-align:right}
   .ps-pct span{display:block;font-size:11px;font-weight:600;color:var(--soft);letter-spacing:.04em;margin-top:4px}
   .ps-bar{height:14px;border-radius:8px;overflow:hidden;display:flex;background:#EBE7DE;border:1px solid var(--line);margin:18px 0 12px}
   .ps-bar i{display:block;height:100%}
@@ -172,7 +173,7 @@
   .mat .info{min-width:0;flex:1;display:flex;align-items:baseline;gap:12px}
   .mat .cod{font-family:var(--mono);font-size:10.5px;color:var(--soft);letter-spacing:.02em;flex:0 0 auto}
   .mat .nom{font-size:14px;font-weight:500;line-height:1.25;min-width:0}
-  .mat .cbtn{flex:0 0 auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+  .mat .cbtn{flex:0 0 auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;cursor:pointer;
     border:1px solid var(--line);background:#fff;color:var(--soft)}
   .mat .cbtn:hover{border-color:var(--lk);color:var(--lk);background:var(--lk-bg)}
   .mat .cbtn.open{border-color:var(--lk);color:#fff;background:var(--lk)}
@@ -232,9 +233,11 @@
   .sp-nota label{font-size:12.5px;font-weight:600;color:var(--ink)}
   .sp-nota label span{font-weight:400;color:var(--soft);font-size:11px}
   .sp-nota input{width:64px;text-align:center;font-family:var(--sans);font-size:15px;font-weight:600;
-    padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);-moz-appearance:textfield}
+    padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);-moz-appearance:textfield;appearance:textfield}
   .sp-nota input::-webkit-outer-spin-button,.sp-nota input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .sp-nota input:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold)}
+  .sp-rename{flex-direction:column;align-items:stretch;gap:6px}
+  .sp-rename input{width:100%;text-align:left;font-size:13.5px;font-weight:600}
 
   .foot{margin-top:40px;text-align:center;font-size:11.5px;color:var(--soft)}
   .watermark{position:fixed;right:14px;bottom:11px;z-index:5;pointer-events:none;
@@ -256,7 +259,7 @@
       <div class="bignum">
         <div class="stat"><span class="num"><span id="pct">0</span><small>%</small></span><span class="cap">aprobado</span></div>
         <div class="sep"></div>
-        <div class="stat"><span class="num" id="avg">—</span><span class="cap"><span id="avg-cap">promedio</span><button class="info-i" type="button" aria-label="Cómo se calcula el promedio">i<span class="tip" role="tooltip">Promedio <strong>sin aplazos</strong>: se calcula solo con materias aprobadas que tengan nota cargada. Puede no coincidir con el promedio oficial de la facultad, que sí incluye los aplazos.</span></button></span></div>
+        <div class="stat"><span class="num" id="avg">—</span><span class="cap"><span id="avg-cap">promedio</span><button class="info-i" type="button" aria-label="Cómo se calcula el promedio" onclick="event.stopPropagation();this.classList.toggle('open')">i<span class="tip" role="tooltip">Promedio <strong>sin aplazos</strong>: se calcula solo con materias aprobadas que tengan nota cargada. Puede no coincidir con el promedio oficial de la facultad, que sí incluye los aplazos.</span></button></span></div>
       </div>
       <div class="bar"><i class="b-ap" id="bar-ap"></i><i class="b-fi" id="bar-fi"></i><i class="b-cu" id="bar-cu"></i></div>
       <div class="counts">
@@ -479,7 +482,7 @@ async function load(){
       try{ const v=await STORE.get(old); if(v){ const d=JSON.parse(v); DB.states=d.states||{}; DB.custom=d.custom||[]; break; } }catch(e){}
     }
   }
-  DB.states=DB.states||{}; DB.custom=DB.custom||[]; DB.notas=DB.notas||{};
+  DB.states=DB.states||{}; DB.custom=DB.custom||[]; DB.notas=DB.notas||{}; DB.optNames=DB.optNames||{};
 }
 async function save(){ try{ await STORE.set(KEY, JSON.stringify(DB)); }catch(e){ console.error(e); } }
 
@@ -487,6 +490,9 @@ function st(c){return DB.states[c]||'pendiente';}
 function antes(c){return CORREL[c]||[];}
 function despues(c){return Object.keys(CORREL).filter(k=>CORREL[k].includes(c));}
 function idOf(c){return 'mat-'+c;}
+function isOpt(c){return /^OPT\d/.test(c);}                 // solo OPT1/2/3 se pueden renombrar
+function nomOf(c){const m=allMats().find(x=>x.cod===c); const base=m?m.nom:c;
+  return (isOpt(c) && DB.optNames && DB.optNames[c]) ? DB.optNames[c] : base;}
 
 function matsOf(yi,ci){
   return PLAN[yi].cuatris[ci].mats.concat(DB.custom.filter(c=>c.y===yi&&c.c===ci));
@@ -494,7 +500,7 @@ function matsOf(yi,ci){
 function allMats(){
   const a=[]; PLAN.forEach((y,yi)=>y.cuatris.forEach((q,ci)=>matsOf(yi,ci).forEach(m=>a.push({...m,yi})))); return a;
 }
-function nameOf(c){const m=allMats().find(x=>x.cod===c); return m?m.nom:c;}
+function nameOf(c){return nomOf(c);}
 
 function render(){
   const plan=document.getElementById('plan'); plan.innerHTML='';
@@ -528,15 +534,16 @@ function matWrap(m){
          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v3M6 16v-2.5h12V16"/></svg>
        </button>` : '';
   el.innerHTML=`<span class="tick">${TICK[st(m.cod)]}</span>
-    <span class="info"><span class="cod">${isCustom?'—':m.cod}</span><span class="nom">${m.nom}</span></span>
+    <span class="info"><span class="cod">${isCustom?'—':m.cod}</span><span class="nom">${nomOf(m.cod)}</span></span>
     ${cbtn}<span class="x" title="Quitar">×</span>`;
 
   el.onclick=(e)=>{
     if(e.target.closest('.x')) return;
     if(e.target.closest('.cbtn')){ e.stopPropagation(); toggleCorrel(m.cod); return; }
+    if(popCod===m.cod){ closeStatePop(); return; }   // 2do toque en la misma materia → cierra
     openStatePop(m.cod, el);
   };
-  el.onkeydown=(e)=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault(); openStatePop(m.cod, el);} };
+  el.onkeydown=(e)=>{ if(e.key===' '||e.key==='Enter'){e.preventDefault(); if(popCod===m.cod) closeStatePop(); else openStatePop(m.cod, el);} };
   if(isCustom) el.querySelector('.x').onclick=(e)=>{e.stopPropagation(); removeMat(m.cod);};
   wrap.appendChild(el);
 
@@ -586,10 +593,17 @@ function openStatePop(c, anchor){
         <label for="sp-nota-in">Nota final <span>(opcional)</span></label>
         <input id="sp-nota-in" type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="—" value="${DB.notas[c]??''}">
       </div>` : '';
-  pop.innerHTML='<div class="sp-head">Estado de la materia</div>'+opts+notaBlock;
+  const renameBlock = isOpt(c) ? `<div class="sp-sep"></div>
+      <div class="sp-nota sp-rename">
+        <label for="sp-opt-in">Nombre de la optativa <span>(editable)</span></label>
+        <input id="sp-opt-in" type="text" maxlength="48" placeholder="Optativa…" value="${(DB.optNames[c]||'').replace(/"/g,'&quot;')}">
+      </div>` : '';
+  pop.innerHTML='<div class="sp-head">Estado de la materia</div>'+opts+notaBlock+renameBlock;
   pop.querySelectorAll('.sp-opt').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); setState(c,b.dataset.k); });
   const ni=pop.querySelector('#sp-nota-in');
   if(ni) ni.oninput=()=>setNota(c, ni.value);
+  const oi=pop.querySelector('#sp-opt-in');
+  if(oi){ oi.onclick=ev=>ev.stopPropagation(); oi.oninput=()=>setOptName(c, oi.value); }
   pop.classList.remove('show'); void pop.offsetWidth;   // reinicia la animación de entrada
   pop.classList.add('show');
   positionPop(pop, anchor);
@@ -598,6 +612,12 @@ function setNota(c, v){
   v=String(v).trim();
   if(v===''){ delete DB.notas[c]; }
   else { let n=Math.round(parseFloat(v.replace(',','.'))); if(isNaN(n)) return; DB.notas[c]=Math.max(1,Math.min(10,n)); }
+  save(); render();
+}
+function setOptName(c, v){
+  if(!isOpt(c)) return;
+  v=String(v).trim();
+  if(v==='') delete DB.optNames[c]; else DB.optNames[c]=v.slice(0,48);
   save(); render();
 }
 function positionPop(pop, anchor){
@@ -616,10 +636,14 @@ function setState(c,k){
 function closeStatePop(){ const pop=document.getElementById('spop'); if(pop) pop.classList.remove('show'); popCod=null; }
 function bindStatePop(){
   document.addEventListener('click',e=>{
+    // cerrar el tooltip (i) del promedio si se toca afuera
+    if(!e.target.closest('.info-i'))
+      document.querySelectorAll('.info-i.open').forEach(b=>b.classList.remove('open'));
     if(!popCod) return;
     if(!e.target.closest('.spop') && !e.target.closest('.mat')) closeStatePop();
   });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeStatePop(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeStatePop();
+    document.querySelectorAll('.info-i.open').forEach(b=>b.classList.remove('open')); } });
   window.addEventListener('scroll',()=>{
     if(!popCod) return;
     const a=document.getElementById(idOf(popCod)), pop=document.getElementById('spop');
@@ -667,7 +691,7 @@ function milestones(){
 
 async function doReset(){
   if(!confirm('¿Reiniciar todo? Se borran estados y materias agregadas (tu perfil se conserva).'))return;
-  DB={states:{},custom:[],notas:{},profile:DB.profile}; openSet.clear(); await save(); render();
+  DB={states:{},custom:[],notas:{},optNames:{},profile:DB.profile}; openSet.clear(); await save(); render();
 }
 
 /* ---- perfil (nombre + foto) ---- */
@@ -740,7 +764,7 @@ function slugName(){
 }
 function exportJSON(){
   const data={app:'plan-uade',version:3,exportedAt:new Date().toISOString(),
-    profile:DB.profile||{name:'',photo:''}, states:DB.states||{}, custom:DB.custom||[], notas:DB.notas||{}};
+    profile:DB.profile||{name:'',photo:''}, states:DB.states||{}, custom:DB.custom||[], notas:DB.notas||{}, optNames:DB.optNames||{}};
   download('plan-uade-'+slugName()+'.json', JSON.stringify(data,null,2), 'application/json');
 }
 function importJSON(file){
@@ -751,7 +775,7 @@ function importJSON(file){
       alert('No pude leer el archivo. Tiene que ser un .json exportado desde acá.'); return;
     }
     if(!confirm('Esto reemplaza tu progreso actual por el del archivo. ¿Seguir?')) return;
-    DB.states=d.states||{}; DB.custom=d.custom||[]; DB.notas=d.notas||{};
+    DB.states=d.states||{}; DB.custom=d.custom||[]; DB.notas=d.notas||{}; DB.optNames=d.optNames||{};
     if(d.profile) DB.profile=d.profile;
     openSet.clear(); save(); render(); renderHeader();
   };
@@ -765,6 +789,8 @@ function buildSummary(){
   const p=DB.profile||{}; const name=p.name||'Mi plan de carrera';
   const av = p.photo? `<img src="${p.photo}" alt="">` : `<span>${initials(p.name)||'·'}</span>`;
   const seg=x=>`width:${total?x/total*100:0}%`;
+  const notas=all.filter(m=>st(m.cod)==='aprobada' && DB.notas[m.cod]!=null).map(m=>DB.notas[m.cod]);
+  const prom = notas.length ? (Math.round(notas.reduce((a,b)=>a+b,0)/notas.length*100)/100).toString() : '—';
 
   const miles=[{t:'Analista en Informática',u:2},{t:'Ingeniero en Informática',u:4}]
     .map(d=>{ const falta=all.filter(m=>m.yi<=d.u && st(m.cod)!=='aprobada').length;
@@ -779,7 +805,7 @@ function buildSummary(){
   }).join('');
 
   const listOf=s=>{ const l=all.filter(m=>st(m.cod)===s);
-    return l.length? l.map(m=>`<li>${m.nom}</li>`).join('') : '<li class="mut">—</li>'; };
+    return l.length? l.map(m=>`<li>${nomOf(m.cod)}</li>`).join('') : '<li class="mut">—</li>'; };
 
   const fecha=new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'});
 
@@ -787,7 +813,10 @@ function buildSummary(){
     <div class="ps-head">
       <div class="ps-av">${av}</div>
       <div><div class="ps-name">${name}</div><div class="ps-sub">Ingeniería en Informática · UADE — Plan 1621</div></div>
-      <div class="ps-pct">${total?Math.round(ap/total*100):0}%<span>aprobado</span></div>
+      <div class="ps-figs">
+        <div class="ps-pct">${prom}<span>promedio</span></div>
+        <div class="ps-pct">${total?Math.round(ap/total*100):0}%<span>aprobado</span></div>
+      </div>
     </div>
     <div class="ps-bar"><i class="s-ap" style="${seg(ap)}"></i><i class="s-fi" style="${seg(fi)}"></i><i class="s-cu" style="${seg(cu)}"></i></div>
     <div class="ps-counts">
