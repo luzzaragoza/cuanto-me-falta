@@ -1,7 +1,13 @@
 import type { DB } from '../types'
 import { avance, hitos, promedio } from '../domain/selectors'
 
-export function Dashboard({ db }: { db: DB }) {
+interface Props {
+  db: DB
+  onOpenNotas: () => void
+  notasResaltado: boolean
+}
+
+export function Dashboard({ db, onOpenNotas, notasResaltado }: Props) {
   const a = avance(db)
   const prom = promedio(db)
   const ms = hitos(db)
@@ -19,12 +25,15 @@ export function Dashboard({ db }: { db: DB }) {
             <span className="cap">aprobado</span>
           </div>
           <div className="sep" />
-          <div className="stat">
+          <div className={'stat' + (notasResaltado ? ' hl' : '')}>
             <span className="num">{prom.valor ?? '—'}</span>
             <span className="cap">
               {prom.valor != null
                 ? `promedio · ${prom.conNota} ${prom.conNota === 1 ? 'materia con nota' : 'materias con nota'}`
                 : 'promedio'}
+              <button className="nota-link" onClick={onOpenNotas}>
+                editar notas
+              </button>
             </span>
           </div>
         </div>

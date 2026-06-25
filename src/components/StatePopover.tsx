@@ -75,8 +75,10 @@ export function StatePopover({ cod, anchor, db, onClose }: Props) {
 
   const select = (k: Estado) => {
     store.setEstado(cod, k)
+    // solo queda abierto para mostrar el aviso de previas; si no, cierra (incluida Aprobada).
+    // Las notas se cargan aparte, en el panel de Notas.
     const faltanAhora = previasFaltantes(store.getSnapshot(), cod).length > 0
-    const keepOpen = k === 'aprobada' || (k === 'cursando' && !special && faltanAhora)
+    const keepOpen = (k === 'cursando' || k === 'aprobada') && !special && faltanAhora
     if (!keepOpen) onClose()
   }
 
@@ -111,37 +113,6 @@ export function StatePopover({ cod, anchor, db, onClose }: Props) {
         <div className="sp-note">
           Se habilita por <b>requisito especial</b> (por año o % de carrera). Consultá en UADE.
         </div>
-      )}
-
-      {estado === 'aprobada' && (
-        <>
-          <div className="sp-sep" />
-          <div className="sp-nota">
-            <label htmlFor="sp-nota-in">
-              Nota final <span>(opcional)</span>
-            </label>
-            <input
-              id="sp-nota-in"
-              type="number"
-              min={1}
-              max={10}
-              step={1}
-              inputMode="numeric"
-              placeholder="—"
-              defaultValue={db.notas[cod] ?? ''}
-              onChange={(e) =>
-                store.setNota(cod, e.target.value === '' ? null : parseFloat(e.target.value))
-              }
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  ;(e.target as HTMLInputElement).blur()
-                  onClose()
-                }
-              }}
-            />
-          </div>
-        </>
       )}
 
       {isOpt && (

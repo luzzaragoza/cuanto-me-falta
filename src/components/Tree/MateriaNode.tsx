@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import type { Estado } from '../../types'
 
@@ -8,14 +9,15 @@ export interface MateriaNodeData {
   nom: string
   estado: Estado
   role: NodeRole
+  tint?: CSSProperties // tinte por profundidad (need/unlock); undefined para el resto
   [key: string]: unknown
 }
 
-/** Nodo de materia en el árbol: código + nombre, color por estado y por rol en la cadena. */
+/** Nodo de materia en el árbol: código + nombre, color por estado y por rol/profundidad. */
 export function MateriaNode({ data }: NodeProps) {
   const d = data as MateriaNodeData
   return (
-    <div className={`tnode ${d.estado} role-${d.role}`}>
+    <div className={`tnode ${d.estado} role-${d.role}`} style={d.tint}>
       <Handle type="target" position={Position.Top} isConnectable={false} />
       <div className="tn-cod">{d.cod.startsWith('CUST') ? '—' : d.cod}</div>
       <div className="tn-nom">{d.nom}</div>

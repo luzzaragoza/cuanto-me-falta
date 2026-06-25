@@ -60,24 +60,26 @@ export function ProfileModal({ welcome, perfil, onClose }: Props) {
           <div className="pprev">
             {photo ? <img src={photo} alt="" /> : <span>{iniciales(name) || '·'}</span>}
           </div>
-          <div>
-            <label className="btn ghost">
-              Subir foto
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => {
-                  pick(e.target.files?.[0])
-                  e.target.value = ''
-                }}
-              />
-            </label>
-            {photo && (
-              <button className="lnk" style={{ marginLeft: 10 }} onClick={() => setPhoto('')}>
-                Quitar
-              </button>
-            )}
+          <div className="ppick-side">
+            <div className="ppick-btns">
+              <label className="btn ghost">
+                Subir foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    pick(e.target.files?.[0])
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+              {photo && (
+                <button className="lnk" onClick={() => setPhoto('')}>
+                  Quitar
+                </button>
+              )}
+            </div>
             <div className="phint">Opcional · formato cuadrado recomendado</div>
           </div>
         </div>

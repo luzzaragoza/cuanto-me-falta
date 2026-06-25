@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDB } from './state/store'
 import { Avatar } from './components/Avatar'
 import { Dashboard } from './components/Dashboard'
+import { NotasPanel } from './components/NotasPanel'
 import { OptionsMenu } from './components/OptionsMenu'
 import { PlanView } from './components/PlanView'
 import { PrintSummary } from './components/PrintSummary'
@@ -20,6 +21,7 @@ export function App() {
   const db = useDB()
   const [pop, setPop] = useState<PopState | null>(null)
   const [tree, setTree] = useState(false)
+  const [notas, setNotas] = useState(false)
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
 
@@ -53,7 +55,7 @@ export function App() {
           </div>
         </header>
 
-        <Dashboard db={db} />
+        <Dashboard db={db} onOpenNotas={() => setNotas(true)} notasResaltado={notas} />
         <PlanView db={db} openCod={pop?.cod ?? null} onOpen={togglePop} />
 
         <div className="foot">Tu progreso se guarda automáticamente en este dispositivo.</div>
@@ -69,6 +71,8 @@ export function App() {
         )}
 
         {tree && <TreeView onClose={() => setTree(false)} />}
+
+        {notas && <NotasPanel onClose={() => setNotas(false)} />}
 
         {modal !== 'closed' && (
           <ProfileModal

@@ -343,9 +343,11 @@ body {
 .mat.aprobada .nom {
   color: var(--ap-tx);
 }
+/* disponible = borde punteado dorado (look propio, distinto del relleno cálido de "cursando") */
 .mat.avail {
-  border-left-color: var(--gold);
-  background: #fcf7ea;
+  border: 1px dashed var(--gold);
+  border-left: 3px dashed var(--gold);
+  background: #fdfbf4;
 }
 .mat.avail .tick {
   border-color: var(--gold);
@@ -550,8 +552,9 @@ body {
   background: var(--paper);
 }
 .sp-note.warn {
-  color: var(--cu-tx);
-  background: var(--cu-bg);
+  color: #a23b2c;
+  background: #f7e9e6;
+  border: 1px solid #eecfc9;
 }
 .sp-note b {
   font-weight: 700;
@@ -683,25 +686,18 @@ body {
   border-left-color: var(--ap);
 }
 .tnode.role-dim {
-  opacity: 0.3;
+  opacity: 0.28;
 }
 .tnode.role-sel {
   border-color: var(--gold);
   box-shadow: 0 0 0 2px var(--gold);
 }
-.tnode.role-need {
-  border-color: #d8cdf4;
-  background: var(--lk-bg);
-}
-.tnode.role-need .tn-nom {
-  color: var(--lk-tx);
-}
-.tnode.role-unlock {
-  border-color: #bce2df;
-  background: var(--hb-bg);
-}
-.tnode.role-unlock .tn-nom {
-  color: var(--hb-tx);
+/* role-need / role-unlock: el color (por profundidad) lo pone el inline style desde TreeView.
+   El nombre hereda ese color del nodo. */
+.tnode.role-need .tn-cod,
+.tnode.role-unlock .tn-cod {
+  color: inherit;
+  opacity: 0.7;
 }
 .tnode .react-flow__handle {
   opacity: 0;
@@ -713,22 +709,159 @@ body {
   background: transparent;
 }
 
-/* rótulo de año */
-.tv-year {
+/* bandas de año (fondo) + rótulo a la izquierda */
+.react-flow__node-band {
+  pointer-events: none;
+}
+.tv-band {
+  position: relative;
+  border-top: 1px dashed var(--line);
+  box-sizing: border-box;
+}
+.tv-band-label {
+  position: sticky;
+  left: 10px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px 6px 14px;
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: 16px;
-  color: var(--gold);
+  font-size: 14px;
+  color: var(--soft);
   white-space: nowrap;
 }
-.tv-year .ty-badge {
-  display: block;
+.tv-band-label b {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--gold);
+}
+.tv-band-label em {
+  font-style: normal;
   font-family: var(--sans);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 600;
+  color: var(--ap-tx);
+  margin-left: 4px;
+}
+
+/* botón de ayuda (?) con tooltip — base */
+.info-i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
   color: var(--soft);
-  margin-top: 2px;
-  letter-spacing: 0;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+.info-i:hover,
+.info-i:focus-visible {
+  color: var(--ink);
+  border-color: var(--soft);
+  outline: none;
+}
+.info-i .tip {
+  position: absolute;
+  top: calc(100% + 9px);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  width: 260px;
+  background: var(--ink);
+  color: var(--paper);
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 95;
+  pointer-events: none;
+}
+.info-i .tip::after {
+  content: '';
+  position: absolute;
+  top: auto;
+  bottom: 100%;
+  right: 12px;
+  border: 5px solid transparent;
+  border-bottom-color: var(--ink);
+}
+.info-i .tip strong {
+  font-weight: 700;
+  color: #fff;
+}
+.info-i:hover .tip,
+.info-i:focus-visible .tip,
+.info-i.open .tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* leyenda fija (dirección siempre presente) */
+.tv-bar .info-i.help {
+  margin-left: auto;
+}
+.tv-keypanel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 11px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  font-size: 11.5px;
+  font-weight: 600;
+  display: grid;
+  gap: 5px;
+}
+.tk-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.tk-row.need {
+  color: var(--lk-tx);
+}
+.tk-row.unlock {
+  color: var(--hb-tx);
+}
+.tk-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+.tk-row.need .tk-dot {
+  background: var(--lk);
+}
+.tk-row.unlock .tk-dot {
+  background: var(--hb);
+}
+.tk-row em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--soft);
+  margin-left: 2px;
 }
 
 /* ----- perfil / avatar ----- */
@@ -820,6 +953,21 @@ body {
   align-items: center;
   margin: 6px 0 18px;
 }
+.ppick-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+.ppick-btns {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ppick-side .phint {
+  margin: 0;
+}
 .pprev {
   width: 66px;
   height: 66px;
@@ -871,6 +1019,9 @@ body {
   margin-top: 20px;
 }
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--sans);
   font-size: 14px;
   font-weight: 600;
@@ -967,6 +1118,9 @@ body {
 }
 
 /* ----- menú Opciones ----- */
+.actions {
+  position: relative;
+}
 .menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -977,7 +1131,7 @@ body {
   border-radius: 12px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16);
   padding: 6px;
-  z-index: 30;
+  z-index: 70;
 }
 .menu button {
   display: flex;
@@ -1242,4 +1396,146 @@ body {
   border-top: 1px solid var(--line);
   font-size: 11px;
   color: var(--soft);
+}
+
+/* ----- link "editar notas" + resaltado del promedio ----- */
+.nota-link {
+  margin-left: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.nota-link:hover {
+  color: var(--ink);
+}
+@keyframes promhl {
+  from {
+    text-shadow: 0 0 0 rgba(195, 146, 0, 0);
+  }
+  to {
+    text-shadow: 0 0 24px rgba(195, 146, 0, 0.6);
+  }
+}
+.stat.hl .num {
+  color: var(--gold);
+  animation: promhl 1s ease-in-out infinite alternate;
+}
+
+/* ----- panel de Notas ----- */
+.sheet-wide {
+  max-width: 520px;
+}
+.notas-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.notas-top h2 {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 22px;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.notas-prom {
+  margin-left: auto;
+  text-align: right;
+  flex: 0 0 auto;
+}
+.np-num {
+  display: block;
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 38px;
+  line-height: 0.8;
+  color: var(--gold);
+}
+.np-cap {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--soft);
+  font-weight: 700;
+  margin-top: 7px;
+}
+.notas-empty {
+  font-size: 13.5px;
+  color: var(--soft);
+  line-height: 1.5;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 6px 0 0;
+}
+.notas-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 52vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.nota-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.nota-row:last-child {
+  border-bottom: 0;
+}
+.nr-cod {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--soft);
+  flex: 0 0 auto;
+  width: 56px;
+}
+.nr-nom {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 0;
+}
+.nota-row input {
+  width: 58px;
+  flex: 0 0 auto;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.nota-row input::-webkit-outer-spin-button,
+.nota-row input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.nota-row input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+.nota-row input:focus::placeholder {
+  color: transparent;
 }

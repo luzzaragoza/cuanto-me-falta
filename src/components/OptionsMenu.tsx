@@ -16,19 +16,24 @@ export function OptionsMenu() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (!open) return
     const onDown = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false)
     }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
+    // se difiere para que el click que abre el menú no lo cierre en el mismo evento
+    const id = window.setTimeout(() => {
+      document.addEventListener('mousedown', onDown)
+      document.addEventListener('keydown', onKey)
+    }, 0)
     return () => {
+      window.clearTimeout(id)
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
     }
-  }, [])
+  }, [open])
 
   const exportBackup = () => {
     const name = store.getSnapshot().profile?.name
@@ -59,7 +64,10 @@ export function OptionsMenu() {
         className="tool-btn"
         aria-haspopup="true"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen((v) => !v)
+        }}
       >
         <IconMenu />
         Opciones

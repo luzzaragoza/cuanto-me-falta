@@ -23,15 +23,11 @@ export function slug(name: string | undefined): string {
 }
 
 /**
- * Imprime el resumen (#print-summary). Espera a que la foto (data URL) decodifique,
- * si no el PDF puede salir sin avatar.
+ * Imprime el resumen (#print-summary, visible solo en @media print).
+ * Es SINCRÓNICO a propósito: `window.print()` tiene que correr dentro del gesto del
+ * usuario (el click), si no algunos navegadores lo bloquean. La foto (data URL) ya está
+ * montada en el DOM desde que abre la app, así que no hay que esperar a que cargue.
  */
-export async function printSummary() {
-  const img = document.querySelector<HTMLImageElement>('#print-summary .ps-av img')
-  try {
-    if (img) await img.decode()
-  } catch {
-    /* si falla el decode, igual imprimimos */
-  }
+export function printSummary() {
   window.print()
 }

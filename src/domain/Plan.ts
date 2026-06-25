@@ -80,6 +80,38 @@ export class Plan {
     }
     return acc
   }
+
+  /** Niveles (BFS) hacia arriba: 1 = previa directa, 2 = previa de la previa, etc. */
+  chainUpLevels(cod: string): Map<string, number> {
+    return this.bfsLevels(cod, (c) => this.antes(c))
+  }
+
+  /** Niveles (BFS) hacia abajo: 1 = habilita directo, 2 = el siguiente, etc. */
+  chainDownLevels(cod: string): Map<string, number> {
+    return this.bfsLevels(cod, (c) => this.despues(c))
+  }
+
+  private bfsLevels(cod: string, vecinos: (c: string) => string[]): Map<string, number> {
+    const levels = new Map<string, number>()
+    const visited = new Set<string>([cod])
+    let frontier = [cod]
+    let depth = 0
+    while (frontier.length) {
+      depth++
+      const next: string[] = []
+      for (const c of frontier) {
+        for (const v of vecinos(c)) {
+          if (!visited.has(v)) {
+            visited.add(v)
+            levels.set(v, depth) // BFS → primera vez = nivel más corto
+            next.push(v)
+          }
+        }
+      }
+      frontier = next
+    }
+    return levels
+  }
 }
 
 /** Instancia única del plan (es estático). */
