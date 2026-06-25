@@ -639,9 +639,11 @@ function openStatePop(c, anchor){
   pop.innerHTML='<div class="sp-head">Estado de la materia</div>'+opts+avisoBlock+specialBlock+notaBlock+renameBlock;
   pop.querySelectorAll('.sp-opt').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); setState(c,b.dataset.k); });
   const ni=pop.querySelector('#sp-nota-in');
-  if(ni) ni.oninput=()=>setNota(c, ni.value);
+  if(ni){ ni.oninput=()=>setNota(c, ni.value);
+    ni.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); ni.blur(); closeStatePop(); } }; }
   const oi=pop.querySelector('#sp-opt-in');
-  if(oi){ oi.onclick=ev=>ev.stopPropagation(); oi.oninput=()=>setOptName(c, oi.value); }
+  if(oi){ oi.onclick=ev=>ev.stopPropagation(); oi.oninput=()=>setOptName(c, oi.value);
+    oi.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); oi.blur(); closeStatePop(); } }; }
   pop.classList.remove('show','closing'); void pop.offsetWidth;   // reinicia la animación de entrada
   pop.classList.add('show');
   positionPop(pop, anchor);
@@ -795,6 +797,7 @@ function bindProfile(){
   document.getElementById('pfile').onchange=e=>{ const f=e.target.files[0]; if(f) pickPhoto(f); e.target.value=''; };
   document.getElementById('premove').onclick=()=>{ pendingPhoto=''; drawPreview(); };
   document.getElementById('psave').onclick=saveProfile;
+  document.getElementById('pname').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); saveProfile(); } };
   document.getElementById('pskip').onclick=closeProfile;
   document.getElementById('modal').onclick=e=>{ if(e.target.id==='modal') closeProfile(); };
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeProfile(); });
