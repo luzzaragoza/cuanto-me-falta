@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ReactFlow,
   Controls,
@@ -12,6 +12,7 @@ import { plan } from '../../domain/Plan'
 import { CORREL } from '../../data/correlativas'
 import { nombreDe } from '../../domain/selectors'
 import { useDB } from '../../state/store'
+import { useExitAnimation } from '../../hooks/useExitAnimation'
 import { MateriaNode, type NodeRole } from './MateriaNode'
 import { BandNode } from './BandNode'
 import { layout } from './layout'
@@ -37,6 +38,15 @@ const shadeIdx = (lvl: number | undefined) => Math.min(Math.max((lvl ?? 1) - 1, 
 export function TreeView({ onClose }: { onClose: () => void }) {
   const db = useDB()
   const [sel, setSel] = useState<string | null>(null)
+  const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') requestClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [requestClose])
 
   const up = sel ? plan.chainUp(sel) : new Set<string>()
   const down = sel ? plan.chainDown(sel) : new Set<string>()
@@ -136,7 +146,7 @@ export function TreeView({ onClose }: { onClose: () => void }) {
     : 'Tocá una materia para ver su cadena'
 
   return (
-    <div className="treeview">
+    <div className={`treeview${closing ? ' closing' : ''}`} onAnimationEnd={onExitEnd}>
       <div className="tv-bar">
         <div className="tv-titles">
           <div className="tv-title">Árbol de correlativas</div>
@@ -159,7 +169,7 @@ export function TreeView({ onClose }: { onClose: () => void }) {
             rueda y arrastrá para moverte.
           </span>
         </button>
-        <button className="tv-close" onClick={onClose} aria-label="Cerrar árbol">
+        <button className="tv-close" onClick={requestClose} aria-label="Cerrar árbol">
           ×
         </button>
       </div>

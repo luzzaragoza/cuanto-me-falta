@@ -1,29 +1,31 @@
 import { useEffect } from 'react'
 import { store, useDB } from '../state/store'
 import { materiasEnEstado, nombreDe, promedio } from '../domain/selectors'
+import { useExitAnimation } from '../hooks/useExitAnimation'
 
 /** Panel para cargar/editar/borrar la nota de cierre de todas las materias aprobadas. */
 export function NotasPanel({ onClose }: { onClose: () => void }) {
   const db = useDB()
   const aprobadas = materiasEnEstado(db, 'aprobada')
   const prom = promedio(db)
+  const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') requestClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [requestClose])
 
   return (
     <div
-      className="modal show"
+      className={`modal show${closing ? ' closing' : ''}`}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget) requestClose()
       }}
     >
-      <div className="sheet sheet-wide">
+      <div className="sheet sheet-wide" onAnimationEnd={onExitEnd}>
         <div className="notas-top">
           <div>
             <h2>Notas y promedio</h2>
@@ -68,7 +70,7 @@ export function NotasPanel({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="m-actions">
-          <button className="btn" onClick={onClose}>
+          <button className="btn" onClick={requestClose}>
             Listo
           </button>
         </div>
