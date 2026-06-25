@@ -1,5 +1,5 @@
 import type { DB, Estado } from '../types'
-import { plan } from './Plan'
+import { plan, type MateriaUbicada } from './Plan'
 
 export interface Avance {
   total: number
@@ -68,4 +68,56 @@ export function disponible(db: DB, cod: string): boolean {
     !cod.startsWith('CUST') &&
     previasFaltantes(db, cod).length === 0
   )
+}
+
+/** Iniciales (hasta 2) para el avatar sin foto. */
+export function iniciales(name: string | undefined): string {
+  if (!name) return ''
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+export interface Hito {
+  titulo: string
+  falta: number
+  ok: boolean
+}
+
+/** Hitos de título: Analista (hasta 3° año) e Ingeniero (todo). `falta` = materias no aprobadas. */
+export function hitos(db: DB): Hito[] {
+  const defs = [
+    { titulo: 'Analista en Informática', hastaYi: 2 },
+    { titulo: 'Ingeniero en Informática', hastaYi: 4 },
+  ]
+  return defs.map((d) => {
+    const falta = plan
+      .materias()
+      .filter((m) => m.yi <= d.hastaYi && estadoDe(db, m.cod) !== 'aprobada').length
+    return { titulo: d.titulo, falta, ok: falta === 0 }
+  })
+}
+
+export interface AvanceAnio {
+  year: number
+  aprobadas: number
+  total: number
+}
+
+/** Avance (aprobadas/total) por año. */
+export function avancePorAnio(db: DB): AvanceAnio[] {
+  return plan.anios.map((a) => {
+    const mats = a.cuatris.flatMap((q) => q.mats)
+    const aprobadas = mats.filter((m) => estadoDe(db, m.cod) === 'aprobada').length
+    return { year: a.year, aprobadas, total: mats.length }
+  })
+}
+
+/** Materias en un estado dado (para las listas del resumen). */
+export function materiasEnEstado(db: DB, estado: Estado): MateriaUbicada[] {
+  return plan.materias().filter((m) => estadoDe(db, m.cod) === estado)
 }

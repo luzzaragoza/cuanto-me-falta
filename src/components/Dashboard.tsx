@@ -1,9 +1,10 @@
 import type { DB } from '../types'
-import { avance, promedio } from '../domain/selectors'
+import { avance, hitos, promedio } from '../domain/selectors'
 
 export function Dashboard({ db }: { db: DB }) {
   const a = avance(db)
   const prom = promedio(db)
+  const ms = hitos(db)
   const seg = (n: number) => ({ width: a.total ? `${(n / a.total) * 100}%` : '0%' })
 
   return (
@@ -53,6 +54,18 @@ export function Dashboard({ db }: { db: DB }) {
           </span>
           <span className="c">{a.total} en total</span>
         </div>
+      </div>
+
+      <div className="miles">
+        {ms.map((h, i) => (
+          <div className={`mile ${h.ok ? 'ok' : ''}`} key={h.titulo}>
+            <span className="mile-n">{i + 1}</span>
+            <span className="mile-t">{h.titulo}</span>
+            <span className="mile-r">
+              {h.ok ? '¡Conseguido!' : `${h.falta} materias para el título`}
+            </span>
+          </div>
+        ))}
       </div>
     </section>
   )
