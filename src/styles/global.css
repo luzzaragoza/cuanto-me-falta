@@ -343,3 +343,190 @@ body {
   font-size: 11.5px;
   color: var(--soft);
 }
+
+/* ----- popover de estado ----- */
+@keyframes spop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-7px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.spop {
+  position: fixed;
+  z-index: 60;
+  min-width: 240px;
+  max-width: 286px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  transform-origin: top center;
+}
+.spop-in {
+  animation: spop-in 0.17s cubic-bezier(0.2, 0.85, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .spop-in {
+    animation: none;
+  }
+}
+.sp-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--soft);
+  padding: 8px 10px 6px;
+}
+.sp-opt {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-family: var(--sans);
+}
+.sp-opt:hover,
+.sp-opt.sel {
+  background: var(--paper);
+}
+.sp-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  border: 2px solid #cfc9bd;
+  color: transparent;
+  background: var(--paper);
+}
+.sp-dot.cursando {
+  border-color: var(--cu);
+  background: var(--cu);
+  color: #fff;
+}
+.sp-dot.final {
+  border-color: var(--fi);
+  background: var(--fi);
+  color: #fff;
+}
+.sp-dot.aprobada {
+  border-color: var(--ap);
+  background: var(--ap);
+  color: #fff;
+}
+.sp-name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sp-name small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--soft);
+  margin-top: 1px;
+}
+.sp-chk {
+  flex: 0 0 auto;
+  color: var(--gold);
+  opacity: 0;
+  display: grid;
+  place-items: center;
+}
+.sp-opt.sel .sp-chk {
+  opacity: 1;
+}
+.sp-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 5px 8px;
+}
+.sp-nota {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px 7px;
+}
+.sp-nota label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sp-nota label span {
+  font-weight: 400;
+  color: var(--soft);
+  font-size: 11px;
+}
+.sp-nota input {
+  width: 64px;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.sp-nota input::-webkit-outer-spin-button,
+.sp-nota input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.sp-nota input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+.sp-nota input:focus::placeholder {
+  color: transparent;
+}
+.sp-rename {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.sp-rename input {
+  width: 100%;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.sp-note {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--soft);
+  margin: 4px 8px 2px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background: var(--paper);
+}
+.sp-note.warn {
+  color: var(--cu-tx);
+  background: var(--cu-bg);
+}
+.sp-note b {
+  font-weight: 700;
+  color: inherit;
+}

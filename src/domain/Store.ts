@@ -1,7 +1,5 @@
 import type { DB, Estado, Perfil } from '../types'
 
-const ESTADOS: Estado[] = ['pendiente', 'cursando', 'final', 'aprobada']
-
 /** DB vacía por defecto. */
 function emptyDB(): DB {
   return { states: {}, notas: {}, optNames: {}, custom: [] }
@@ -49,12 +47,6 @@ export class Store {
   setEstado(cod: string, estado: Estado): void {
     this.db = { ...this.db, states: { ...this.db.states, [cod]: estado } }
     this.commit()
-  }
-
-  /** Cicla pendiente → cursando → final → aprobada → pendiente (provisorio hasta el popover). */
-  ciclarEstado(cod: string): void {
-    const i = ESTADOS.indexOf(this.estado(cod))
-    this.setEstado(cod, ESTADOS[(i + 1) % ESTADOS.length])
   }
 
   setNota(cod: string, valor: number | null): void {

@@ -1,10 +1,15 @@
 import type { DB } from '../types'
 import { PLAN } from '../data/plan'
 import { disponible, nombreDe } from '../domain/selectors'
-import { store } from '../state/store'
 import { MateriaRow } from './MateriaRow'
 
-export function PlanView({ db }: { db: DB }) {
+interface Props {
+  db: DB
+  openCod: string | null
+  onOpen: (cod: string, anchor: HTMLElement) => void
+}
+
+export function PlanView({ db, openCod, onOpen }: Props) {
   return (
     <div id="plan">
       {PLAN.map((anio) => (
@@ -25,7 +30,8 @@ export function PlanView({ db }: { db: DB }) {
                     nom={nombreDe(db, m.cod)}
                     estado={db.states[m.cod] ?? 'pendiente'}
                     disponible={disponible(db, m.cod)}
-                    onClick={() => store.ciclarEstado(m.cod)}
+                    abierto={openCod === m.cod}
+                    onOpen={(anchor) => onOpen(m.cod, anchor)}
                   />
                 ))}
               </div>
