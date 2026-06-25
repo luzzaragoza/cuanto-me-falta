@@ -3,6 +3,7 @@ import { useDB } from './state/store'
 import { Dashboard } from './components/Dashboard'
 import { PlanView } from './components/PlanView'
 import { StatePopover } from './components/StatePopover'
+import { TreeView } from './components/Tree/TreeView'
 
 interface PopState {
   cod: string
@@ -12,6 +13,7 @@ interface PopState {
 export function App() {
   const db = useDB()
   const [pop, setPop] = useState<PopState | null>(null)
+  const [tree, setTree] = useState(false)
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
 
   // segundo toque sobre la misma materia → cierra (toggle)
@@ -25,7 +27,18 @@ export function App() {
           <h1>{nombre}</h1>
           <div className="sub">Ingeniería en Informática · UADE</div>
         </div>
-        <span className="spine">Plan 1621 — 2021</span>
+        <div className="head-right">
+          <span className="spine">Plan 1621 — 2021</span>
+          <button className="tool-btn" onClick={() => setTree(true)} title="Ver árbol de correlativas">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="3" width="6" height="5" rx="1.2" />
+              <rect x="3" y="16" width="6" height="5" rx="1.2" />
+              <rect x="15" y="16" width="6" height="5" rx="1.2" />
+              <path d="M12 8v3M6 16v-2.5h12V16" />
+            </svg>
+            Árbol
+          </button>
+        </div>
       </header>
 
       <Dashboard db={db} />
@@ -42,6 +55,8 @@ export function App() {
           onClose={() => setPop(null)}
         />
       )}
+
+      {tree && <TreeView onClose={() => setTree(false)} />}
     </div>
   )
 }
