@@ -75,11 +75,11 @@
     opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease;z-index:60;pointer-events:none}
   .info-i .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink)}
   .info-i:hover .tip,.info-i:focus-visible .tip,.info-i.open .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-  /* variante "ayuda" (?) de la barra de herramientas: tooltip anclado a la derecha para no cortarse */
+  /* variante "ayuda" (?) del header: tooltip anclado a la derecha y abriendo HACIA ABAJO (está arriba de todo) */
   .info-i.help{width:20px;height:20px;font-style:normal;font-size:12px;cursor:help}
-  .info-i.help .tip{left:auto;right:0;width:250px;transform:translateX(0) translateY(4px)}
+  .info-i.help .tip{top:calc(100% + 9px);bottom:auto;left:auto;right:0;width:250px;transform:translateX(0) translateY(-4px)}
   .info-i.help:hover .tip,.info-i.help:focus-visible .tip,.info-i.help.open .tip{transform:translateX(0) translateY(0)}
-  .info-i.help .tip::after{left:auto;right:12px;transform:none}
+  .info-i.help .tip::after{top:auto;bottom:100%;left:auto;right:12px;transform:none;border-top-color:transparent;border-bottom-color:var(--ink)}
   .bignum .sep{width:1px;align-self:stretch;background:var(--line);margin:6px 0}
   .bar{height:16px;border-radius:9px;overflow:hidden;display:flex;background:#EBE7DE;border:1px solid var(--line);margin-top:22px}
   .bar i{display:block;height:100%;transition:width .4s cubic-bezier(.2,.7,.2,1)}
@@ -256,6 +256,37 @@
   .watermark{position:fixed;right:14px;bottom:11px;z-index:5;pointer-events:none;
     font-family:var(--serif);font-style:italic;font-weight:600;font-size:13px;color:var(--ink);opacity:.22;letter-spacing:.01em}
   @media print{.watermark{display:none}}
+
+  /* ===== Árbol de correlativas (vista full-screen) ===== */
+  .tree{position:fixed;inset:0;z-index:80;background:var(--paper);display:none;flex-direction:column}
+  .tree.show{display:flex}
+  .tree-bar{display:flex;align-items:center;gap:16px;padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);flex-wrap:wrap}
+  .tree-titles{min-width:0}
+  .tree-title{font-family:var(--serif);font-weight:900;font-size:20px;letter-spacing:-.01em}
+  .tree-hint{font-size:11.5px;color:var(--soft);margin-top:2px}
+  .tree-legend{display:flex;gap:14px;margin-left:auto;font-size:11.5px;font-weight:600}
+  .tl{display:inline-flex;align-items:center;gap:6px}
+  .tl i{width:14px;height:3px;border-radius:2px;display:inline-block}
+  .tl.need i{background:var(--lk)} .tl.unlock i{background:var(--hb)}
+  .tl.need{color:var(--lk-tx)} .tl.unlock{color:var(--hb-tx)}
+  .tree-close{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}
+  .tree-close:hover{border-color:var(--ink)}
+  .tree-scroll{position:relative;flex:1;overflow:auto;padding:22px}
+  .tree-lines{position:absolute;top:0;left:0;pointer-events:none;z-index:1;overflow:visible}
+  .tree-grid{position:relative;z-index:2;display:flex;gap:26px;align-items:flex-start;width:max-content;min-width:100%}
+  .tree-col{display:flex;flex-direction:column;gap:12px;width:172px;flex:0 0 auto}
+  .tree-col h4{margin:0 0 4px;font-family:var(--serif);font-weight:900;font-size:15px;color:var(--gold)}
+  .tree-node{position:relative;background:var(--card);border:1px solid var(--line);border-left:3px solid #D8D2C6;
+    border-radius:9px;padding:8px 10px;cursor:pointer;transition:opacity .15s,box-shadow .15s,border-color .15s,background .15s}
+  .tree-node .tn-cod{display:block;font-family:var(--mono);font-size:9.5px;color:var(--soft)}
+  .tree-node .tn-nom{display:block;font-size:12px;font-weight:500;line-height:1.2;margin-top:2px}
+  .tree-node.cursando{border-left-color:var(--cu)} .tree-node.final{border-left-color:var(--fi)} .tree-node.aprobada{border-left-color:var(--ap)}
+  .tree-grid.has-sel .tree-node{opacity:.3}
+  .tree-grid.has-sel .tree-node.on{opacity:1}
+  .tree-node.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+  .tree-node.need{border-color:#D8CDF4;background:var(--lk-bg)} .tree-node.need .tn-nom{color:var(--lk-tx)}
+  .tree-node.unlock{border-color:#BCE2DF;background:var(--hb-bg)} .tree-node.unlock .tn-nom{color:var(--hb-tx)}
+  @media(max-width:560px){ .tree-scroll{padding:14px} .tree-col{width:152px} .tree-legend{order:3;width:100%;margin-left:0} }
 </style>
 
 <div class="wrap">
@@ -266,6 +297,10 @@
     </div>
     <div class="head-right">
       <span class="spine">Plan 1621 — 2021</span>
+      <button class="menu-btn" id="treeBtn" title="Ver árbol de correlativas">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v3M6 16v-2.5h12V16"/></svg>
+        Árbol
+      </button>
       <div class="actions">
         <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
@@ -332,6 +367,25 @@
 
 <div class="spop" id="spop" role="menu"></div>
 <div id="print-summary"></div>
+
+<div class="tree" id="tree" aria-hidden="true">
+  <div class="tree-bar">
+    <div class="tree-titles">
+      <div class="tree-title">Árbol de correlativas</div>
+      <div class="tree-hint" id="treeHint">Tocá una materia para ver su cadena</div>
+    </div>
+    <div class="tree-legend">
+      <span class="tl need"><i></i>Necesitás</span>
+      <span class="tl unlock"><i></i>Habilita</span>
+    </div>
+    <button class="tree-close" id="treeClose" aria-label="Cerrar árbol">×</button>
+  </div>
+  <div class="tree-scroll" id="treeScroll">
+    <svg class="tree-lines" id="treeLines" aria-hidden="true"></svg>
+    <div class="tree-grid" id="treeGrid"></div>
+  </div>
+</div>
+
 <div class="watermark">¿cuánto me falta?</div>
 
 <script>
@@ -885,6 +939,89 @@ function printSummary(){
   else go();
 }
 
+/* ===== Árbol de correlativas ===== */
+let treeSel=null;
+function chainUp(c, acc){ acc=acc||new Set(); antes(c).forEach(p=>{ if(!acc.has(p)){ acc.add(p); chainUp(p,acc); } }); return acc; }     // ancestros (necesitás)
+function chainDown(c, acc){ acc=acc||new Set(); despues(c).forEach(d=>{ if(!acc.has(d)){ acc.add(d); chainDown(d,acc); } }); return acc; } // descendientes (habilita)
+
+function buildTree(){
+  const grid=document.getElementById('treeGrid');
+  grid.innerHTML = PLAN.map((y,yi)=>{
+    const mats=[]; y.cuatris.forEach((q,ci)=>matsOf(yi,ci).forEach(m=>mats.push(m)));
+    const nodes = mats.map(m=>`<div class="tree-node ${st(m.cod)}" data-cod="${m.cod}" id="tn-${m.cod}">
+        <span class="tn-cod">${m.cod.startsWith('CUST')?'—':m.cod}</span>
+        <span class="tn-nom">${nomOf(m.cod)}</span>
+      </div>`).join('');
+    return `<div class="tree-col"><h4>${y.year}° año</h4>${nodes}</div>`;
+  }).join('');
+  grid.classList.remove('has-sel');
+  grid.querySelectorAll('.tree-node').forEach(n=>n.onclick=e=>{ e.stopPropagation(); selectTree(n.dataset.cod); });
+}
+function openTree(){
+  buildTree(); clearTree();
+  const tv=document.getElementById('tree'); tv.classList.add('show'); tv.setAttribute('aria-hidden','false');
+}
+function closeTree(){
+  const tv=document.getElementById('tree'); tv.classList.remove('show'); tv.setAttribute('aria-hidden','true'); treeSel=null;
+}
+function clearTree(){
+  treeSel=null;
+  const grid=document.getElementById('treeGrid');
+  grid.classList.remove('has-sel');
+  grid.querySelectorAll('.tree-node').forEach(n=>n.classList.remove('on','sel','need','unlock'));
+  document.getElementById('treeLines').innerHTML='';
+  document.getElementById('treeHint').textContent='Tocá una materia para ver su cadena';
+}
+function selectTree(c){
+  if(treeSel===c){ clearTree(); return; }                 // segundo toque → limpia
+  treeSel=c;
+  const up=chainUp(c), down=chainDown(c);
+  const grid=document.getElementById('treeGrid');
+  grid.classList.add('has-sel');
+  grid.querySelectorAll('.tree-node').forEach(n=>{
+    const cod=n.dataset.cod; n.classList.remove('on','sel','need','unlock');
+    if(cod===c) n.classList.add('on','sel');
+    else if(up.has(cod)) n.classList.add('on','need');
+    else if(down.has(cod)) n.classList.add('on','unlock');
+  });
+  document.getElementById('treeHint').textContent = nomOf(c)+' · necesitás '+up.size+' · habilita '+down.size;
+  drawTreeLines(c, up, down);
+}
+function treeAnchors(a,b){
+  const acx=a.x+a.w/2, acy=a.y+a.h/2, bcx=b.x+b.w/2, bcy=b.y+b.h/2, dx=bcx-acx, dy=bcy-acy;
+  if(Math.abs(dx)>=Math.abs(dy)) return dx>=0 ? [{x:a.x+a.w,y:acy},{x:b.x,y:bcy}] : [{x:a.x,y:acy},{x:b.x+b.w,y:bcy}];
+  return dy>=0 ? [{x:acx,y:a.y+a.h},{x:bcx,y:b.y}] : [{x:acx,y:a.y},{x:bcx,y:b.y+b.h}];
+}
+function drawTreeLines(c, up, down){
+  const scroller=document.getElementById('treeScroll'), svg=document.getElementById('treeLines');
+  const W=scroller.scrollWidth, H=scroller.scrollHeight;
+  svg.setAttribute('width',W); svg.setAttribute('height',H); svg.style.width=W+'px'; svg.style.height=H+'px';
+  const sr=scroller.getBoundingClientRect();
+  const box=cod=>{ const el=document.getElementById('tn-'+cod); if(!el) return null; const r=el.getBoundingClientRect();
+    return {x:r.left-sr.left+scroller.scrollLeft, y:r.top-sr.top+scroller.scrollTop, w:r.width, h:r.height}; };
+  const inDown=new Set(down); inDown.add(c);
+  const upAll=new Set(up); upAll.add(c);
+  const edges=[];
+  upAll.forEach(n=>antes(n).forEach(p=>{ if(up.has(p)) edges.push([p,n,'need']); }));      // subgrafo de prerrequisitos
+  down.forEach(d=>antes(d).forEach(p=>{ if(inDown.has(p)) edges.push([p,d,'unlock']); }));  // subgrafo de lo que habilita
+  const defs='<defs>'
+    +'<marker id="ah-need" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6B4FCF"/></marker>'
+    +'<marker id="ah-unlock" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#0E8C8C"/></marker>'
+    +'</defs>';
+  const out=edges.map(([a,b,kind])=>{ const ba=box(a), bb=box(b); if(!ba||!bb) return '';
+    const [p1,p2]=treeAnchors(ba,bb); const col=kind==='need'?'#6B4FCF':'#0E8C8C';
+    return `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="${col}" stroke-width="2" stroke-linecap="round" marker-end="url(#ah-${kind})" opacity=".8"/>`;
+  }).join('');
+  svg.innerHTML=defs+out;
+}
+function bindTree(){
+  document.getElementById('treeBtn').onclick=openTree;
+  document.getElementById('treeClose').onclick=closeTree;
+  document.getElementById('treeScroll').onclick=e=>{ if(!e.target.closest('.tree-node')) clearTree(); };
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('tree').classList.contains('show')) closeTree(); });
+  window.addEventListener('resize',()=>{ if(treeSel && document.getElementById('tree').classList.contains('show')) drawTreeLines(treeSel, chainUp(treeSel), chainDown(treeSel)); });
+}
+
 function bindActions(){
   const menu=document.getElementById('menu'), btn=document.getElementById('menuBtn');
   const open=v=>{ menu.classList.toggle('show',v); btn.setAttribute('aria-expanded',v); };
@@ -902,7 +1039,7 @@ function bindActions(){
 (async()=>{
   await load();
   const firstTime = (DB.profile===undefined);
-  render(); renderHeader(); bindProfile(); bindActions(); bindStatePop();
+  render(); renderHeader(); bindProfile(); bindActions(); bindStatePop(); bindTree();
   if(firstTime) openProfile(true);
 })();
 </script>
