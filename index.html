@@ -98,10 +98,10 @@
   .mile .r{margin-left:auto;font-size:11.5px;color:var(--soft);text-align:right;font-weight:500}
   .mile.done .r{color:var(--ap-tx);font-weight:600}
 
-  .tools{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:24px 0 6px;padding-top:18px;border-top:1px solid var(--line)}
+  .head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
   .reset{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--soft);background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
   .reset:hover{border-color:var(--ink);color:var(--ink)}
-  .actions{position:relative;margin-left:auto}
+  .actions{position:relative}
   .menu-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:12.5px;font-weight:600;
     color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 13px;cursor:pointer}
   .menu-btn:hover{border-color:var(--ink)} .menu-btn svg{color:var(--soft)}
@@ -264,7 +264,24 @@
       <button class="avatar" id="avatar" title="Editar perfil"></button>
       <div><h1 id="title">Mi plan de carrera</h1><div class="sub">Ingeniería en Informática · UADE</div></div>
     </div>
-    <div class="spine">Plan 1621 — 2021</div>
+    <div class="head-right">
+      <span class="spine">Plan 1621 — 2021</span>
+      <div class="actions">
+        <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          Opciones
+        </button>
+        <div class="menu" id="menu" role="menu">
+          <button role="menuitem" id="m-pdf"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg> Exportar resumen (PDF)</button>
+          <button role="menuitem" id="m-export"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg> Exportar backup (.json)</button>
+          <button role="menuitem" id="m-import"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 13 5-5 5 5"/><path d="M5 3h14"/></svg> Importar backup</button>
+          <div class="menu-sep"></div>
+          <button role="menuitem" id="m-reset" class="danger"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reiniciar todo</button>
+        </div>
+      </div>
+      <button class="info-i help" type="button" aria-label="¿Cómo se usa?" onclick="event.stopPropagation();this.classList.toggle('open')">?<span class="tip" role="tooltip"><strong>Tocá una materia</strong> para elegir su estado (y cargarle la nota si está aprobada). Con el <strong>botón de organigrama</strong> de la derecha ves sus correlativas.</span></button>
+      <input id="pimport" type="file" accept="application/json,.json" hidden>
+    </div>
   </div>
 
   <div class="dash">
@@ -286,23 +303,6 @@
     <div class="miles" id="miles"></div>
   </div>
 
-  <div class="tools">
-    <div class="actions">
-      <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        Opciones
-      </button>
-      <div class="menu" id="menu" role="menu">
-        <button role="menuitem" id="m-pdf"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg> Exportar resumen (PDF)</button>
-        <button role="menuitem" id="m-export"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg> Exportar backup (.json)</button>
-        <button role="menuitem" id="m-import"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 13 5-5 5 5"/><path d="M5 3h14"/></svg> Importar backup</button>
-        <div class="menu-sep"></div>
-        <button role="menuitem" id="m-reset" class="danger"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reiniciar todo</button>
-      </div>
-    </div>
-    <button class="info-i help" type="button" aria-label="¿Cómo se usa?" onclick="event.stopPropagation();this.classList.toggle('open')">?<span class="tip" role="tooltip"><strong>Tocá una materia</strong> para elegir su estado (y cargarle la nota si está aprobada). Con el <strong>botón de organigrama</strong> de la derecha ves sus correlativas.</span></button>
-    <input id="pimport" type="file" accept="application/json,.json" hidden>
-  </div>
 
   <div id="plan"></div>
   <div class="foot">Tu progreso se guarda automáticamente.</div>
