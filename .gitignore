@@ -3,3 +3,11 @@ CLAUDE.md
 
 # Config local de Claude / editor
 .claude/
+
+# Dependencias y build (toolchain Vite)
+node_modules/
+dist/
+*.local
+
+# Logs
+npm-debug.log*

@@ -1,0 +1,59 @@
+import type { DB } from '../types'
+import { avance, promedio } from '../domain/selectors'
+
+export function Dashboard({ db }: { db: DB }) {
+  const a = avance(db)
+  const prom = promedio(db)
+  const seg = (n: number) => ({ width: a.total ? `${(n / a.total) * 100}%` : '0%' })
+
+  return (
+    <section className="dash">
+      <div className="hero">
+        <div className="bignum">
+          <div className="stat">
+            <span className="num">
+              {a.pct}
+              <small>%</small>
+            </span>
+            <span className="cap">aprobado</span>
+          </div>
+          <div className="sep" />
+          <div className="stat">
+            <span className="num">{prom.valor ?? '—'}</span>
+            <span className="cap">
+              {prom.valor != null
+                ? `promedio · ${prom.conNota} ${prom.conNota === 1 ? 'materia con nota' : 'materias con nota'}`
+                : 'promedio'}
+            </span>
+          </div>
+        </div>
+
+        <div className="bar">
+          <i className="b-ap" style={seg(a.aprobadas)} />
+          <i className="b-fi" style={seg(a.final)} />
+          <i className="b-cu" style={seg(a.cursando)} />
+        </div>
+
+        <div className="counts">
+          <span className="c">
+            <i style={{ background: 'var(--ap)' }} />
+            {a.aprobadas} aprobadas
+          </span>
+          <span className="c">
+            <i style={{ background: 'var(--fi)' }} />
+            {a.final} pend. de final
+          </span>
+          <span className="c">
+            <i style={{ background: 'var(--cu)' }} />
+            {a.cursando} cursando
+          </span>
+          <span className="c">
+            <i style={{ background: '#D8D2C6' }} />
+            {a.pendientes} pendientes
+          </span>
+          <span className="c">{a.total} en total</span>
+        </div>
+      </div>
+    </section>
+  )
+}
