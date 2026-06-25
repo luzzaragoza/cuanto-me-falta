@@ -192,16 +192,23 @@
   .mat.final .tick{border-color:var(--fi);background:var(--fi);color:#fff} .mat.final .nom{color:var(--fi-tx)}
   .mat.aprobada{border-left-color:var(--ap);background:var(--ap-bg)}
   .mat.aprobada .tick{border-color:var(--ap);background:var(--ap);color:#fff} .mat.aprobada .nom{color:var(--ap-tx)}
+  /* materia disponible para cursar (pendiente con previas en curso/hechas): aviso sutil, igual tildable */
+  .mat.avail{border-left-color:var(--gold);background:#FCF7EA}
+  .mat.avail .tick{border-color:var(--gold)}
+  .avail-tag{flex:0 0 auto;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:#8A6800;background:#F6EBC9;border:1px solid #E9D9A6;border-radius:999px;padding:2px 7px;white-space:nowrap}
   @keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(195,146,0,0)}30%{box-shadow:0 0 0 3px rgba(195,146,0,.9)}}
   .mat.flash{animation:flash 1s ease}
   @keyframes spop-in{from{opacity:0;transform:translateY(-7px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
   @keyframes spop-out{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-7px) scale(.96)}}
   @keyframes panel-in{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes panel-out{from{opacity:1}to{opacity:0}}   /* cierre discreto: solo fade */
 
   .panel{background:#FBFAF7;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;
     margin:-2px 6px 0;padding:11px 14px 13px;transform-origin:top center}
   .panel-in{animation:panel-in .22s cubic-bezier(.2,.85,.3,1)}
-  @media (prefers-reduced-motion:reduce){.spop.show,.spop.closing,.panel-in,.mat.flash{animation:none}}
+  .panel-out{animation:panel-out .14s ease forwards;pointer-events:none}
+  @media (prefers-reduced-motion:reduce){.spop.show,.spop.closing,.panel-in,.panel-out,.mat.flash{animation:none}}
   .panel .row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:3px 0}
   .panel .lab{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.04em;
     text-transform:uppercase;flex:0 0 auto;width:104px;padding-top:4px}
@@ -245,6 +252,9 @@
   .sp-nota input:focus::placeholder{color:transparent}   /* al entrar a la casilla, se va el "—" */
   .sp-rename{flex-direction:column;align-items:stretch;gap:6px}
   .sp-rename input{width:100%;text-align:left;font-size:13.5px;font-weight:600}
+  .sp-note{font-size:11.5px;line-height:1.4;color:var(--soft);margin:4px 8px 2px;padding:8px 11px;border-radius:9px;background:var(--paper)}
+  .sp-note.warn{color:var(--cu-tx);background:var(--cu-bg)}
+  .sp-note b{font-weight:700;color:inherit}
 
   .foot{margin-top:40px;text-align:center;font-size:11.5px;color:var(--soft)}
   .watermark{position:fixed;right:14px;bottom:11px;z-index:5;pointer-events:none;
@@ -500,6 +510,11 @@ function idOf(c){return 'mat-'+c;}
 function isOpt(c){return /^OPT\d/.test(c);}                 // solo OPT1/2/3 se pueden renombrar
 function nomOf(c){const m=allMats().find(x=>x.cod===c); const base=m?m.nom:c;
   return (isOpt(c) && DB.optNames && DB.optNames[c]) ? DB.optNames[c] : base;}
+function isSpecial(c){return isOpt(c) || /^PPS/.test(c) || c==='3.4.100';}   // se habilitan por requisito especial
+function missingPrevias(c){return antes(c).filter(p=>st(p)==='pendiente');}   // previas que ni siquiera empezó
+function isAvailable(c){                                    // pendiente + todas las previas al menos en curso (sin previas = cursable)
+  return st(c)==='pendiente' && !isSpecial(c) && !c.startsWith('CUST') && missingPrevias(c).length===0;
+}
 
 function matsOf(yi,ci){
   return PLAN[yi].cuatris[ci].mats.concat(DB.custom.filter(c=>c.y===yi&&c.c===ci));
@@ -534,15 +549,16 @@ function matWrap(m){
   const wrap=document.createElement('div'); wrap.className='matwrap';
 
   const el=document.createElement('div');
-  el.className='mat '+st(m.cod)+(isCustom?' custom':''); el.id=idOf(m.cod);
+  el.className='mat '+st(m.cod)+(isCustom?' custom':'')+(isAvailable(m.cod)?' avail':''); el.id=idOf(m.cod);
   el.tabIndex=0; el.setAttribute('role','button');
   const cbtn = hasCorrel
     ? `<button class="cbtn ${openSet.has(m.cod)?'open':''}" title="Ver correlativas" aria-label="Ver correlativas">
          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v3M6 16v-2.5h12V16"/></svg>
        </button>` : '';
+  const availTag = isAvailable(m.cod) ? '<span class="avail-tag" title="Ya tenés las correlativas en curso o hechas">disponible</span>' : '';
   el.innerHTML=`<span class="tick">${TICK[st(m.cod)]}</span>
     <span class="info"><span class="cod">${isCustom?'—':m.cod}</span><span class="nom">${nomOf(m.cod)}</span></span>
-    ${cbtn}<span class="x" title="Quitar">×</span>`;
+    ${availTag}${cbtn}<span class="x" title="Quitar">×</span>`;
 
   el.onclick=(e)=>{
     if(e.target.closest('.x')) return;
@@ -581,9 +597,18 @@ function goTo(c){
 const reduceMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function toggleCorrel(c){
   closeStatePop();
-  if(openSet.has(c)) openSet.delete(c); else { justOpened.add(c); openSet.add(c); }   // cierre instantáneo; solo anima al abrir
-  render();
-  if(openSet.has(c)){const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  if(openSet.has(c)){                                   // CERRAR con fade discreto
+    openSet.delete(c);
+    const wrap=document.getElementById(idOf(c))?.parentElement;
+    const pan=wrap&&wrap.querySelector('.panel');
+    if(pan && !reduceMotion()){
+      pan.classList.add('panel-out');
+      pan.addEventListener('animationend',()=>render(),{once:true});
+    } else render();
+  } else {                                              // ABRIR
+    justOpened.add(c); openSet.add(c); render();
+    const el=document.getElementById(idOf(c)); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
 }
 
 /* ---- popover de estado ---- */
@@ -606,7 +631,12 @@ function openStatePop(c, anchor){
         <label for="sp-opt-in">Nombre de la optativa <span>(editable)</span></label>
         <input id="sp-opt-in" type="text" maxlength="48" placeholder="Optativa…" value="${(DB.optNames[c]||'').replace(/"/g,'&quot;')}">
       </div>` : '';
-  pop.innerHTML='<div class="sp-head">Estado de la materia</div>'+opts+notaBlock+renameBlock;
+  const miss = (st(c)==='cursando'||st(c)==='aprobada') ? missingPrevias(c) : [];
+  const avisoBlock = (miss.length && !isSpecial(c))
+    ? `<div class="sp-note warn">Ojo: te faltan previas — ${miss.map(p=>nomOf(p)).join(', ')}.</div>` : '';
+  const specialBlock = isSpecial(c)
+    ? `<div class="sp-note">Se habilita por <b>requisito especial</b> (por año o % de carrera). Consultá en UADE.</div>` : '';
+  pop.innerHTML='<div class="sp-head">Estado de la materia</div>'+opts+avisoBlock+specialBlock+notaBlock+renameBlock;
   pop.querySelectorAll('.sp-opt').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); setState(c,b.dataset.k); });
   const ni=pop.querySelector('#sp-nota-in');
   if(ni) ni.oninput=()=>setNota(c, ni.value);
@@ -638,7 +668,9 @@ function positionPop(pop, anchor){
 }
 function setState(c,k){
   DB.states[c]=k; save(); render();
-  if(k==='aprobada') openStatePop(c, document.getElementById(idOf(c)));
+  // se reabre si: es aprobada (para la nota) o se marcó cursando/aprobada sin tener las previas (para el aviso)
+  const keepOpen = k==='aprobada' || ((k==='cursando') && !isSpecial(c) && missingPrevias(c).length>0);
+  if(keepOpen) openStatePop(c, document.getElementById(idOf(c)));
   else closeStatePop();
 }
 function closeStatePop(){
