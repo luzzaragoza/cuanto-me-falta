@@ -6,6 +6,7 @@ import {
   Panel,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { plan } from '../../domain/Plan'
@@ -35,10 +36,11 @@ const UNLOCK_SHADES = [
 const GREY = '#C9C2B5'
 const shadeIdx = (lvl: number | undefined) => Math.min(Math.max((lvl ?? 1) - 1, 0), 3)
 
-export function TreeView({ onClose }: { onClose: () => void }) {
+export function TreeView({ onClose, focus }: { onClose: () => void; focus: string | null }) {
   const db = useDB()
-  const [sel, setSel] = useState<string | null>(null)
+  const [sel, setSel] = useState<string | null>(focus)
   const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
+  const lay = useMemo(() => layout(), [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -52,7 +54,7 @@ export function TreeView({ onClose }: { onClose: () => void }) {
   const down = sel ? plan.chainDown(sel) : new Set<string>()
 
   const { nodes, edges } = useMemo(() => {
-    const { pos, bands } = layout()
+    const { pos, bands } = lay
     const upLvl = sel ? plan.chainUpLevels(sel) : new Map<string, number>()
     const downLvl = sel ? plan.chainDownLevels(sel) : new Map<string, number>()
     const upSet = new Set(upLvl.keys())
@@ -139,7 +141,7 @@ export function TreeView({ onClose }: { onClose: () => void }) {
     }
 
     return { nodes: [...bandNodes, ...matNodes], edges: edgeList }
-  }, [db, sel])
+  }, [db, sel, lay])
 
   const hint = sel
     ? `${nombreDe(db, sel)} · necesitás ${up.size} · habilita ${down.size}`
@@ -155,7 +157,7 @@ export function TreeView({ onClose }: { onClose: () => void }) {
         <button
           className="info-i help"
           type="button"
-          aria-label="¿Cómo se usa el árbol?"
+          aria-label="¿Cómo se usa el árbol de correlativas?"
           onClick={(e) => {
             e.stopPropagation()
             ;(e.currentTarget as HTMLElement).classList.toggle('open')
@@ -169,7 +171,7 @@ export function TreeView({ onClose }: { onClose: () => void }) {
             rueda y arrastrá para moverte.
           </span>
         </button>
-        <button className="tv-close" onClick={requestClose} aria-label="Cerrar árbol">
+        <button className="tv-close" onClick={requestClose} aria-label="Cerrar árbol de correlativas">
           ×
         </button>
       </div>
@@ -183,6 +185,10 @@ export function TreeView({ onClose }: { onClose: () => void }) {
             if (n.type === 'materia') setSel((s) => (s === n.id ? null : n.id))
           }}
           onPaneClick={() => setSel(null)}
+          onInit={(inst: ReactFlowInstance) => {
+            const p = focus ? lay.pos[focus] : undefined
+            if (p) inst.setCenter(p.x + 100, p.y + 26, { zoom: 1.05, duration: 600 })
+          }}
           fitView
           fitViewOptions={{ padding: 0.18 }}
           minZoom={0.45}

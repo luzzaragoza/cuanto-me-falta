@@ -58,6 +58,23 @@ export function previasFaltantes(db: DB, cod: string): string[] {
 }
 
 /**
+ * Previas que NO cumplen la regla para pasar la materia al estado dado.
+ * - cursar / pend. de final: la previa tiene que estar al menos **en curso** (no 'pendiente').
+ * - aprobada (rendir el final): la previa tiene que estar **aprobada**.
+ * Devuelve [] para 'pendiente'. Base para el aviso de correlativas.
+ */
+export function previasParaEstado(db: DB, cod: string, estado: Estado): string[] {
+  const previas = plan.antes(cod)
+  if (estado === 'cursando' || estado === 'final') {
+    return previas.filter((p) => estadoDe(db, p) === 'pendiente')
+  }
+  if (estado === 'aprobada') {
+    return previas.filter((p) => estadoDe(db, p) !== 'aprobada')
+  }
+  return []
+}
+
+/**
  * ¿Está disponible para cursar? Pendiente + no especial + no custom +
  * todas las previas directas al menos en curso (sin previas = cursable).
  */

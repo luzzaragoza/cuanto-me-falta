@@ -8,6 +8,7 @@ import { PlanView } from './components/PlanView'
 import { PrintSummary } from './components/PrintSummary'
 import { ProfileModal } from './components/ProfileModal'
 import { StatePopover } from './components/StatePopover'
+import { Toaster } from './components/Toaster'
 import { TreeView } from './components/Tree/TreeView'
 
 interface PopState {
@@ -20,7 +21,7 @@ type Modal = 'closed' | 'welcome' | 'edit'
 export function App() {
   const db = useDB()
   const [pop, setPop] = useState<PopState | null>(null)
-  const [tree, setTree] = useState(false)
+  const [tree, setTree] = useState<{ focus: string | null } | null>(null)
   const [notas, setNotas] = useState(false)
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
@@ -42,21 +43,33 @@ export function App() {
           </div>
           <div className="head-right">
             <span className="spine">Plan 1621 — 2021</span>
-            <button className="tool-btn" onClick={() => setTree(true)} title="Ver árbol de correlativas">
+            <button className="tool-btn" onClick={() => setTree({ focus: null })} title="Ver árbol de correlativas">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="3" width="6" height="5" rx="1.2" />
                 <rect x="3" y="16" width="6" height="5" rx="1.2" />
                 <rect x="15" y="16" width="6" height="5" rx="1.2" />
                 <path d="M12 8v3M6 16v-2.5h12V16" />
               </svg>
-              Árbol
+              Árbol de correlativas
+            </button>
+            <button className="tool-btn" onClick={() => setNotas(true)} title="Notas y promedio">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="3" width="14" height="18" rx="2" />
+                <path d="M9 8h6M9 12h6M9 16h4" />
+              </svg>
+              Notas
             </button>
             <OptionsMenu />
           </div>
         </header>
 
-        <Dashboard db={db} onOpenNotas={() => setNotas(true)} notasResaltado={notas} />
-        <PlanView db={db} openCod={pop?.cod ?? null} onOpen={togglePop} />
+        <Dashboard db={db} />
+        <PlanView
+          db={db}
+          openCod={pop?.cod ?? null}
+          onOpen={togglePop}
+          onVerArbol={(cod) => setTree({ focus: cod })}
+        />
 
         <div className="foot">Tu progreso se guarda automáticamente en este dispositivo.</div>
 
@@ -67,10 +80,11 @@ export function App() {
             anchor={pop.anchor}
             db={db}
             onClose={() => setPop(null)}
+            onVerArbol={(cod) => setTree({ focus: cod })}
           />
         )}
 
-        {tree && <TreeView onClose={() => setTree(false)} />}
+        {tree && <TreeView focus={tree.focus} onClose={() => setTree(null)} />}
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 
@@ -84,6 +98,7 @@ export function App() {
       </div>
 
       <PrintSummary />
+      <Toaster />
     </>
   )
 }

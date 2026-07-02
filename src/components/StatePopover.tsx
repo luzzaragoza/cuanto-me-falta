@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import type { DB, Estado } from '../types'
 import { plan } from '../domain/Plan'
-import { nombreDe, previasFaltantes } from '../domain/selectors'
+import { nombreDe, previasParaEstado } from '../domain/selectors'
 import { store } from '../state/store'
+import { toast } from '../lib/toast'
 
 const OPTS: { k: Estado; label: string; desc: string }[] = [
   { k: 'pendiente', label: 'Pendiente', desc: 'Todavía no la empecé' },
@@ -24,15 +25,14 @@ interface Props {
   anchor: HTMLElement
   db: DB
   onClose: () => void
+  onVerArbol: (cod: string) => void
 }
 
-export function StatePopover({ cod, anchor, db, onClose }: Props) {
+export function StatePopover({ cod, anchor, db, onClose, onVerArbol }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const estado: Estado = db.states[cod] ?? 'pendiente'
   const special = plan.isSpecial(cod)
   const isOpt = plan.isOpt(cod)
-  const faltan =
-    (estado === 'cursando' || estado === 'aprobada') && !special ? previasFaltantes(db, cod) : []
 
   const reposition = useCallback(() => {
     const pop = ref.current
@@ -75,11 +75,20 @@ export function StatePopover({ cod, anchor, db, onClose }: Props) {
 
   const select = (k: Estado) => {
     store.setEstado(cod, k)
-    // solo queda abierto para mostrar el aviso de previas; si no, cierra (incluida Aprobada).
-    // Las notas se cargan aparte, en el panel de Notas.
-    const faltanAhora = previasFaltantes(store.getSnapshot(), cod).length > 0
-    const keepOpen = (k === 'cursando' || k === 'aprobada') && !special && faltanAhora
-    if (!keepOpen) onClose()
+    // El aviso de previas ahora es un toast flotante: no atamos el popover a mostrarlo.
+    if (!special) {
+      const faltan = previasParaEstado(store.getSnapshot(), cod, k)
+      if (faltan.length > 0) {
+        const nombres = faltan.map((p) => nombreDe(db, p)).join(', ')
+        const verbo = k === 'aprobada' ? 'aprobar' : 'cursar'
+        const falta = faltan.length > 1 ? 'te faltan' : 'te falta'
+        toast.show(`Para ${verbo} ${nombreDe(db, cod)} ${falta}: ${nombres}.`, 'warn', {
+          label: 'Ver árbol de correlativas',
+          run: () => onVerArbol(cod),
+        })
+      }
+    }
+    onClose()
   }
 
   return (
@@ -102,12 +111,6 @@ export function StatePopover({ cod, anchor, db, onClose }: Props) {
           </span>
         </button>
       ))}
-
-      {faltan.length > 0 && (
-        <div className="sp-note warn">
-          Ojo: te faltan previas — {faltan.map((p) => nombreDe(db, p)).join(', ')}.
-        </div>
-      )}
 
       {special && (
         <div className="sp-note">

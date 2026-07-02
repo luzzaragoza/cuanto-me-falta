@@ -1,15 +1,12 @@
 import type { DB } from '../types'
-import { avance, hitos, promedio } from '../domain/selectors'
+import { avance, hitos } from '../domain/selectors'
 
 interface Props {
   db: DB
-  onOpenNotas: () => void
-  notasResaltado: boolean
 }
 
-export function Dashboard({ db, onOpenNotas, notasResaltado }: Props) {
+export function Dashboard({ db }: Props) {
   const a = avance(db)
-  const prom = promedio(db)
   const ms = hitos(db)
   const seg = (n: number) => ({ width: a.total ? `${(n / a.total) * 100}%` : '0%' })
 
@@ -24,24 +21,12 @@ export function Dashboard({ db, onOpenNotas, notasResaltado }: Props) {
             </span>
             <span className="cap">aprobado</span>
           </div>
-          <div className="sep" />
-          <div className={'stat' + (notasResaltado ? ' hl' : '')}>
-            <span className="num">{prom.valor ?? '—'}</span>
-            <span className="cap">
-              {prom.valor != null
-                ? `promedio · ${prom.conNota} ${prom.conNota === 1 ? 'materia con nota' : 'materias con nota'}`
-                : 'promedio'}
-              <button className="nota-link" onClick={onOpenNotas}>
-                editar notas
-              </button>
-            </span>
-          </div>
-        </div>
 
-        <div className="bar">
-          <i className="b-ap" style={seg(a.aprobadas)} />
-          <i className="b-fi" style={seg(a.final)} />
-          <i className="b-cu" style={seg(a.cursando)} />
+          <div className="bar">
+            <i className="b-ap" style={seg(a.aprobadas)} />
+            <i className="b-fi" style={seg(a.final)} />
+            <i className="b-cu" style={seg(a.cursando)} />
+          </div>
         </div>
 
         <div className="counts">
