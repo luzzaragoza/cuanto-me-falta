@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useDB } from './state/store'
+import { hitos } from './domain/selectors'
 import { Avatar } from './components/Avatar'
 import { Dashboard } from './components/Dashboard'
 import { NotasPanel } from './components/NotasPanel'
@@ -26,6 +27,7 @@ export function App() {
   const [notas, setNotas] = useState(false)
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
+  const titulos = hitos(db) // Analista / Ingeniero → chips de progreso en el header
 
   // segundo toque sobre la misma materia → cierra (toggle)
   const togglePop = (cod: string, anchor: HTMLElement) =>
@@ -54,27 +56,20 @@ export function App() {
           </div>
           <div className="head-right">
             <span className="spine">Plan 1621 — 2021</span>
-            <button className="tool-btn" onClick={() => openTree(null)} title="Ver árbol de correlativas">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="3" width="6" height="5" rx="1.2" />
-                <rect x="3" y="16" width="6" height="5" rx="1.2" />
-                <rect x="15" y="16" width="6" height="5" rx="1.2" />
-                <path d="M12 8v3M6 16v-2.5h12V16" />
-              </svg>
-              Árbol de correlativas
-            </button>
-            <button className="tool-btn" onClick={openNotas} title="Notas y promedio">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="5" y="3" width="14" height="18" rx="2" />
-                <path d="M9 8h6M9 12h6M9 16h4" />
-              </svg>
-              Notas
-            </button>
+            <div className="title-chips">
+              {titulos.map((t, i) => (
+                <span className={'title-chip' + (t.ok ? ' ok' : '')} key={t.titulo}>
+                  <span className="tc-n">{t.ok ? '✓' : i + 1}</span>
+                  <span className="tc-t">{t.titulo.split(' ')[0]}</span>
+                  <span className="tc-r">{t.ok ? 'listo' : `faltan ${t.falta}`}</span>
+                </span>
+              ))}
+            </div>
             <OptionsMenu />
           </div>
         </header>
 
-        <Dashboard db={db} />
+        <Dashboard db={db} onOpenTree={() => openTree(null)} onOpenNotas={openNotas} />
         <PlanView
           db={db}
           openCod={pop?.cod ?? null}

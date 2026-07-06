@@ -1,13 +1,30 @@
 import type { DB } from '../types'
-import { avance, hitos } from '../domain/selectors'
+import { avance } from '../domain/selectors'
 
 interface Props {
   db: DB
+  onOpenTree: () => void
+  onOpenNotas: () => void
 }
 
-export function Dashboard({ db }: Props) {
+const TreeIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="3" width="6" height="5" rx="1.2" />
+    <rect x="3" y="16" width="6" height="5" rx="1.2" />
+    <rect x="15" y="16" width="6" height="5" rx="1.2" />
+    <path d="M12 8v3M6 16v-2.5h12V16" />
+  </svg>
+)
+
+const NotesIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="3" width="14" height="18" rx="2" />
+    <path d="M9 8h6M9 12h6M9 16h4" />
+  </svg>
+)
+
+export function Dashboard({ db, onOpenTree, onOpenNotas }: Props) {
   const a = avance(db)
-  const ms = hitos(db)
   const seg = (n: number) => ({ width: a.total ? `${(n / a.total) * 100}%` : '0%' })
 
   return (
@@ -50,16 +67,17 @@ export function Dashboard({ db }: Props) {
         </div>
       </div>
 
-      <div className="miles">
-        {ms.map((h, i) => (
-          <div className={`mile ${h.ok ? 'ok' : ''}`} key={h.titulo}>
-            <span className="mile-n">{i + 1}</span>
-            <span className="mile-t">{h.titulo}</span>
-            <span className="mile-r">
-              {h.ok ? '¡Conseguido!' : `${h.falta} materias para el título`}
-            </span>
-          </div>
-        ))}
+      <div className="nav-tiles">
+        <button className="nav-tile" type="button" onClick={onOpenTree}>
+          <TreeIcon />
+          <span className="nt-t">Árbol de correlativas</span>
+          <span className="nt-r">ver cadenas</span>
+        </button>
+        <button className="nav-tile" type="button" onClick={onOpenNotas}>
+          <NotesIcon />
+          <span className="nt-t">Notas</span>
+          <span className="nt-r">promedio y notas</span>
+        </button>
       </div>
     </section>
   )

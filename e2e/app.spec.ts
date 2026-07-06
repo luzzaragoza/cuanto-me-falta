@@ -56,7 +56,7 @@ test('el botón del toast abre el árbol de correlativas', async ({ page }) => {
   await expect(page.locator('.react-flow')).toBeVisible()
 })
 
-test('el árbol de correlativas se abre desde el header y cierra con Escape', async ({ page }) => {
+test('el árbol de correlativas se abre desde el dashboard y cierra con Escape', async ({ page }) => {
   await page.getByRole('button', { name: 'Árbol de correlativas' }).click()
   await expect(page.locator('.react-flow')).toBeVisible()
 

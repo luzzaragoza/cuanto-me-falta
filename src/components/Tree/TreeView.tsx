@@ -42,6 +42,20 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
   const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
   const lay = useMemo(() => layout(), [])
 
+  // Límite de paneo: no dejar arrastrar el árbol hasta el vacío (antes se podía
+  // perder de vista y quedaba todo en blanco). Es el bounding box + un margen chico.
+  const translateExtent = useMemo(() => {
+    const M = 300
+    const first = lay.bands[0]
+    const last = lay.bands[lay.bands.length - 1]
+    const top = first ? first.y : 0
+    const bottom = last ? last.y + last.height : 900
+    return [
+      [-M, top - M],
+      [lay.width + M, bottom + M],
+    ] as [[number, number], [number, number]]
+  }, [lay])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') requestClose()
@@ -191,8 +205,9 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
           }}
           fitView
           fitViewOptions={{ padding: 0.18 }}
+          translateExtent={translateExtent}
           minZoom={0.45}
-          maxZoom={1.6}
+          maxZoom={1.2}
           nodesConnectable={false}
           elementsSelectable={false}
           proOptions={{ hideAttribution: true }}
