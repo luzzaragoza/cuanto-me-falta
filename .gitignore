@@ -9,5 +9,10 @@ node_modules/
 dist/
 *.local
 
+# Salidas de tests E2E (Playwright)
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Logs
 npm-debug.log*

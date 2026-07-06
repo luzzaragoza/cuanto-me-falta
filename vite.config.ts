@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -7,4 +8,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/cuanto-me-falta/' : '/',
   plugins: [react()],
+  // El dominio (Plan/selectors/datos) es puro → corre en Node, sin DOM.
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
 }))

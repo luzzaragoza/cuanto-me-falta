@@ -26,6 +26,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Gate de calidad: si el lint, los unit tests o los E2E fallan, no se buildea ni se deploya.
+      - run: npm run lint
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
