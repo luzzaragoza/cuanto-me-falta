@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { store } from '../state/store'
 import { download, printSummary, slug } from '../lib/io'
+import { track } from '../lib/analytics'
+
+// URL del formulario de feedback (Tally). Si no está configurada, no se muestra el botón.
+const feedbackUrl = (import.meta.env as Record<string, string | undefined>).VITE_FEEDBACK_URL
 
 const IconMenu = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -36,9 +40,16 @@ export function OptionsMenu() {
   }, [open])
 
   const exportBackup = () => {
+    track('backup_exportado')
     const name = store.getSnapshot().profile?.name
     download(`plan-uade-${slug(name)}.json`, store.exportar())
     setOpen(false)
+  }
+
+  const openFeedback = () => {
+    setOpen(false)
+    track('feedback_abierto')
+    if (feedbackUrl) window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
   }
 
   const onFile = (file: File | undefined) => {
@@ -79,6 +90,7 @@ export function OptionsMenu() {
             role="menuitem"
             onClick={() => {
               setOpen(false)
+              track('pdf_exportado')
               printSummary()
             }}
           >
@@ -96,6 +108,14 @@ export function OptionsMenu() {
           >
             Importar backup
           </button>
+          {feedbackUrl && (
+            <>
+              <div className="menu-sep" />
+              <button role="menuitem" onClick={openFeedback}>
+                Enviar feedback
+              </button>
+            </>
+          )}
           <div className="menu-sep" />
           <button role="menuitem" className="danger" onClick={reset}>
             Reiniciar todo

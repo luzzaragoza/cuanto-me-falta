@@ -10,6 +10,7 @@ import { ProfileModal } from './components/ProfileModal'
 import { StatePopover } from './components/StatePopover'
 import { Toaster } from './components/Toaster'
 import { TreeView } from './components/Tree/TreeView'
+import { track } from './lib/analytics'
 
 interface PopState {
   cod: string
@@ -30,6 +31,16 @@ export function App() {
   const togglePop = (cod: string, anchor: HTMLElement) =>
     setPop((prev) => (prev?.cod === cod ? null : { cod, anchor }))
 
+  // aperturas instrumentadas (un solo choke point para el tracking)
+  const openTree = (focus: string | null) => {
+    track('arbol_abierto')
+    setTree({ focus })
+  }
+  const openNotas = () => {
+    track('notas_abierto')
+    setNotas(true)
+  }
+
   return (
     <>
       <div className="wrap">
@@ -43,7 +54,7 @@ export function App() {
           </div>
           <div className="head-right">
             <span className="spine">Plan 1621 — 2021</span>
-            <button className="tool-btn" onClick={() => setTree({ focus: null })} title="Ver árbol de correlativas">
+            <button className="tool-btn" onClick={() => openTree(null)} title="Ver árbol de correlativas">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="3" width="6" height="5" rx="1.2" />
                 <rect x="3" y="16" width="6" height="5" rx="1.2" />
@@ -52,7 +63,7 @@ export function App() {
               </svg>
               Árbol de correlativas
             </button>
-            <button className="tool-btn" onClick={() => setNotas(true)} title="Notas y promedio">
+            <button className="tool-btn" onClick={openNotas} title="Notas y promedio">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="5" y="3" width="14" height="18" rx="2" />
                 <path d="M9 8h6M9 12h6M9 16h4" />
@@ -68,7 +79,7 @@ export function App() {
           db={db}
           openCod={pop?.cod ?? null}
           onOpen={togglePop}
-          onVerArbol={(cod) => setTree({ focus: cod })}
+          onVerArbol={(cod) => openTree(cod)}
         />
 
         <div className="foot">Tu progreso se guarda automáticamente en este dispositivo.</div>
@@ -80,7 +91,7 @@ export function App() {
             anchor={pop.anchor}
             db={db}
             onClose={() => setPop(null)}
-            onVerArbol={(cod) => setTree({ focus: cod })}
+            onVerArbol={(cod) => openTree(cod)}
           />
         )}
 
