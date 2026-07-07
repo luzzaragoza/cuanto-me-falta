@@ -10,6 +10,7 @@ import { PrintSummary } from './components/PrintSummary'
 import { ProfileModal } from './components/ProfileModal'
 import { StatePopover } from './components/StatePopover'
 import { Toaster } from './components/Toaster'
+import { Welcome } from './components/Welcome'
 import { TreeView } from './components/Tree/TreeView'
 import { track } from './lib/analytics'
 
@@ -94,12 +95,10 @@ export function App() {
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 
-        {modal !== 'closed' && (
-          <ProfileModal
-            welcome={modal === 'welcome'}
-            perfil={db.profile}
-            onClose={() => setModal('closed')}
-          />
+        {modal === 'welcome' && <Welcome onClose={() => setModal('closed')} />}
+
+        {modal === 'edit' && (
+          <ProfileModal welcome={false} perfil={db.profile} onClose={() => setModal('closed')} />
         )}
       </div>
 

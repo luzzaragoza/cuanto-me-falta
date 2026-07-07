@@ -89,3 +89,26 @@ test('cargar una nota en el drawer actualiza el promedio', async ({ page }) => {
   // 3) el promedio refleja el 8
   await expect(page.locator('.drawer-prom .np-num')).toHaveText('8')
 })
+
+test('la bienvenida de primera visita pide el nombre y entra a la app', async ({ page }) => {
+  // quitar el perfil sembrado (corre después del seed del beforeEach) → primera visita
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('plan-uade-v3')
+    if (raw) {
+      const d = JSON.parse(raw)
+      delete d.profile
+      localStorage.setItem('plan-uade-v3', JSON.stringify(d))
+    }
+  })
+  await page.reload()
+
+  const welcome = page.locator('.welcome')
+  await expect(welcome).toBeVisible()
+  await expect(welcome.getByRole('heading')).toContainText('Cuánto me falta')
+
+  await page.getByPlaceholder('Tu nombre').fill('Luz')
+  await page.getByRole('button', { name: /Empezá/ }).click()
+
+  await expect(page.locator('.welcome')).toHaveCount(0)
+  await expect(page.locator('.head h1')).toHaveText('Luz')
+})
