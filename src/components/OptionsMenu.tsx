@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { store } from '../state/store'
 import { download, printSummary, slug } from '../lib/io'
 import { track } from '../lib/analytics'
+import { PLANES } from '../data/planes'
+import { cambiarAPlan, planActivoId } from '../state/planActivo'
 
 // URL del formulario de feedback (Tally). Si no está configurada, no se muestra el botón.
 const feedbackUrl = (import.meta.env as Record<string, string | undefined>).VITE_FEEDBACK_URL
@@ -86,6 +88,25 @@ export function OptionsMenu() {
 
       {open && (
         <div className="menu" role="menu">
+          {PLANES.length > 1 && (
+            <>
+              <div className="menu-carrera">
+                <label htmlFor="opt-carrera">Carrera</label>
+                <select
+                  id="opt-carrera"
+                  value={planActivoId()}
+                  onChange={(e) => cambiarAPlan(e.target.value, store.getSnapshot().profile)}
+                >
+                  {PLANES.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.carrera}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="menu-sep" />
+            </>
+          )}
           <button
             role="menuitem"
             onClick={() => {

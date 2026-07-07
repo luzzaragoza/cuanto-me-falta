@@ -1089,6 +1089,37 @@ body {
   font-size: 11.5px;
   margin: 2px 0 0;
 }
+.w-select,
+.menu-carrera select {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.w-select:focus,
+.menu-carrera select:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+.menu-carrera {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px 4px;
+}
+.menu-carrera label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--soft);
+}
 @keyframes welcome-fade {
   from {
     opacity: 0;

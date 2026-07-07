@@ -1,17 +1,31 @@
 import { describe, it, expect } from 'vitest'
 import { Plan, plan } from './Plan'
-import type { AnioDef } from '../types'
+import type { PlanDef } from '../data/model'
 
 // Grafo de juguete para probar la estructura sin depender del plan real:
 //   A → B → C
 //        └→ D
 // (B necesita A; C y D necesitan B)
-const anios: AnioDef[] = [
-  { year: 1, cuatris: [{ n: 1, mats: [{ cod: 'A', nom: 'Materia A' }, { cod: 'B', nom: 'Materia B' }] }] },
-  { year: 2, cuatris: [{ n: 1, mats: [{ cod: 'C', nom: 'Materia C' }, { cod: 'D', nom: 'Materia D' }] }] },
-]
-const correl: Record<string, string[]> = { B: ['A'], C: ['B'], D: ['B'] }
-const p = new Plan(anios, correl)
+const def: PlanDef = {
+  id: 'test',
+  universidad: 'x',
+  codigo: '0',
+  anio: 2021,
+  carrera: 'Carrera de Prueba',
+  titulos: [{ nombre: 'Título de Prueba', hastaAnio: 2 }],
+  materias: [
+    { cod: 'A', nom: 'Materia A', anio: 1, cuatri: 1 },
+    { cod: 'B', nom: 'Materia B', anio: 1, cuatri: 1 },
+    { cod: 'C', nom: 'Materia C', anio: 2, cuatri: 1 },
+    { cod: 'D', nom: 'Materia D', anio: 2, cuatri: 1, opt: true },
+  ],
+  correlativas: [
+    { cod: 'B', requiere: 'A' },
+    { cod: 'C', requiere: 'B' },
+    { cod: 'D', requiere: 'B' },
+  ],
+}
+const p = new Plan(def)
 
 const orden = (s: Set<string>) => [...s].sort()
 
@@ -28,6 +42,11 @@ describe('Plan · estructura', () => {
   it('nombre() devuelve el nombre, o el propio código si no existe', () => {
     expect(p.nombre('A')).toBe('Materia A')
     expect(p.nombre('ZZZ')).toBe('ZZZ')
+  })
+
+  it('carrera y títulos salen del PlanDef', () => {
+    expect(p.carrera).toBe('Carrera de Prueba')
+    expect(p.titulos()).toEqual([{ nombre: 'Título de Prueba', hastaAnio: 2 }])
   })
 })
 
@@ -69,14 +88,14 @@ describe('Plan · cadenas recursivas', () => {
   })
 })
 
-describe('Plan · clasificación de materias (plan real)', () => {
-  it('isOpt() detecta solo las optativas OPT1/2/3', () => {
-    expect(plan.isOpt('OPT1')).toBe(true)
-    expect(plan.isOpt('OPT3')).toBe(true)
-    expect(plan.isOpt('3.4.069')).toBe(false)
+describe('Plan · clasificación por flags', () => {
+  it('isOpt() usa el flag opt de la materia', () => {
+    expect(p.isOpt('D')).toBe(true)
+    expect(p.isOpt('A')).toBe(false)
   })
 
-  it('isSpecial() cubre optativas, PPS y Proyecto Final', () => {
+  it('isSpecial() cubre optativas y especiales (plan real)', () => {
+    expect(plan.isOpt('OPT1')).toBe(true)
     expect(plan.isSpecial('OPT2')).toBe(true)
     expect(plan.isSpecial('PPS06')).toBe(true)
     expect(plan.isSpecial('3.4.100')).toBe(true)

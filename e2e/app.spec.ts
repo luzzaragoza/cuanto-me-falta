@@ -112,3 +112,24 @@ test('la bienvenida de primera visita pide el nombre y entra a la app', async ({
   await expect(page.locator('.welcome')).toHaveCount(0)
   await expect(page.locator('.head h1')).toHaveText('Luz')
 })
+
+test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => {
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('plan-uade-v3')
+    if (raw) {
+      const d = JSON.parse(raw)
+      delete d.profile
+      localStorage.setItem('plan-uade-v3', JSON.stringify(d))
+    }
+  })
+  await page.reload()
+  await expect(page.locator('.welcome')).toBeVisible()
+
+  await page.selectOption('#w-carrera', 'uade-lic-gestion-ti')
+  await page.getByPlaceholder('Tu nombre').fill('Test')
+  await page.getByRole('button', { name: /Empezá/ }).click()
+
+  // recargó en el plan nuevo: subtítulo con la carrera Lic + una materia propia de ese plan
+  await expect(page.locator('.head .sub')).toContainText('Gestión de Tecnología')
+  await expect(page.locator('#plan')).toContainText('Testing de Aplicaciones')
+})

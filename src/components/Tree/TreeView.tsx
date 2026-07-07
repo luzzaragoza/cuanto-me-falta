@@ -10,7 +10,6 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { plan } from '../../domain/Plan'
-import { CORREL } from '../../data/correlativas'
 import { nombreDe } from '../../domain/selectors'
 import { useDB } from '../../state/store'
 import { useExitAnimation } from '../../hooks/useExitAnimation'
@@ -115,8 +114,8 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
     }))
 
     const edgeList: Edge[] = []
-    for (const target of Object.keys(CORREL)) {
-      for (const source of CORREL[target]) {
+    for (const { cod: target, requiere: source } of plan.correlativas()) {
+      {
         let kind: 'need' | 'unlock' | 'none' = 'none'
         let depth = 1
         if (sel) {

@@ -1,6 +1,7 @@
-import { PLAN } from '../data/plan'
-import { CORREL } from '../data/correlativas'
 import type { AnioDef, MateriaDef } from '../types'
+import type { Correlativa, MateriaPlan, PlanDef, TituloPlan } from '../data/model'
+import { getPlanDef } from '../data/planes'
+import { planActivoId } from '../state/planActivo'
 
 /** Materia del plan junto con dónde vive (año/cuatrimestre). */
 export interface MateriaUbicada extends MateriaDef {
@@ -9,18 +10,55 @@ export interface MateriaUbicada extends MateriaDef {
   ci: number // índice de cuatrimestre (0-based)
 }
 
+/** Agrupa las materias planas del PlanDef en la vista año → cuatrimestre → materias. */
+function buildAnios(def: PlanDef): AnioDef[] {
+  const porAnio = new Map<number, Map<number, MateriaDef[]>>()
+  for (const m of def.materias) {
+    if (!porAnio.has(m.anio)) porAnio.set(m.anio, new Map())
+    const cuatris = porAnio.get(m.anio)!
+    if (!cuatris.has(m.cuatri)) cuatris.set(m.cuatri, [])
+    cuatris.get(m.cuatri)!.push({ cod: m.cod, nom: m.nom })
+  }
+  const tituloDe = (year: number) => def.titulos.find((t) => t.hastaAnio === year)?.nombre
+  return [...porAnio.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, cuatriMap]) => ({
+      year,
+      titulo: tituloDe(year),
+      cuatris: [...cuatriMap.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([n, mats]) => ({ n, mats })),
+    }))
+}
+
+/** Lista de correlativas (aristas) → mapa `materia → [previas]`. */
+function buildCorrel(def: PlanDef): Record<string, string[]> {
+  const out: Record<string, string[]> = {}
+  for (const c of def.correlativas) (out[c.cod] ??= []).push(c.requiere)
+  return out
+}
+
 /**
- * Grafo estático del plan de carrera: materias + correlativas.
- * No conoce el estado del usuario (eso vive en el Store); solo responde
- * preguntas sobre la estructura del plan.
+ * Grafo estático de un plan de carrera: materias + correlativas + títulos.
+ * Se construye desde un `PlanDef` (datos normalizados). No conoce el estado del
+ * usuario (eso vive en el Store); solo responde preguntas sobre la estructura.
  */
 export class Plan {
+  readonly def: PlanDef
   readonly anios: AnioDef[]
   private readonly correl: Record<string, string[]>
+  private readonly porCod: Map<string, MateriaPlan>
 
-  constructor(anios: AnioDef[] = PLAN, correl: Record<string, string[]> = CORREL) {
-    this.anios = anios
-    this.correl = correl
+  constructor(def: PlanDef) {
+    this.def = def
+    this.anios = buildAnios(def)
+    this.correl = buildCorrel(def)
+    this.porCod = new Map(def.materias.map((m) => [m.cod, m]))
+  }
+
+  /** Nombre de la carrera (ej. 'Ingeniería en Informática'). */
+  get carrera(): string {
+    return this.def.carrera
   }
 
   /** Lista plana de todas las materias del plan, con su ubicación. */
@@ -36,7 +74,17 @@ export class Plan {
 
   /** Nombre base de una materia por código (sin nombres custom de optativas). */
   nombre(cod: string): string {
-    return this.materias().find((m) => m.cod === cod)?.nom ?? cod
+    return this.porCod.get(cod)?.nom ?? cod
+  }
+
+  /** Títulos que otorga el plan (hitos). */
+  titulos(): TituloPlan[] {
+    return this.def.titulos
+  }
+
+  /** Correlativas como lista de aristas (para dibujar el árbol). */
+  correlativas(): Correlativa[] {
+    return this.def.correlativas
   }
 
   /** Correlativas anteriores directas (lo que necesitás antes). */
@@ -49,14 +97,15 @@ export class Plan {
     return Object.keys(this.correl).filter((k) => this.correl[k].includes(cod))
   }
 
-  /** ¿Es una optativa renombrable (OPT1/2/3)? */
+  /** ¿Es una optativa renombrable? */
   isOpt(cod: string): boolean {
-    return /^OPT\d/.test(cod)
+    return this.porCod.get(cod)?.opt ?? false
   }
 
   /** ¿Se habilita por requisito especial (optativas, PPS, Proyecto Final)? */
   isSpecial(cod: string): boolean {
-    return this.isOpt(cod) || /^PPS/.test(cod) || cod === '3.4.100'
+    const m = this.porCod.get(cod)
+    return !!(m?.opt || m?.especial)
   }
 
   /** Toda la cadena de prerrequisitos (ancestros recursivos): "necesitás". */
@@ -114,5 +163,5 @@ export class Plan {
   }
 }
 
-/** Instancia única del plan (es estático). */
-export const plan = new Plan()
+/** Instancia única del plan ACTIVO (elegido por el usuario; por defecto el de Ing.). */
+export const plan = new Plan(getPlanDef(planActivoId()))

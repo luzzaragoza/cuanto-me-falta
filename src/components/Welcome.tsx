@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { store } from '../state/store'
+import { PLANES } from '../data/planes'
+import { cambiarAPlan, planActivoId } from '../state/planActivo'
 
 // Marca en serif de sistema (Georgia) para que el ¿ del logo sea idéntico al
 // del favicon / OG (generados con esa fuente). El wordmark de abajo sí usa Fraunces.
@@ -50,10 +52,17 @@ const FEATURES = [
 /** Pantalla de bienvenida de primera visita: marca + qué es + tu nombre. */
 export function Welcome({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
+  const [planId, setPlanId] = useState(planActivoId())
 
   const start = () => {
-    store.setPerfil({ name: name.trim(), photo: '' })
-    onClose()
+    const perfil = { name: name.trim(), photo: '' }
+    if (planId === planActivoId()) {
+      store.setPerfil(perfil)
+      onClose()
+    } else {
+      // eligió otra carrera: recargamos en ese plan con este perfil
+      cambiarAPlan(planId, perfil, true)
+    }
   }
   // "entrar sin nombre": marcamos el perfil como visto (vacío) para no re-preguntar
   const skip = () => {
@@ -93,6 +102,22 @@ export function Welcome({ onClose }: { onClose: () => void }) {
               </span>
             </div>
           ))}
+        </div>
+
+        <div className="w-start">
+          <label htmlFor="w-carrera">Elegí tu carrera</label>
+          <select
+            id="w-carrera"
+            className="w-select"
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+          >
+            {PLANES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.carrera}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="w-start">

@@ -19,6 +19,7 @@
 
 ## Qué podés hacer
 
+- 🎓 **Elegí tu carrera** — Ingeniería en Informática o Lic. en Gestión de Tecnología de la Información (y se vienen más).
 - ✅ **Marcá cada materia** — pendiente, cursando, pendiente de final o aprobada.
 - 🌳 **Mirá el árbol de correlativas** — qué necesitás antes y qué habilita cada materia.
 - 📊 **Seguí tu avance** — el % aprobado y cuánto te falta para cada título (Analista, Ingeniero).

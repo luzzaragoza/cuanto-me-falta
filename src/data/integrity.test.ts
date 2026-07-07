@@ -1,79 +1,85 @@
 import { describe, it, expect } from 'vitest'
-import { PLAN } from './plan'
-import { CORREL } from './correlativas'
+import { PLANES, PLAN_POR_DEFECTO, existePlan } from './planes'
 
-// Red de seguridad de los DATOS del plan. No prueba lógica: prueba que
-// PLAN y CORREL estén bien cargados. Cuando se sumen materias o carreras,
-// este archivo es el que atrapa un código mal tipeado o una previa fantasma.
+// Red de seguridad de los DATOS. Valida CADA plan cargado (no solo el default):
+// sin materias duplicadas, correlativas que apunten a códigos existentes, sin ciclos.
+// Cuando el admin cargue más planes, esto atrapa un dato mal tipeado.
 
-/** Todos los códigos de materia que existen en el plan (lista plana). */
-const todosLosCodigos = PLAN.flatMap((a) => a.cuatris.flatMap((q) => q.mats.map((m) => m.cod)))
-const codigos = new Set(todosLosCodigos)
-
-describe('integridad de datos · PLAN', () => {
-  it('no tiene códigos de materia duplicados', () => {
-    const conteo = new Map<string, number>()
-    for (const c of todosLosCodigos) conteo.set(c, (conteo.get(c) ?? 0) + 1)
-    const duplicados = [...conteo.entries()].filter(([, n]) => n > 1).map(([c]) => c)
-    expect(duplicados).toEqual([])
+describe('integridad · registro de planes', () => {
+  it('los ids de plan son únicos', () => {
+    const ids = PLANES.map((p) => p.id)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('ninguna materia tiene código o nombre vacío', () => {
-    const mats = PLAN.flatMap((a) => a.cuatris.flatMap((q) => q.mats))
-    const vacias = mats.filter((m) => !m.cod.trim() || !m.nom.trim())
-    expect(vacias).toEqual([])
+  it('el plan por defecto existe en el registro', () => {
+    expect(existePlan(PLAN_POR_DEFECTO)).toBe(true)
   })
 })
 
-describe('integridad de datos · CORREL', () => {
-  it('cada materia con correlativas existe en el plan', () => {
-    const inexistentes = Object.keys(CORREL).filter((cod) => !codigos.has(cod))
-    expect(inexistentes).toEqual([])
-  })
+for (const plan of PLANES) {
+  describe(`integridad · ${plan.carrera} (${plan.codigo})`, () => {
+    const codigos = new Set(plan.materias.map((m) => m.cod))
 
-  it('cada correlativa previa existe en el plan', () => {
-    const previasRotas = Object.entries(CORREL)
-      .flatMap(([cod, previas]) => previas.map((previa) => ({ cod, previa })))
-      .filter(({ previa }) => !codigos.has(previa))
-    expect(previasRotas).toEqual([])
-  })
+    it('no tiene códigos de materia duplicados', () => {
+      const conteo = new Map<string, number>()
+      for (const m of plan.materias) conteo.set(m.cod, (conteo.get(m.cod) ?? 0) + 1)
+      const duplicados = [...conteo.entries()].filter(([, n]) => n > 1).map(([c]) => c)
+      expect(duplicados).toEqual([])
+    })
 
-  it('ninguna materia es correlativa de sí misma', () => {
-    const autoreferencias = Object.entries(CORREL)
-      .filter(([cod, previas]) => previas.includes(cod))
-      .map(([cod]) => cod)
-    expect(autoreferencias).toEqual([])
-  })
+    it('ninguna materia tiene código o nombre vacío', () => {
+      const vacias = plan.materias.filter((m) => !m.cod.trim() || !m.nom.trim())
+      expect(vacias).toEqual([])
+    })
 
-  it('no hay previas duplicadas dentro de una misma materia', () => {
-    const conRepetidas = Object.entries(CORREL)
-      .filter(([, previas]) => new Set(previas).size !== previas.length)
-      .map(([cod]) => cod)
-    expect(conRepetidas).toEqual([])
-  })
+    it('cada correlativa apunta a materias que existen en el plan', () => {
+      const rotas = plan.correlativas.filter(
+        (c) => !codigos.has(c.cod) || !codigos.has(c.requiere),
+      )
+      expect(rotas).toEqual([])
+    })
 
-  it('no hay ciclos en el grafo de correlativas', () => {
-    // DFS con marcado tri-estado: sin visitar / en proceso / listo.
-    // Si al recorrer las previas topamos con una que está "en proceso",
-    // volvimos sobre nuestros pasos → hay ciclo.
-    const marca = new Map<string, 'proceso' | 'listo'>()
-    const ciclos: string[] = []
+    it('ninguna materia es correlativa de sí misma', () => {
+      const auto = plan.correlativas.filter((c) => c.cod === c.requiere)
+      expect(auto).toEqual([])
+    })
 
-    const visitar = (cod: string, camino: string[]): void => {
-      marca.set(cod, 'proceso')
-      for (const previa of CORREL[cod] ?? []) {
-        if (marca.get(previa) === 'proceso') {
-          ciclos.push([...camino, cod, previa].join(' → '))
-        } else if (!marca.has(previa)) {
-          visitar(previa, [...camino, cod])
-        }
+    it('no hay correlativas duplicadas', () => {
+      const vistas = new Set<string>()
+      const duplicadas = plan.correlativas.filter((c) => {
+        const k = `${c.cod}<-${c.requiere}`
+        if (vistas.has(k)) return true
+        vistas.add(k)
+        return false
+      })
+      expect(duplicadas).toEqual([])
+    })
+
+    it('no hay ciclos en el grafo de correlativas', () => {
+      const ady = new Map<string, string[]>()
+      for (const c of plan.correlativas) {
+        const arr = ady.get(c.cod) ?? []
+        arr.push(c.requiere)
+        ady.set(c.cod, arr)
       }
-      marca.set(cod, 'listo')
-    }
+      const marca = new Map<string, 'proceso' | 'listo'>()
+      const ciclos: string[] = []
+      const visitar = (cod: string, camino: string[]): void => {
+        marca.set(cod, 'proceso')
+        for (const previa of ady.get(cod) ?? []) {
+          if (marca.get(previa) === 'proceso') ciclos.push([...camino, cod, previa].join(' → '))
+          else if (!marca.has(previa)) visitar(previa, [...camino, cod])
+        }
+        marca.set(cod, 'listo')
+      }
+      for (const cod of ady.keys()) if (!marca.has(cod)) visitar(cod, [])
+      expect(ciclos).toEqual([])
+    })
 
-    for (const cod of Object.keys(CORREL)) {
-      if (!marca.has(cod)) visitar(cod, [])
-    }
-    expect(ciclos).toEqual([])
+    it('los títulos apuntan a años que existen en el plan', () => {
+      const anios = new Set(plan.materias.map((m) => m.anio))
+      const rotos = plan.titulos.filter((t) => !anios.has(t.hastaAnio))
+      expect(rotos).toEqual([])
+    })
   })
-})
+}

@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import type { DB } from '../types'
-import { PLAN } from '../data/plan'
+import { plan } from '../domain/Plan'
 import { disponible, nombreDe } from '../domain/selectors'
 import { MateriaRow } from './MateriaRow'
 import { CorrPanel } from './CorrPanel'
@@ -35,7 +35,7 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
 
   return (
     <div id="plan">
-      {PLAN.map((anio) => (
+      {plan.anios.map((anio) => (
         <section className="year" key={anio.year}>
           <div className="yhead">
             <span className="n">{anio.year}°</span>

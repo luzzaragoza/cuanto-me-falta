@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useDB } from './state/store'
 import { hitos } from './domain/selectors'
+import { plan } from './domain/Plan'
+import { nombreUniversidad } from './data/planes'
 import { Avatar } from './components/Avatar'
 import { Dashboard } from './components/Dashboard'
 import { NotasPanel } from './components/NotasPanel'
@@ -52,11 +54,15 @@ export function App() {
             <Avatar perfil={db.profile} onClick={() => setModal('edit')} />
             <div>
               <h1>{nombre}</h1>
-              <div className="sub">Ingeniería en Informática · UADE</div>
+              <div className="sub">
+                {plan.carrera} · {nombreUniversidad(plan.def.universidad)}
+              </div>
             </div>
           </div>
           <div className="head-right">
-            <span className="spine">Plan 1621 — 2021</span>
+            <span className="spine">
+              Plan {plan.def.codigo} — {plan.def.anio}
+            </span>
             <div className="title-chips">
               {titulos.map((t, i) => (
                 <span className={'title-chip' + (t.ok ? ' ok' : '')} key={t.titulo}>
