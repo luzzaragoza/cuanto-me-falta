@@ -134,3 +134,17 @@ test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => 
   await expect(page.locator('.head .sub')).toContainText('Gestión de Tecnología')
   await expect(page.locator('#plan')).toContainText('Testing de Aplicaciones')
 })
+
+test('el resumen PDF usa la carrera del plan activo (no hardcodeada)', async ({ page }) => {
+  await page.evaluate(() => {
+    localStorage.setItem('cmf-plan-activo', 'uade-lic-gestion-ti')
+    localStorage.setItem(
+      'plan-uade-lic-gestion-ti-v3',
+      JSON.stringify({ states: {}, notas: {}, optNames: {}, custom: [], profile: { name: 'Test', photo: '' } }),
+    )
+  })
+  await page.reload()
+  const resumen = page.locator('#print-summary')
+  await expect(resumen).toContainText('Gestión de Tecnología')
+  await expect(resumen).not.toContainText('Ingeniería en Informática')
+})

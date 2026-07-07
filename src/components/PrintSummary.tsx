@@ -8,6 +8,8 @@ import {
   nombreDe,
   promedio,
 } from '../domain/selectors'
+import { plan } from '../domain/Plan'
+import { nombreUniversidad } from '../data/planes'
 
 /** Resumen de una carilla para exportar a PDF (visible solo al imprimir). */
 export function PrintSummary() {
@@ -27,22 +29,36 @@ export function PrintSummary() {
 
   return (
     <div id="print-summary">
-      <div className="ps-head">
+      <header className="ps-head">
         <div className="ps-av">
           {perfil?.photo ? <img src={perfil.photo} alt="" /> : <span>{iniciales(perfil?.name) || '·'}</span>}
         </div>
-        <div>
+        <div className="ps-id">
           <div className="ps-name">{nombre}</div>
-          <div className="ps-sub">Ingeniería en Informática · UADE — Plan 1621</div>
+          <div className="ps-sub">
+            {plan.carrera} · {nombreUniversidad(plan.def.universidad)} — Plan {plan.def.codigo}
+          </div>
         </div>
-        <div className="ps-figs">
-          <div className="ps-pct">
-            {prom.valor ?? '—'}
-            <span>promedio</span>
-          </div>
-          <div className="ps-pct">
-            {a.pct}%<span>aprobado</span>
-          </div>
+      </header>
+
+      <div className="ps-stats">
+        <div className="ps-stat">
+          <span className="ps-stat-n">
+            {a.pct}
+            <i>%</i>
+          </span>
+          <span className="ps-stat-l">aprobado</span>
+        </div>
+        <div className="ps-stat">
+          <span className="ps-stat-n">{prom.valor ?? '—'}</span>
+          <span className="ps-stat-l">promedio</span>
+        </div>
+        <div className="ps-stat">
+          <span className="ps-stat-n">
+            {a.aprobadas}
+            <i>/{a.total}</i>
+          </span>
+          <span className="ps-stat-l">materias aprobadas</span>
         </div>
       </div>
 
@@ -51,27 +67,38 @@ export function PrintSummary() {
         <i className="s-fi" style={seg(a.final)} />
         <i className="s-cu" style={seg(a.cursando)} />
       </div>
-
-      <div className="ps-counts">
-        <span className="ch ap">{a.aprobadas} aprobadas</span>
-        <span className="ch fi">{a.final} pend. de final</span>
-        <span className="ch cu">{a.cursando} cursando</span>
-        <span className="ch pe">{a.pendientes} pendientes</span>
-        <span className="ch pe">{a.total} en total</span>
+      <div className="ps-legend">
+        <span>
+          <i className="d-ap" />
+          {a.aprobadas} aprobadas
+        </span>
+        <span>
+          <i className="d-fi" />
+          {a.final} pend. de final
+        </span>
+        <span>
+          <i className="d-cu" />
+          {a.cursando} cursando
+        </span>
+        <span>
+          <i className="d-pe" />
+          {a.pendientes} pendientes
+        </span>
       </div>
 
-      <div className="ps-cols">
-        <div className="ps-block">
-          <h4>Títulos</h4>
+      <div className="ps-grid">
+        <section className="ps-sec">
+          <h4 className="ps-h">Títulos</h4>
           {hitos(db).map((h) => (
             <div className={`ps-mile ${h.ok ? 'ok' : ''}`} key={h.titulo}>
-              <span>{h.ok ? '✓' : '·'}</span> {h.titulo}
-              <b>{h.ok ? '¡Conseguido!' : `${h.falta} materias`}</b>
+              <span className="m-mark">{h.ok ? '✓' : '○'}</span>
+              <span className="m-name">{h.titulo}</span>
+              <b>{h.ok ? '¡Conseguido!' : `faltan ${h.falta}`}</b>
             </div>
           ))}
-        </div>
-        <div className="ps-block">
-          <h4>Avance por año</h4>
+        </section>
+        <section className="ps-sec">
+          <h4 className="ps-h">Avance por año</h4>
           {avancePorAnio(db).map((y) => (
             <div className="ps-year" key={y.year}>
               <span className="yl">{y.year}° año</span>
@@ -83,33 +110,33 @@ export function PrintSummary() {
               </span>
             </div>
           ))}
-        </div>
+        </section>
       </div>
 
-      <div className="ps-now">
-        <div>
-          <h4>Cursando ahora</h4>
-          <ul>
+      <div className="ps-grid">
+        <section className="ps-sec">
+          <h4 className="ps-h">Cursando ahora</h4>
+          <ul className="ps-list cu">
             {cursando.length ? (
               cursando.map((m) => <li key={m.cod}>{nombreDe(db, m.cod)}</li>)
             ) : (
-              <li className="mut">—</li>
+              <li className="mut">Ninguna por ahora</li>
             )}
           </ul>
-        </div>
-        <div>
-          <h4>Pendientes de final</h4>
-          <ul>
+        </section>
+        <section className="ps-sec">
+          <h4 className="ps-h">Pendientes de final</h4>
+          <ul className="ps-list fi">
             {final.length ? (
               final.map((m) => <li key={m.cod}>{nombreDe(db, m.cod)}</li>)
             ) : (
-              <li className="mut">—</li>
+              <li className="mut">Ninguna por ahora</li>
             )}
           </ul>
-        </div>
+        </section>
       </div>
 
-      <div className="ps-foot">Generado el {fecha} · ¿Cuánto me falta?</div>
+      <div className="ps-foot">Promedio sin aplazos · Generado el {fecha} · cuantomefalta.app</div>
     </div>
   )
 }

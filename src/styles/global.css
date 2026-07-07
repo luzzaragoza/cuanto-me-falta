@@ -1525,13 +1525,13 @@ body {
 .ps-head {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 15px;
   border-bottom: 2px solid var(--ink);
   padding-bottom: 14px;
 }
 .ps-av {
-  width: 60px;
-  height: 60px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   overflow: hidden;
   background: var(--gold);
@@ -1540,7 +1540,7 @@ body {
   place-items: center;
   font-family: var(--serif);
   font-weight: 700;
-  font-size: 24px;
+  font-size: 23px;
   flex: 0 0 auto;
 }
 .ps-av img {
@@ -1551,47 +1551,67 @@ body {
 .ps-name {
   font-family: var(--serif);
   font-weight: 900;
-  font-size: 26px;
+  font-size: 25px;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 .ps-sub {
   font-size: 11px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--soft);
   font-weight: 600;
   margin-top: 6px;
 }
-.ps-figs {
-  margin-left: auto;
+
+/* franja de números (bien separados) */
+.ps-stats {
   display: flex;
-  gap: 26px;
-  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 18px 0 14px;
 }
-.ps-pct {
+.ps-stat {
+  flex: 1;
+  padding: 13px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ps-stat + .ps-stat {
+  border-left: 1px solid var(--line);
+}
+.ps-stat-n {
   font-family: var(--serif);
   font-weight: 900;
-  font-size: 46px;
-  line-height: 0.8;
-  text-align: right;
+  font-size: 33px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
-.ps-pct span {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
+.ps-stat-n i {
+  font-style: normal;
+  font-size: 17px;
   color: var(--soft);
-  letter-spacing: 0.04em;
-  margin-top: 4px;
 }
+.ps-stat-l {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--soft);
+  font-weight: 700;
+}
+
+/* barra + leyenda */
 .ps-bar {
-  height: 14px;
-  border-radius: 8px;
+  height: 13px;
+  border-radius: 7px;
   overflow: hidden;
   display: flex;
   background: #ebe7de;
   border: 1px solid var(--line);
-  margin: 18px 0 12px;
+  margin-bottom: 10px;
 }
 .ps-bar i {
   display: block;
@@ -1606,89 +1626,112 @@ body {
 .ps-bar .s-cu {
   background: var(--cu);
 }
-.ps-counts {
+.ps-legend {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px 16px;
   margin-bottom: 24px;
-}
-.ps-counts .ch {
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 999px;
-  padding: 4px 11px;
-  border: 1px solid var(--line);
-}
-.ch.ap {
-  color: var(--ap-tx);
-  background: var(--ap-bg);
-}
-.ch.fi {
-  color: var(--fi-tx);
-  background: var(--fi-bg);
-}
-.ch.cu {
-  color: var(--cu-tx);
-  background: var(--cu-bg);
-}
-.ch.pe {
-  color: var(--soft);
-}
-.ps-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  margin-bottom: 22px;
-}
-.ps-block h4,
-.ps-now h4 {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--soft);
-  font-weight: 700;
-  margin: 0 0 10px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 6px;
-}
-.ps-mile {
-  font-family: var(--serif);
-  font-size: 15px;
-  margin: 9px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ps-mile b {
-  margin-left: auto;
-  font-family: var(--sans);
   font-size: 11.5px;
   font-weight: 600;
+}
+.ps-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ps-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+.ps-legend .d-ap {
+  background: var(--ap);
+}
+.ps-legend .d-fi {
+  background: var(--fi);
+}
+.ps-legend .d-cu {
+  background: var(--cu);
+}
+.ps-legend .d-pe {
+  background: #d8d2c6;
+}
+
+/* secciones en 2 columnas */
+.ps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+.ps-h {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+/* títulos */
+.ps-mile {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--serif);
+  font-size: 14px;
+}
+.ps-mile:last-child {
+  border-bottom: 0;
+}
+.ps-mile .m-mark {
   color: var(--soft);
+  font-weight: 700;
+}
+.ps-mile.ok .m-mark {
+  color: var(--ap);
+}
+.ps-mile .m-name {
+  flex: 1;
+  min-width: 0;
+}
+.ps-mile b {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--soft);
+  white-space: nowrap;
 }
 .ps-mile.ok b {
   color: var(--ap-tx);
 }
-.ps-mile.ok > span {
-  color: var(--ap);
-  font-weight: 900;
-}
+
+/* avance por año */
 .ps-year {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 9px 0;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
   font-size: 13px;
 }
+.ps-year:last-child {
+  border-bottom: 0;
+}
 .ps-year .yl {
-  width: 52px;
+  width: 50px;
   color: var(--soft);
   font-weight: 600;
 }
 .ps-year .yt {
   flex: 1;
-  height: 9px;
-  border-radius: 6px;
+  height: 8px;
+  border-radius: 5px;
   background: #ebe7de;
   overflow: hidden;
 }
@@ -1698,35 +1741,56 @@ body {
   background: var(--ap);
 }
 .ps-year .yn {
-  width: 42px;
+  width: 44px;
   text-align: right;
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 700;
 }
-.ps-now {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-}
-.ps-now ul {
+
+/* listas (cursando / pendientes de final) */
+.ps-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.ps-now li {
+.ps-list li {
+  position: relative;
   font-size: 13px;
-  padding: 4px 0;
-  border-bottom: 1px dotted var(--line);
+  padding: 6px 0 6px 15px;
+  border-bottom: 1px solid var(--line);
 }
-.ps-now li.mut {
+.ps-list li:last-child {
+  border-bottom: 0;
+}
+.ps-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 11px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.ps-list.cu li::before {
+  background: var(--cu);
+}
+.ps-list.fi li::before {
+  background: var(--fi);
+}
+.ps-list li.mut {
+  padding-left: 0;
   color: var(--soft);
-  border: 0;
+  border-bottom: 0;
+}
+.ps-list li.mut::before {
+  display: none;
 }
 .ps-foot {
-  margin-top: 26px;
+  margin-top: 22px;
   padding-top: 10px;
   border-top: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--soft);
 }
 
