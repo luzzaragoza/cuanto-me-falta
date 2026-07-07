@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { store } from '../state/store'
-import { PLANES } from '../data/planes'
 import { cambiarAPlan, planActivoId } from '../state/planActivo'
+import { CarreraSelect } from './CarreraSelect'
 
 // Marca en serif de sistema (Georgia) para que el ¿ del logo sea idéntico al
 // del favicon / OG (generados con esa fuente). El wordmark de abajo sí usa Fraunces.
@@ -105,19 +105,8 @@ export function Welcome({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="w-start">
-          <label htmlFor="w-carrera">Elegí tu carrera</label>
-          <select
-            id="w-carrera"
-            className="w-select"
-            value={planId}
-            onChange={(e) => setPlanId(e.target.value)}
-          >
-            {PLANES.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.carrera}
-              </option>
-            ))}
-          </select>
+          <label>Elegí tu carrera</label>
+          <CarreraSelect value={planId} onChange={setPlanId} />
         </div>
 
         <div className="w-start">

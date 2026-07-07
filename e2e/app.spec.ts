@@ -125,7 +125,8 @@ test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => 
   await page.reload()
   await expect(page.locator('.welcome')).toBeVisible()
 
-  await page.selectOption('#w-carrera', 'uade-lic-gestion-ti')
+  await page.locator('.cselect-btn').click()
+  await page.locator('.cselect-opt').filter({ hasText: 'Gestión de Tecnología' }).click()
   await page.getByPlaceholder('Tu nombre').fill('Test')
   await page.getByRole('button', { name: /Empezá/ }).click()
 

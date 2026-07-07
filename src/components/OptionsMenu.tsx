@@ -90,20 +90,24 @@ export function OptionsMenu() {
         <div className="menu" role="menu">
           {PLANES.length > 1 && (
             <>
-              <div className="menu-carrera">
-                <label htmlFor="opt-carrera">Carrera</label>
-                <select
-                  id="opt-carrera"
-                  value={planActivoId()}
-                  onChange={(e) => cambiarAPlan(e.target.value, store.getSnapshot().profile)}
+              <div className="menu-label">Carrera</div>
+              {PLANES.map((p) => (
+                <button
+                  key={p.id}
+                  role="menuitem"
+                  className={'menu-carrera-item' + (p.id === planActivoId() ? ' sel' : '')}
+                  onClick={() => cambiarAPlan(p.id, store.getSnapshot().profile)}
                 >
-                  {PLANES.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.carrera}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <span>{p.carrera}</span>
+                  {p.id === planActivoId() && (
+                    <span className="cselect-opt-chk">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              ))}
               <div className="menu-sep" />
             </>
           )}
