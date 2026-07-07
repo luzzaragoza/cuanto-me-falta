@@ -1,56 +1,56 @@
-# ¿Cuánto me falta?
+<p align="center">
+  <img src="public/icon-192.png" alt="¿Cuánto me falta?" width="92">
+</p>
 
-Seguimiento interactivo de la carrera **Ingeniería en Informática (UADE — Plan 1621)**.
-Marcá el estado de cada materia, mirá las correlativas y tu avance de un vistazo.
+<h1 align="center">¿Cuánto me falta?</h1>
 
-## Qué hace
+<p align="center">
+  <b>Seguí el avance de tu carrera de un vistazo.</b><br>
+  Marcá tus materias, mirá las correlativas y sabé cuánto te falta para recibirte.
+</p>
 
-- **Estados por materia**: pendiente → aprobada → cursando → pendiente de final (un toque cambia el estado).
-- **Correlativas precargadas**: cada materia tiene un botón que muestra sus correlativas *anteriores* ("necesita") y *posteriores* ("habilita"), con nombres navegables para recorrer la cadena.
-- **Dashboard**: porcentaje aprobado, promedio, conteos, barra de progreso y los títulos intermedios (Analista, Ingeniero) con cuántas materias faltan para cada uno.
-- **Perfil**: nombre y foto opcional, con un saludo de bienvenida la primera vez.
-- **Exportar resumen en PDF**: una carilla linda para vista rápida.
-- **Backup**: exportar e importar tu progreso en `.json` (para respaldo o para compartirlo).
-- **Guardado automático** en tu navegador.
+<p align="center">
+  <a href="https://cuantomefalta.app">▶ <b>Probala en cuantomefalta.app</b></a>
+</p>
 
-## Cómo usar
+<p align="center">
+  <img src="docs/captura-app.png" alt="Pantalla principal de la app" width="820">
+</p>
 
-1. Entrá al sitio publicado.
-2. Tocá una materia para marcar su estado.
-3. Usá el botón de la derecha de cada materia para ver sus correlativas.
-4. Menú **Opciones** (arriba a la derecha): exportar PDF, exportar/importar backup o reiniciar.
+## Qué podés hacer
 
-## Privacidad
+- ✅ **Marcá cada materia** — pendiente, cursando, pendiente de final o aprobada.
+- 🌳 **Mirá el árbol de correlativas** — qué necesitás antes y qué habilita cada materia.
+- 📊 **Seguí tu avance** — el % aprobado y cuánto te falta para cada título (Analista, Ingeniero).
+- ✏️ **Cargá tus notas** — y mirá tu promedio.
+- 📱 **Instalala en el celu** — "agregar a inicio" y la usás como una app más.
 
-Todo se guarda **localmente en tu navegador** (localStorage). No se envía nada a ningún servidor: tus datos quedan solo en tu dispositivo. Si borrás los datos del navegador se pierden, así que conviene usar **Exportar backup** cada tanto.
+<p align="center">
+  <img src="docs/captura-arbol.png" alt="Árbol de correlativas" width="820">
+</p>
+<p align="center">
+  <sub>Tocás una materia y ves toda su cadena: lo que <b>necesitás</b> antes (violeta) y lo que <b>habilita</b> después (teal).</sub>
+</p>
 
-## Tecnología
+## Tus datos son tuyos
 
-**Vite + React 19 + TypeScript**, con [React Flow](https://reactflow.dev/) para el árbol de correlativas. El estado del usuario se guarda en `localStorage` (sin servidor). Se publica en GitHub Pages mediante GitHub Actions.
+Todo lo que cargás queda **guardado solo en tu dispositivo**. No hay cuentas ni servidor:
+nadie más ve tu progreso. Y podés exportar un backup cuando quieras.
 
-> Versión anterior: era un único `index.html` vanilla. Quedó como referencia en [`legacy/index.html`](legacy/index.html) durante la migración.
+## Aclaración importante
 
-## Desarrollo
+Es un proyecto **independiente, hecho por una estudiante**. **No tiene afiliación oficial con UADE.**
+El plan de estudios y las correlativas se cargaron a mano y pueden tener errores o quedar
+desactualizados — ante la duda, verificá siempre con la información oficial de tu facultad.
 
-Requiere [Node.js](https://nodejs.org/) (18+).
+## Sobre el proyecto
 
-```bash
-npm install      # instalar dependencias (una vez)
-npm run dev      # servidor local con hot-reload → http://localhost:5173
-npm run build    # build de producción (chequea tipos + empaqueta en dist/)
-npm run preview  # previsualizar el build de producción
-```
+Hecho con 💛 por **Marina Luz Zaragoza**. Nació para Ingeniería en Informática (UADE, Plan 1621)
+y está pensado para crecer a más carreras y universidades.
 
-El deploy es automático: cada push a `main` dispara el workflow de GitHub Actions que buildea y publica. (Requiere *Settings → Pages → Source = GitHub Actions* en el repo.)
-
-## Aclaración
-
-Proyecto hecho por estudiantes, **sin afiliación oficial con UADE**. El plan y las correlativas se cargaron a mano y pueden contener errores o quedar desactualizados: verificá siempre con la información oficial de la universidad.
-
-## Autoría
-
-Creado por **Marina Luz Zaragoza**.
+<sub>Construido con React, TypeScript y Vite.</sub>
 
 ## Licencia
 
-Distribuido bajo licencia MIT. Ver [LICENSE](LICENSE).
+© 2026 Marina Luz Zaragoza. **Todos los derechos reservados.** El código se publica solo para
+mostrar el proyecto y no puede reutilizarse sin autorización. Ver [LICENSE](LICENSE).
