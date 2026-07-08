@@ -18,6 +18,7 @@ test.beforeEach(async ({ page }) => {
         profile: { name: 'Test', photo: '' },
       }),
     )
+    localStorage.setItem('cmf-tour-visto', '1') // sin tour en los tests salvo el dedicado
   })
   await page.goto('/')
 })
@@ -147,4 +148,34 @@ test('el resumen PDF usa la carrera del plan activo (no hardcodeada)', async ({ 
   const resumen = page.locator('#print-summary')
   await expect(resumen).toContainText('Gestión de Tecnología')
   await expect(resumen).not.toContainText('Ingeniería en Informática')
+})
+
+test('el tutorial (coach marks) corre en la primera visita y no vuelve', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.removeItem('cmf-tour-visto')
+    const raw = localStorage.getItem('plan-uade-v3')
+    if (raw) {
+      const d = JSON.parse(raw)
+      delete d.profile
+      localStorage.setItem('plan-uade-v3', JSON.stringify(d))
+    }
+  })
+  await page.reload()
+
+  // bienvenida → entrar
+  await page.getByPlaceholder('Tu nombre').fill('Luz')
+  await page.getByRole('button', { name: /Empezá/ }).click()
+
+  // aparece el tour, arranca en 1/5
+  const tour = page.locator('.tour')
+  await expect(tour).toBeVisible()
+  await expect(tour).toContainText('1 / 5')
+
+  // recorrerlo hasta el final
+  for (let s = 0; s < 4; s++) await page.getByRole('button', { name: 'Siguiente' }).click()
+  await page.getByRole('button', { name: 'Listo' }).click()
+  await expect(page.locator('.tour')).toHaveCount(0)
+
+  // quedó marcado como visto → no vuelve
+  expect(await page.evaluate(() => localStorage.getItem('cmf-tour-visto'))).toBe('1')
 })

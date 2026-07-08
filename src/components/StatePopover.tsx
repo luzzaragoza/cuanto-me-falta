@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import type { DB, Estado } from '../types'
 import { plan } from '../domain/Plan'
-import { nombreDe, previasParaEstado } from '../domain/selectors'
+import { avance, nombreDe, previasParaEstado } from '../domain/selectors'
 import { store } from '../state/store'
 import { toast } from '../lib/toast'
+import { trackActivacion } from '../lib/analytics'
 
 const OPTS: { k: Estado; label: string; desc: string }[] = [
   { k: 'pendiente', label: 'Pendiente', desc: 'Todavía no la empecé' },
@@ -75,6 +76,9 @@ export function StatePopover({ cod, anchor, db, onClose, onVerArbol }: Props) {
 
   const select = (k: Estado) => {
     store.setEstado(cod, k)
+    // activación: 1ª materia marcada / llegó a 5 (métrica del Gate A)
+    const av = avance(store.getSnapshot())
+    trackActivacion(av.aprobadas + av.final + av.cursando)
     // El aviso de previas ahora es un toast flotante: no atamos el popover a mostrarlo.
     if (!special) {
       const faltan = previasParaEstado(store.getSnapshot(), cod, k)

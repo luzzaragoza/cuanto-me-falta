@@ -14,7 +14,17 @@ import { StatePopover } from './components/StatePopover'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
 import { TreeView } from './components/Tree/TreeView'
+import { Tour } from './components/Tour'
 import { track } from './lib/analytics'
+
+const TOUR_KEY = 'cmf-tour-visto'
+const tourVisto = () => {
+  try {
+    return !!localStorage.getItem(TOUR_KEY)
+  } catch {
+    return true
+  }
+}
 
 interface PopState {
   cod: string
@@ -29,8 +39,20 @@ export function App() {
   const [tree, setTree] = useState<{ focus: string | null } | null>(null)
   const [notas, setNotas] = useState(false)
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
+  const [tourSeen, setTourSeen] = useState(tourVisto)
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
   const titulos = hitos(db) // Analista / Ingeniero → chips de progreso en el header
+
+  // el tour corre una sola vez, ya con un perfil y sin modales abiertos
+  const showTour = modal === 'closed' && db.profile !== undefined && !tourSeen
+  const closeTour = () => {
+    try {
+      localStorage.setItem(TOUR_KEY, '1')
+    } catch {
+      /* modo incógnito, etc. */
+    }
+    setTourSeen(true)
+  }
 
   // segundo toque sobre la misma materia → cierra (toggle)
   const togglePop = (cod: string, anchor: HTMLElement) =>
@@ -72,7 +94,7 @@ export function App() {
                 </span>
               ))}
             </div>
-            <OptionsMenu />
+            <OptionsMenu onVerTutorial={() => setTourSeen(false)} />
           </div>
         </header>
 
@@ -98,6 +120,8 @@ export function App() {
         )}
 
         {tree && <TreeView focus={tree.focus} onClose={() => setTree(null)} />}
+
+        {showTour && <Tour onClose={closeTour} />}
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 

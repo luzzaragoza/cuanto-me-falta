@@ -16,7 +16,7 @@ const IconMenu = () => (
   </svg>
 )
 
-export function OptionsMenu() {
+export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -132,6 +132,16 @@ export function OptionsMenu() {
             }}
           >
             Importar backup
+          </button>
+          <div className="menu-sep" />
+          <button
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onVerTutorial()
+            }}
+          >
+            Ver el tutorial
           </button>
           {feedbackUrl && (
             <>

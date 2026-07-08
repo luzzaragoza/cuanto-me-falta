@@ -75,3 +75,24 @@ export function track(name: string, data?: Props): void {
     // analytics jamás debe tirar abajo la app
   }
 }
+
+/**
+ * Hitos de ACTIVACIÓN (la métrica que alimenta el Gate A). Se disparan una sola vez
+ * por usuario, con un flag en localStorage: la 1ª materia que marca, y cuando llega a 5
+ * (el umbral de "activado" del plan comercial). `marcadas` = materias no-pendientes.
+ */
+export function trackActivacion(marcadas: number): void {
+  if (!inCliente()) return
+  try {
+    if (marcadas >= 1 && !localStorage.getItem('cmf-ev-primera')) {
+      localStorage.setItem('cmf-ev-primera', '1')
+      track('primera_materia')
+    }
+    if (marcadas >= 5 && !localStorage.getItem('cmf-ev-activado')) {
+      localStorage.setItem('cmf-ev-activado', '1')
+      track('activado')
+    }
+  } catch {
+    /* noop */
+  }
+}
