@@ -12,8 +12,17 @@ const Check = () => (
   </svg>
 )
 
-/** Dropdown custom para elegir la carrera (más lindo que el <select> nativo). */
-export function CarreraSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+/** Dropdown custom para elegir la carrera (más lindo que el <select> nativo).
+ *  variant 'box' = caja (bienvenida) · 'inline' = texto del subtítulo del header. */
+export function CarreraSelect({
+  value,
+  onChange,
+  variant = 'box',
+}: {
+  value: string
+  onChange: (id: string) => void
+  variant?: 'box' | 'inline'
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const actual = PLANES.find((p) => p.id === value) ?? PLANES[0]
@@ -35,7 +44,7 @@ export function CarreraSelect({ value, onChange }: { value: string; onChange: (i
   }, [open])
 
   return (
-    <div className={'cselect' + (open ? ' open' : '')} ref={ref}>
+    <div className={'cselect' + (variant === 'inline' ? ' inline' : '') + (open ? ' open' : '')} ref={ref}>
       <button
         type="button"
         className="cselect-btn"
@@ -43,7 +52,11 @@ export function CarreraSelect({ value, onChange }: { value: string; onChange: (i
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="cselect-val">{actual.carrera}</span>
+        <span className="cselect-val">
+          {variant === 'inline'
+            ? `${actual.carrera} · ${nombreUniversidad(actual.universidad)}`
+            : actual.carrera}
+        </span>
         <span className="cselect-chev">
           <Chevron />
         </span>
@@ -65,7 +78,7 @@ export function CarreraSelect({ value, onChange }: { value: string; onChange: (i
                 <span className="cselect-opt-tx">
                   <span className="cselect-opt-name">{p.carrera}</span>
                   <span className="cselect-opt-meta">
-                    {nombreUniversidad(p.universidad)} · Plan {p.codigo}
+                    {nombreUniversidad(p.universidad)} · Plan {p.codigo} — {p.anio}
                   </span>
                 </span>
                 {p.id === value && (

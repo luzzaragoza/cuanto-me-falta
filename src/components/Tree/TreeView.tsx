@@ -15,9 +15,12 @@ import { useDB } from '../../state/store'
 import { useExitAnimation } from '../../hooks/useExitAnimation'
 import { MateriaNode, type NodeRole } from './MateriaNode'
 import { BandNode } from './BandNode'
-import { layout } from './layout'
+import { TreeEdge } from './TreeEdge'
+import { YearRail } from './YearRail'
+import { layout, YEARY, NODEX } from './layout'
 
 const nodeTypes = { materia: MateriaNode, band: BandNode }
+const edgeTypes = { tree: TreeEdge }
 
 // Escalas de color por profundidad: directas claritas → más lejos, más oscuro (texto blanco en los oscuros).
 const NEED_SHADES = [
@@ -91,7 +94,14 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
       id: `band-${i}`,
       type: 'band',
       position: { x: b.x, y: b.y },
-      data: { year: b.year, titulo: b.titulo, width: b.width, height: b.height, alt: b.alt },
+      data: {
+        year: b.year,
+        titulo: b.titulo,
+        width: b.width,
+        height: b.height,
+        alt: b.alt,
+        cuatris: b.cuatris,
+      },
       selectable: false,
       draggable: false,
       connectable: false,
@@ -113,6 +123,12 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
       zIndex: 1,
     }))
 
+    // Ruteo de aristas: según cuántos años salta el vínculo elegimos por dónde va el
+    // tramo horizontal, para que las flechas no se encimen ni corten filas de nodos.
+    //  · intra-año (salto 0) → 'over': pasa por ARRIBA de la fila (hueco vacío), en carriles.
+    //  · contigua (salto 1)  → 'mid': a mitad de camino, escalonada por columna de origen.
+    //  · salto ≥2 años       → 'nearTarget': horizontal pegado al destino (no cruza la fila del medio).
+    const overLane = new Map<number, number>() // carril por fila para las intra-año
     const edgeList: Edge[] = []
     for (const { cod: target, requiere: source } of plan.correlativas()) {
       {
@@ -135,11 +151,37 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
             ? NEED_SHADES[shadeIdx(depth)].borderColor
             : UNLOCK_SHADES[shadeIdx(depth)].borderColor
           : GREY
+
+        const sy = pos[source]?.y ?? 0
+        const ty = pos[target]?.y ?? 0
+        const rowSpan = Math.round((ty - sy) / YEARY)
+        let mode: 'over' | 'nearTarget' | 'mid'
+        let sourceHandle: string
+        let lane: number
+        if (rowSpan <= 0) {
+          mode = 'over'
+          sourceHandle = 'st'
+          lane = overLane.get(sy) ?? 0
+          overLane.set(sy, lane + 1)
+        } else {
+          sourceHandle = 'sb'
+          if (rowSpan >= 2) {
+            mode = 'nearTarget'
+            lane = 0
+          } else {
+            mode = 'mid'
+            lane = Math.round((pos[source]?.x ?? 0) / NODEX) % 4
+          }
+        }
+
         edgeList.push({
           id: `${source}->${target}`,
           source,
           target,
-          type: 'smoothstep',
+          sourceHandle,
+          targetHandle: 'tt',
+          type: 'tree',
+          data: { mode, lane },
           animated: active,
           style: {
             stroke: color,
@@ -194,6 +236,7 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodeClick={(_, n) => {
             if (n.type === 'materia') setSel((s) => (s === n.id ? null : n.id))
           }}
@@ -212,7 +255,8 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
           proOptions={{ hideAttribution: true }}
         >
           <Controls showInteractive={false} />
-          <Panel position="top-left" className="tv-keypanel">
+          <YearRail bands={lay.bands} />
+          <Panel position="top-right" className="tv-keypanel">
             <div className="tk-row need">
               <span className="tk-dot" />↑ Necesitás <em>antes</em>
             </div>

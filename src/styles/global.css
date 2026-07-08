@@ -46,14 +46,36 @@ body {
 }
 
 /* ----- header ----- */
+/* identidad (avatar + nombre + carrera) a la izquierda, Opciones a la derecha, en una fila */
 .head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
   border-bottom: 2px solid var(--ink);
   padding-bottom: 14px;
+}
+.who-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.head .actions {
+  flex: 0 0 auto;
+}
+/* en mobile, Opciones queda solo con el ícono (libera espacio para el nombre) */
+@media (max-width: 480px) {
+  .tb-label {
+    display: none;
+  }
+  .head .tool-btn {
+    padding: 8px 10px;
+  }
+  .head .sub {
+    letter-spacing: 0.02em;
+    font-size: 10.5px;
+  }
 }
 .head h1 {
   font-family: var(--serif);
@@ -69,21 +91,6 @@ body {
   text-transform: uppercase;
   color: var(--soft);
   font-weight: 600;
-  margin-top: 6px;
-}
-.head .spine {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--gold);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-.head-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 .tool-btn {
   display: inline-flex;
@@ -104,52 +111,6 @@ body {
 }
 .tool-btn svg {
   color: var(--soft);
-}
-/* chips de títulos (Analista / Ingeniero) en el header */
-.title-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.title-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 5px 12px 5px 6px;
-  background: var(--card);
-  font-size: 12px;
-}
-.title-chip .tc-n {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  font-weight: 700;
-  border: 2px solid var(--line);
-  color: var(--soft);
-  background: var(--paper);
-}
-.title-chip.ok .tc-n {
-  background: var(--ap);
-  border-color: var(--ap);
-  color: #fff;
-}
-.title-chip .tc-t {
-  font-family: var(--serif);
-  font-weight: 600;
-}
-.title-chip .tc-r {
-  color: var(--soft);
-  font-weight: 500;
-}
-.title-chip.ok .tc-r {
-  color: var(--ap-tx);
-  font-weight: 600;
 }
 
 /* ----- dashboard ----- */
@@ -293,6 +254,9 @@ body {
     grid-template-columns: 1fr;
   }
 }
+.cuati {
+  min-width: 0; /* deja que la columna del grid se achique en mobile (sin desborde lateral) */
+}
 .cuati h3 {
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -353,6 +317,7 @@ body {
   font-weight: 500;
   line-height: 1.25;
   min-width: 0;
+  overflow-wrap: anywhere; /* el nombre puede cortar si hace falta → la fila nunca fuerza ancho */
 }
 .mat.cursando {
   border-left-color: var(--cu);
@@ -756,7 +721,7 @@ body {
   background: transparent;
 }
 
-/* bandas de año (fondo) + rótulo a la izquierda */
+/* bandas de año (fondo) + marca de cuatrimestre */
 .react-flow__node-band {
   pointer-events: none;
 }
@@ -765,30 +730,64 @@ body {
   border-top: 1px dashed var(--line);
   box-sizing: border-box;
 }
-.tv-band-label {
-  position: sticky;
-  left: 10px;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 6px 12px 6px 14px;
-  font-family: var(--serif);
-  font-size: 14px;
+/* rótulo de cuatrimestre, arriba de cada grupo (se desliza con el contenido) */
+.tv-cuatri {
+  position: absolute;
+  top: 7px;
+  height: 34px;
+  box-sizing: border-box;
+  border-left: 1px dashed var(--line);
+  padding-left: 9px;
+}
+.tv-cuatri-lbl {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--soft);
+  opacity: 0.6;
   white-space: nowrap;
 }
-.tv-band-label b {
+/* rail de años: fijo a la izquierda, sigue el paneo vertical (fuera del transform) */
+.tv-rail {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+.tv-rail-item {
+  position: absolute;
+  left: 12px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 11px 6px;
+  background: rgba(247, 244, 236, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  font-family: var(--serif);
+  white-space: nowrap;
+}
+.tv-rail-item b {
   font-size: 18px;
   font-weight: 900;
   color: var(--gold);
 }
-.tv-band-label em {
+.tv-rail-item span {
+  font-size: 12px;
+  color: var(--soft);
+}
+.tv-rail-item em {
   font-style: normal;
   font-family: var(--sans);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--ap-tx);
-  margin-left: 4px;
+  margin-left: 2px;
 }
 
 /* botón de ayuda (?) con tooltip — base */
@@ -1093,6 +1092,52 @@ body {
 .cselect {
   position: relative;
   width: 100%;
+}
+/* variante inline: el dropdown vive dentro del subtítulo del header */
+.cselect.inline {
+  display: inline-flex;
+  width: auto;
+  vertical-align: baseline;
+}
+.cselect.inline .cselect-btn {
+  width: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  gap: 4px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
+.cselect.inline .cselect-btn:hover {
+  border: 0;
+  color: var(--gold);
+}
+.cselect.inline.open .cselect-btn,
+.cselect.inline .cselect-btn:focus-visible {
+  outline: 0;
+  color: var(--gold);
+}
+.cselect.inline .cselect-chev {
+  width: 13px;
+  height: 13px;
+}
+.cselect.inline .cselect-chev svg {
+  width: 13px;
+  height: 13px;
+}
+.cselect.inline .cselect-val {
+  white-space: normal; /* en mobile envuelve en vez de cortarse */
+  overflow: visible;
+  text-overflow: clip;
+}
+.cselect.inline .cselect-list {
+  left: 0;
+  right: auto;
+  min-width: 280px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 .cselect-btn {
   width: 100%;

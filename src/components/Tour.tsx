@@ -29,7 +29,7 @@ const STEPS: Step[] = [
     texto: 'Cargá la nota de las materias aprobadas y mirá tu promedio.',
   },
   {
-    sel: '.head-right .actions',
+    sel: '.head .actions',
     titulo: 'Opciones',
     texto: 'Exportá un PDF o un backup, cambiá de carrera y más.',
   },

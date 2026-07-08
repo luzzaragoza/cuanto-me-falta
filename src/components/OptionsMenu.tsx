@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { store } from '../state/store'
 import { download, printSummary, slug } from '../lib/io'
 import { track } from '../lib/analytics'
-import { PLANES } from '../data/planes'
-import { cambiarAPlan, planActivoId } from '../state/planActivo'
 
 // URL del formulario de feedback (Tally). Si no está configurada, no se muestra el botón.
 const feedbackUrl = (import.meta.env as Record<string, string | undefined>).VITE_FEEDBACK_URL
@@ -83,34 +81,11 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
         }}
       >
         <IconMenu />
-        Opciones
+        <span className="tb-label">Opciones</span>
       </button>
 
       {open && (
         <div className="menu" role="menu">
-          {PLANES.length > 1 && (
-            <>
-              <div className="menu-label">Carrera</div>
-              {PLANES.map((p) => (
-                <button
-                  key={p.id}
-                  role="menuitem"
-                  className={'menu-carrera-item' + (p.id === planActivoId() ? ' sel' : '')}
-                  onClick={() => cambiarAPlan(p.id, store.getSnapshot().profile)}
-                >
-                  <span>{p.carrera}</span>
-                  {p.id === planActivoId() && (
-                    <span className="cselect-opt-chk">
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
-                    </span>
-                  )}
-                </button>
-              ))}
-              <div className="menu-sep" />
-            </>
-          )}
           <button
             role="menuitem"
             onClick={() => {
@@ -133,6 +108,7 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
           >
             Importar backup
           </button>
+
           <div className="menu-sep" />
           <button
             role="menuitem"
@@ -144,13 +120,11 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
             Ver el tutorial
           </button>
           {feedbackUrl && (
-            <>
-              <div className="menu-sep" />
-              <button role="menuitem" onClick={openFeedback}>
-                Enviar feedback
-              </button>
-            </>
+            <button role="menuitem" onClick={openFeedback}>
+              Enviar feedback
+            </button>
           )}
+
           <div className="menu-sep" />
           <button role="menuitem" className="danger" onClick={reset}>
             Reiniciar todo

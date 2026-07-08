@@ -136,7 +136,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
         <button className="lnk w-skip" onClick={skip}>
           Entrar sin nombre
         </button>
-        <p className="w-priv">Tus datos quedan solo en este dispositivo. La foto la sumás después.</p>
+        <p className="w-priv">Tus datos quedan solo en este dispositivo.</p>
       </div>
     </div>
   )

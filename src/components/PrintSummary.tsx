@@ -55,10 +55,10 @@ export function PrintSummary() {
         </div>
         <div className="ps-stat">
           <span className="ps-stat-n">
-            {a.aprobadas}
+            {a.total - a.aprobadas}
             <i>/{a.total}</i>
           </span>
-          <span className="ps-stat-l">materias aprobadas</span>
+          <span className="ps-stat-l">te faltan</span>
         </div>
       </div>
 

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useDB } from './state/store'
-import { hitos } from './domain/selectors'
 import { plan } from './domain/Plan'
-import { nombreUniversidad } from './data/planes'
+import { PLANES, nombreUniversidad } from './data/planes'
+import { cambiarAPlan, planActivoId } from './state/planActivo'
 import { Avatar } from './components/Avatar'
+import { CarreraSelect } from './components/CarreraSelect'
 import { Dashboard } from './components/Dashboard'
 import { NotasPanel } from './components/NotasPanel'
 import { OptionsMenu } from './components/OptionsMenu'
@@ -41,7 +42,6 @@ export function App() {
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
   const [tourSeen, setTourSeen] = useState(tourVisto)
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
-  const titulos = hitos(db) // Analista / Ingeniero → chips de progreso en el header
 
   // el tour corre una sola vez, ya con un perfil y sin modales abiertos
   const showTour = modal === 'closed' && db.profile !== undefined && !tourSeen
@@ -74,28 +74,24 @@ export function App() {
         <header className="head">
           <div className="who">
             <Avatar perfil={db.profile} onClick={() => setModal('edit')} />
-            <div>
+            <div className="who-tx">
               <h1>{nombre}</h1>
               <div className="sub">
-                {plan.carrera} · {nombreUniversidad(plan.def.universidad)}
+                {PLANES.length > 1 ? (
+                  <CarreraSelect
+                    variant="inline"
+                    value={planActivoId()}
+                    onChange={(id) => cambiarAPlan(id, db.profile)}
+                  />
+                ) : (
+                  <>
+                    {plan.carrera} · {nombreUniversidad(plan.def.universidad)}
+                  </>
+                )}
               </div>
             </div>
           </div>
-          <div className="head-right">
-            <span className="spine">
-              Plan {plan.def.codigo} — {plan.def.anio}
-            </span>
-            <div className="title-chips">
-              {titulos.map((t, i) => (
-                <span className={'title-chip' + (t.ok ? ' ok' : '')} key={t.titulo}>
-                  <span className="tc-n">{t.ok ? '✓' : i + 1}</span>
-                  <span className="tc-t">{t.titulo.split(' ')[0]}</span>
-                  <span className="tc-r">{t.ok ? 'listo' : `faltan ${t.falta}`}</span>
-                </span>
-              ))}
-            </div>
-            <OptionsMenu onVerTutorial={() => setTourSeen(false)} />
-          </div>
+          <OptionsMenu onVerTutorial={() => setTourSeen(false)} />
         </header>
 
         <Dashboard db={db} onOpenTree={() => openTree(null)} onOpenNotas={openNotas} />
