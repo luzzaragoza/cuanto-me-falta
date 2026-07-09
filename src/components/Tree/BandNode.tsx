@@ -18,7 +18,11 @@ export function BandNode({ data }: NodeProps) {
   return (
     <div className={'tv-band' + (d.alt ? ' alt' : '')} style={{ width: d.width, height: d.height }}>
       {d.cuatris?.map((c) => (
-        <div key={c.n} className="tv-cuatri" style={{ left: c.x, width: c.w }}>
+        <div
+          key={c.n}
+          className={'tv-cuatri' + (c.n % 2 === 0 ? ' alt' : '')}
+          style={{ left: c.x, width: c.w }}
+        >
           <span className="tv-cuatri-lbl">{c.n}° cuatrimestre</span>
         </div>
       ))}

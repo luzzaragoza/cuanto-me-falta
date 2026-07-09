@@ -730,14 +730,17 @@ body {
   border-top: 1px dashed var(--line);
   box-sizing: border-box;
 }
-/* rótulo de cuatrimestre, arriba de cada grupo (se desliza con el contenido) */
+/* franja de cuatrimestre (se desliza con el contenido). El 2° va tinte tenue para distinguirlo. */
 .tv-cuatri {
   position: absolute;
-  top: 7px;
-  height: 34px;
+  top: 6px;
+  bottom: 10px;
   box-sizing: border-box;
-  border-left: 1px dashed var(--line);
-  padding-left: 9px;
+  border-radius: 12px;
+  padding: 7px 0 0 11px;
+}
+.tv-cuatri.alt {
+  background: rgba(93, 82, 60, 0.05);
 }
 .tv-cuatri-lbl {
   font-family: var(--sans);

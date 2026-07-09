@@ -15,7 +15,6 @@ export function YearRail({ bands }: { bands: Banda[] }) {
           <div className="tv-rail-item" key={b.year} style={{ top }}>
             <b>{b.year}°</b>
             <span>año</span>
-            {b.titulo && <em>{b.titulo.split(' ')[0]}</em>}
           </div>
         )
       })}
