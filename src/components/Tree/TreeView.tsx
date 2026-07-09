@@ -35,7 +35,6 @@ const UNLOCK_SHADES = [
   { background: '#4FB6AC', borderColor: '#2E9E93', color: '#ffffff' },
   { background: '#0E8C8C', borderColor: '#0A6E6E', color: '#ffffff' },
 ]
-const GREY = '#C9C2B5'
 const shadeIdx = (lvl: number | undefined) => Math.min(Math.max((lvl ?? 1) - 1, 0), 3)
 
 export function TreeView({ onClose, focus }: { onClose: () => void; focus: string | null }) {
@@ -123,34 +122,34 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
       zIndex: 1,
     }))
 
-    // Ruteo de aristas: según cuántos años salta el vínculo elegimos por dónde va el
-    // tramo horizontal, para que las flechas no se encimen ni corten filas de nodos.
-    //  · intra-año (salto 0) → 'over': pasa por ARRIBA de la fila (hueco vacío), en carriles.
+    // Aristas: SOLO se dibuja la cadena de la materia seleccionada. En reposo no hay
+    // ninguna → el árbol queda limpio (antes la maraña tenue cargaba mucho lo visual).
+    // El ruteo elige por dónde va el tramo horizontal según cuántos años salta el vínculo,
+    // para que las flechas no se encimen ni corten filas de nodos:
+    //  · intra-año (salto 0) → 'over': por ARRIBA de la fila (hueco vacío), en carriles.
     //  · contigua (salto 1)  → 'mid': a mitad de camino, escalonada por columna de origen.
     //  · salto ≥2 años       → 'nearTarget': horizontal pegado al destino (no cruza la fila del medio).
     const overLane = new Map<number, number>() // carril por fila para las intra-año
     const edgeList: Edge[] = []
-    for (const { cod: target, requiere: source } of plan.correlativas()) {
-      {
+    if (sel) {
+      for (const { cod: target, requiere: source } of plan.correlativas()) {
         let kind: 'need' | 'unlock' | 'none' = 'none'
         let depth = 1
-        if (sel) {
-          const tIsSel = target === sel
-          const sIsSel = source === sel
-          if ((upSet.has(target) || tIsSel) && upSet.has(source)) {
-            kind = 'need'
-            depth = Math.max(upLvl.get(source) ?? 1, upLvl.get(target) ?? 0)
-          } else if ((downSet.has(source) || sIsSel) && downSet.has(target)) {
-            kind = 'unlock'
-            depth = Math.max(downLvl.get(source) ?? 0, downLvl.get(target) ?? 1)
-          }
+        const tIsSel = target === sel
+        const sIsSel = source === sel
+        if ((upSet.has(target) || tIsSel) && upSet.has(source)) {
+          kind = 'need'
+          depth = Math.max(upLvl.get(source) ?? 1, upLvl.get(target) ?? 0)
+        } else if ((downSet.has(source) || sIsSel) && downSet.has(target)) {
+          kind = 'unlock'
+          depth = Math.max(downLvl.get(source) ?? 0, downLvl.get(target) ?? 1)
         }
-        const active = kind !== 'none'
-        const color = active
-          ? kind === 'need'
+        if (kind === 'none') continue // fuera de la cadena → no se dibuja
+
+        const color =
+          kind === 'need'
             ? NEED_SHADES[shadeIdx(depth)].borderColor
             : UNLOCK_SHADES[shadeIdx(depth)].borderColor
-          : GREY
 
         const sy = pos[source]?.y ?? 0
         const ty = pos[target]?.y ?? 0
@@ -182,15 +181,9 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
           targetHandle: 'tt',
           type: 'tree',
           data: { mode, lane },
-          animated: active,
-          style: {
-            stroke: color,
-            strokeWidth: active ? 2.5 : 1,
-            opacity: sel ? (active ? 0.95 : 0.05) : 0.16,
-          },
-          markerEnd: active
-            ? { type: MarkerType.ArrowClosed, color, width: 18, height: 18 }
-            : undefined,
+          animated: true,
+          style: { stroke: color, strokeWidth: 2.5, opacity: 0.95 },
+          markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
         })
       }
     }
@@ -242,11 +235,20 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
           }}
           onPaneClick={() => setSel(null)}
           onInit={(inst: ReactFlowInstance) => {
-            const p = focus ? lay.pos[focus] : undefined
-            if (p) inst.setCenter(p.x + 100, p.y + 26, { zoom: 1.05, duration: 600 })
+            if (focus && lay.pos[focus]) {
+              const p = lay.pos[focus]
+              inst.setCenter(p.x + 100, p.y + 26, { zoom: 1.05, duration: 600 })
+              return
+            }
+            // Sin foco: abrir "cerca" mostrando el arranque del plan (año 1), a un zoom
+            // cómodo según el ancho de pantalla. Evita el fitView lejano con mucho blanco.
+            const vw = window.innerWidth
+            const cols = vw < 560 ? 2.6 : 4.6 // columnas visibles al abrir (mobile vs pc)
+            const zoom = Math.min(1, Math.max(0.55, vw / (cols * NODEX)))
+            const topY = lay.bands[0]?.y ?? 0
+            // 92 = aire arriba (el árbol no pegado al techo ni a la leyenda)
+            inst.setViewport({ x: 64, y: 92 - topY * zoom, zoom })
           }}
-          fitView
-          fitViewOptions={{ padding: 0.18 }}
           translateExtent={translateExtent}
           minZoom={0.45}
           maxZoom={1.2}
