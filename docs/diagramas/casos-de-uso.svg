@@ -1,0 +1,96 @@
+<svg viewBox="0 0 920 680" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="arrowInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#232019"/>
+    </marker>
+    <marker id="arrowSoft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b655b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="920" height="680" fill="#f5f3ee"/>
+
+  <!-- ===== Actor ===== -->
+  <g stroke="#232019" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <circle cx="78" cy="272" r="15" fill="#f5f3ee"/>
+    <line x1="78" y1="287" x2="78" y2="330"/>
+    <line x1="56" y1="300" x2="100" y2="300"/>
+    <line x1="78" y1="330" x2="60" y2="360"/>
+    <line x1="78" y1="330" x2="96" y2="360"/>
+  </g>
+  <text x="78" y="384" text-anchor="middle" font-size="14" font-weight="600" fill="#232019">Estudiante</text>
+
+  <!-- asociación actor → sistema -->
+  <line x1="104" y1="308" x2="168" y2="308" stroke="#232019" stroke-width="1.6"/>
+  <text x="78" y="408" text-anchor="middle" font-size="11" fill="#6b655b">inicia los 14 casos de uso</text>
+
+  <!-- ===== Límite del sistema ===== -->
+  <rect x="170" y="34" width="716" height="612" rx="16" fill="#ffffff" stroke="#232019" stroke-width="2"/>
+  <text x="528" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#232019" font-family="Fraunces, Georgia, serif">¿Cuánto me falta?</text>
+  <line x1="330" y1="78" x2="726" y2="78" stroke="#e4dfd4" stroke-width="1.5"/>
+
+  <!-- ===== Grupo: Progreso académico ===== -->
+  <rect x="196" y="96" width="322" height="266" rx="12" fill="#f5f3ee" stroke="#e4dfd4" stroke-width="1.5"/>
+  <text x="212" y="120" font-size="12.5" font-weight="700" fill="#6b655b" letter-spacing="1">PROGRESO ACADÉMICO</text>
+  <g>
+    <ellipse cx="357" cy="152" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="156.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-01</tspan> Ingresar por primera vez</text>
+    <ellipse cx="357" cy="197" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="201.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-02</tspan> Cambiar de carrera</text>
+    <ellipse cx="357" cy="242" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="246.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-03</tspan> Cambiar estado de materia</text>
+    <ellipse cx="357" cy="287" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="291.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-04</tspan> Cargar nota y ver promedio</text>
+    <ellipse cx="357" cy="332" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="336.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-07</tspan> Renombrar optativa</text>
+  </g>
+
+  <!-- ===== Grupo: Correlatividades ===== -->
+  <rect x="540" y="96" width="322" height="132" rx="12" fill="#ece7fa" stroke="#6b4fcf" stroke-width="1.5"/>
+  <text x="556" y="120" font-size="12.5" font-weight="700" fill="#4a35a0" letter-spacing="1">CORRELATIVIDADES</text>
+  <g>
+    <ellipse cx="701" cy="152" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="701" y="156.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-05</tspan> Consultar correlativas</text>
+    <ellipse cx="701" cy="197" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="701" y="201.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-06</tspan> Explorar árbol de correlativas</text>
+  </g>
+
+  <!-- ===== Grupo: Mis datos ===== -->
+  <rect x="540" y="252" width="322" height="222" rx="12" fill="#f5f3ee" stroke="#e4dfd4" stroke-width="1.5"/>
+  <text x="556" y="276" font-size="12.5" font-weight="700" fill="#6b655b" letter-spacing="1">MIS DATOS</text>
+  <g>
+    <ellipse cx="701" cy="308" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="701" y="312.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-09</tspan> Exportar backup</text>
+    <ellipse cx="701" cy="353" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="701" y="357.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-10</tspan> Importar backup</text>
+    <ellipse cx="701" cy="398" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="701" y="402.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-11</tspan> Exportar resumen en PDF</text>
+    <ellipse cx="701" cy="443" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="701" y="447.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-13</tspan> Reiniciar progreso</text>
+  </g>
+
+  <!-- ===== Grupo: Aplicación ===== -->
+  <rect x="196" y="420" width="322" height="180" rx="12" fill="#f5f3ee" stroke="#e4dfd4" stroke-width="1.5"/>
+  <text x="212" y="444" font-size="12.5" font-weight="700" fill="#6b655b" letter-spacing="1">APLICACIÓN</text>
+  <g>
+    <ellipse cx="357" cy="478" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="482.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-08</tspan> Editar perfil</text>
+    <ellipse cx="357" cy="523" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="527.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-12</tspan> Repetir tutorial</text>
+    <ellipse cx="357" cy="568" rx="146" ry="19" fill="#ffffff" stroke="#232019" stroke-width="1.3"/>
+    <text x="357" y="572.5" text-anchor="middle" font-size="12.5" fill="#232019"><tspan fill="#c39200" font-weight="700">CU-14</tspan> Instalar como PWA</text>
+  </g>
+
+  <!-- ===== Relaciones ===== -->
+  <!-- CU-01 include CU-12 (primera visita ejecuta el tutorial) -->
+  <path d="M 232 171 C 186 260, 186 420, 228 514" fill="none" stroke="#6b655b" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrowSoft)"/>
+  <text x="186" y="336" text-anchor="middle" font-size="11.5" font-style="italic" fill="#6b655b" transform="rotate(-90 186 336)">«include»</text>
+
+  <!-- CU-06 extend CU-03 (el aviso de correlativas ofrece abrir el árbol) -->
+  <path d="M 554 208 C 520 226, 516 226, 506 236" fill="none" stroke="#6b655b" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrowSoft)"/>
+  <text x="529" y="212" text-anchor="middle" font-size="11.5" font-style="italic" fill="#6b655b">«extend»</text>
+  <text x="620" y="240" text-anchor="middle" font-size="10.5" fill="#6b655b">condición: aviso de correlativas (RN-04)</text>
+
+  <!-- ===== Pie ===== -->
+  <text x="528" y="630" text-anchor="middle" font-size="11.5" fill="#6b655b">Versión actual: un único actor. Los datos académicos se mantienen por código (§2.2); el rol Administrador es evolución futura (§4.11).</text>
+</svg>
