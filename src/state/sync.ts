@@ -127,6 +127,16 @@ async function alEntrar(uid: string): Promise<void> {
 
 let remotoPendiente: RemoteData | null = null
 
+// Quien baja su avance de la cuenta ya usó la app: no corresponde re-mostrarle
+// el tutorial en este dispositivo (se pisaba con los modales del sync, además).
+function marcarTourVisto(): void {
+  try {
+    localStorage.setItem('cmf-tour-visto', '1')
+  } catch {
+    /* noop */
+  }
+}
+
 function continuarMerge(remoto: RemoteData | null): void {
   const local = snapshotLocal()
 
@@ -136,10 +146,14 @@ function continuarMerge(remoto: RemoteData | null): void {
       break
     case 'pull':
       escribirLocal(remoto!)
+      marcarTourVisto()
       location.reload() // el singleton del Store se reconstruye con lo bajado
       break
     case 'nada':
-      setEstado('listo')
+      // si la fila remota todavía no tiene el consentimiento (cuentas creadas
+      // antes de este build), lo subimos ya — si no, otro dispositivo lo re-pediría
+      if (!remoto?.consentimiento && leerConsent()) void push()
+      else setEstado('listo')
       break
     case 'conflicto':
       conflicto = {
@@ -174,6 +188,7 @@ export function resolverConflicto(eleccion: 'cuenta' | 'dispositivo'): void {
   conflicto = null
   if (eleccion === 'cuenta') {
     escribirLocal(remoto)
+    marcarTourVisto()
     location.reload()
   } else {
     // decisión explícita del usuario: lo local pisa la cuenta

@@ -2667,6 +2667,18 @@ body {
   font-weight: 700;
   font-size: 16px;
 }
+/* insignia de Google (identifica la cuenta por email, sin repetir la foto de perfil) */
+.acct-gbadge {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 .acct-tx {
   display: flex;
   flex-direction: column;

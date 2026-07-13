@@ -73,7 +73,13 @@ export function App() {
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
 
   // el tour corre una sola vez, ya con un perfil y sin modales abiertos
-  const showTour = modal === 'closed' && db.profile !== undefined && !tourSeen
+  // (tampoco mientras el sync espera una decisión: consentimiento o conflicto)
+  const showTour =
+    modal === 'closed' &&
+    db.profile !== undefined &&
+    !tourSeen &&
+    syncEstado !== 'consentimiento' &&
+    syncEstado !== 'conflicto'
   const closeTour = () => {
     try {
       localStorage.setItem(TOUR_KEY, '1')

@@ -34,19 +34,17 @@ export function AccountBox() {
   if (!authHabilitado) return null
 
   if (session) {
+    // Identificamos la CUENTA por su email con el logo de Google (el nombre y la
+    // foto ya viven en el perfil de la app — no se duplican acá).
     const u = session.user
-    const meta = u.user_metadata as { full_name?: string; name?: string; avatar_url?: string }
-    const nombre = meta.full_name || meta.name || u.email || 'Tu cuenta'
     return (
       <div className="acct acct-in">
         <div className="acct-id">
-          {meta.avatar_url ? (
-            <img className="acct-pic" src={meta.avatar_url} alt="" referrerPolicy="no-referrer" />
-          ) : (
-            <span className="acct-pic acct-pic-ph">{nombre.charAt(0).toUpperCase()}</span>
-          )}
+          <span className="acct-gbadge" aria-hidden="true">
+            <GoogleG />
+          </span>
           <div className="acct-tx">
-            <b>{nombre}</b>
+            <b>{u.email ?? 'Tu cuenta de Google'}</b>
             <small className={sync === 'error' ? 'sync-err' : undefined}>{SYNC_LABEL[sync]}</small>
           </div>
         </div>
