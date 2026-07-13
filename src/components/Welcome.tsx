@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { store } from '../state/store'
 import { cambiarAPlan, planActivoId } from '../state/planActivo'
+import { authHabilitado } from '../lib/supabase'
+import { photoFromUrl } from '../lib/image'
+import { useSession } from '../state/auth'
+import { AccountBox } from './AccountBox'
 import { CarreraSelect } from './CarreraSelect'
 
 // Marca en serif de sistema (Georgia) para que el ¿ del logo sea idéntico al
@@ -49,13 +53,39 @@ const FEATURES = [
   { Icon: AvanceIcon, t: 'Avance', d: 'cuánto te falta para el título' },
 ]
 
-/** Pantalla de bienvenida de primera visita: marca + qué es + tu nombre. */
+/**
+ * Bienvenida de primera visita, en DOS pasos (decisión Luz):
+ *   1. Marca + qué hace la app + decidir cómo entrar: con Google (sincroniza) o
+ *      sin cuenta (los datos quedan en el dispositivo — mismo párrafo que el link).
+ *   2. Elegir la carrera (+ nombre, solo si no entró con Google) → Empezá.
+ * Si entra con Google, el nombre y la foto salen de su cuenta y no se le piden.
+ * Sin backend configurado (dev/CI), el paso 1 muestra un único "Continuar".
+ */
 export function Welcome({ onClose }: { onClose: () => void }) {
+  const session = useSession()
+  const [paso, setPaso] = useState<1 | 2>(1)
   const [name, setName] = useState('')
   const [planId, setPlanId] = useState(planActivoId())
+  const [entrando, setEntrando] = useState(false)
 
-  const start = () => {
-    const perfil = { name: name.trim(), photo: '' }
+  // volvió del redirect de Google ya logueado → directo al paso de carrera
+  useEffect(() => {
+    if (session) setPaso(2)
+  }, [session])
+
+  const metaGoogle = session?.user.user_metadata as
+    | { full_name?: string; name?: string; avatar_url?: string }
+    | undefined
+  const nombreGoogle = (metaGoogle?.full_name || metaGoogle?.name || '').trim()
+
+  const start = async () => {
+    setEntrando(true)
+    const perfil = session
+      ? {
+          name: nombreGoogle,
+          photo: metaGoogle?.avatar_url ? await photoFromUrl(metaGoogle.avatar_url) : '',
+        }
+      : { name: name.trim(), photo: '' }
     if (planId === planActivoId()) {
       store.setPerfil(perfil)
       onClose()
@@ -90,53 +120,104 @@ export function Welcome({ onClose }: { onClose: () => void }) {
         </h1>
         <p className="w-tag">Seguí el avance de tu carrera de un vistazo.</p>
 
-        <div className="w-features">
-          {FEATURES.map(({ Icon, t, d }) => (
-            <div className="w-feat" key={t}>
-              <span className="w-feat-ic">
-                <Icon />
-              </span>
-              <span className="w-feat-tx">
-                <b>{t}</b>
-                <small>{d}</small>
-              </span>
+        {paso === 1 && (
+          <>
+            <div className="w-features">
+              {FEATURES.map(({ Icon, t, d }) => (
+                <div className="w-feat" key={t}>
+                  <span className="w-feat-ic">
+                    <Icon />
+                  </span>
+                  <span className="w-feat-tx">
+                    <b>{t}</b>
+                    <small>{d}</small>
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="w-start">
-          <label>Elegí tu carrera</label>
-          <CarreraSelect value={planId} onChange={setPlanId} />
-        </div>
+            {authHabilitado ? (
+              <div className="w-acct">
+                <AccountBox />
+                <p className="w-nocta">
+                  <button className="lnk w-next" onClick={() => setPaso(2)}>
+                    Seguir sin cuenta
+                  </button>{' '}
+                  — tus datos quedan solo en este dispositivo.
+                </p>
+              </div>
+            ) : (
+              <div className="w-start">
+                <button className="btn w-go w-next" onClick={() => setPaso(2)}>
+                  Continuar →
+                </button>
+                <p className="w-priv">Tus datos quedan solo en este dispositivo.</p>
+              </div>
+            )}
+          </>
+        )}
 
-        <div className="w-start">
-          <label htmlFor="w-name">¿Cómo te llamás?</label>
-          <div className="w-start-row">
-            <input
-              id="w-name"
-              type="text"
-              placeholder="Tu nombre"
-              maxLength={40}
-              value={name}
-              autoFocus
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  start()
-                }
-              }}
-            />
-            <button className="btn" onClick={start}>
-              Empezá →
+        {paso === 2 && (
+          <>
+            {session && (
+              <div className="w-hola">
+                {metaGoogle?.avatar_url && (
+                  <img className="acct-pic" src={metaGoogle.avatar_url} alt="" referrerPolicy="no-referrer" />
+                )}
+                <span>
+                  ¡Hola, <b>{nombreGoogle || session.user.email}</b>! Tu avance va a quedar
+                  sincronizado con tu cuenta.
+                </span>
+              </div>
+            )}
+
+            <div className="w-start">
+              <label>Elegí tu carrera</label>
+              <CarreraSelect value={planId} onChange={setPlanId} />
+            </div>
+
+            {session ? (
+              <div className="w-start">
+                <button className="btn w-go" disabled={entrando} onClick={() => void start()}>
+                  {entrando ? 'Entrando…' : 'Empezá →'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="w-start">
+                  <label htmlFor="w-name">¿Cómo te llamás?</label>
+                  <div className="w-start-row">
+                    <input
+                      id="w-name"
+                      type="text"
+                      placeholder="Tu nombre"
+                      maxLength={40}
+                      value={name}
+                      autoFocus
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          void start()
+                        }
+                      }}
+                    />
+                    <button className="btn" disabled={entrando} onClick={() => void start()}>
+                      Empezá →
+                    </button>
+                  </div>
+                </div>
+                <button className="lnk w-skip" onClick={skip}>
+                  Entrar sin nombre
+                </button>
+              </>
+            )}
+
+            <button className="lnk w-back" onClick={() => setPaso(1)}>
+              ← Volver
             </button>
-          </div>
-        </div>
-
-        <button className="lnk w-skip" onClick={skip}>
-          Entrar sin nombre
-        </button>
-        <p className="w-priv">Tus datos quedan solo en este dispositivo.</p>
+          </>
+        )}
       </div>
     </div>
   )

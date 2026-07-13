@@ -29,3 +29,21 @@ export function resizePhoto(file: File, size = 256): Promise<string> {
     img.src = url
   })
 }
+
+/**
+ * Baja una foto remota (p.ej. el avatar de Google al iniciar sesión) y la pasa por
+ * el mismo resize a 256px, para guardarla en el perfil local como data URL.
+ * Devuelve '' si falla (CORS, red, etc.) — la foto es opcional, nunca rompe el flujo.
+ */
+export async function photoFromUrl(url: string): Promise<string> {
+  try {
+    // los avatares de Google vienen como `...=s96-c`; pedimos más resolución
+    const mejor = url.replace(/=s\d+-c$/, '=s256-c')
+    const res = await fetch(mejor)
+    if (!res.ok) return ''
+    const blob = await res.blob()
+    return await resizePhoto(new File([blob], 'avatar', { type: blob.type }))
+  } catch {
+    return ''
+  }
+}

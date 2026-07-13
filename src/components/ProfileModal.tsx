@@ -3,6 +3,7 @@ import type { Perfil } from '../types'
 import { iniciales } from '../domain/selectors'
 import { resizePhoto } from '../lib/image'
 import { store } from '../state/store'
+import { AccountBox } from './AccountBox'
 
 interface Props {
   welcome: boolean
@@ -102,6 +103,13 @@ export function ProfileModal({ welcome, perfil, onClose }: Props) {
             }
           }}
         />
+
+        {!welcome && (
+          <>
+            <div className="m-sep" />
+            <AccountBox />
+          </>
+        )}
 
         <div className="m-actions">
           <button className="lnk" onClick={skip}>

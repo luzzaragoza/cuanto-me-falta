@@ -1108,6 +1108,55 @@ body {
   font-size: 11.5px;
   margin: 2px 0 0;
 }
+/* bloque de cuenta dentro de la bienvenida (Google + divisor "o") */
+.w-acct {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.w-acct .acct {
+  align-items: stretch;
+}
+.w-acct .gbtn {
+  align-self: stretch;
+}
+.w-acct .acct-hint {
+  text-align: center;
+}
+.w-go {
+  width: 100%;
+}
+/* "Seguir sin cuenta — tus datos quedan en este dispositivo" (un solo párrafo) */
+.w-nocta {
+  color: var(--soft);
+  font-size: 12.5px;
+  margin: 2px 0 0;
+  text-align: center;
+}
+.w-nocta .lnk {
+  font-size: 12.5px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* saludo al volver logueada de Google (paso 2) */
+.w-hola {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--gold-soft, rgba(195, 146, 0, 0.08));
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+}
+.w-back {
+  margin-top: 12px;
+  font-size: 12px;
+}
 /* ----- selector de carrera (dropdown custom) ----- */
 .cselect {
   position: relative;
@@ -2547,4 +2596,124 @@ body {
   .drawer-wrap.closing .drawer {
     animation: none;
   }
+}
+
+/* ----- cuenta (login/logout con Google) ----- */
+.m-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 20px 0 16px;
+}
+.acct {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* botón de Google: fondo blanco, marco tenue, la G a la izquierda */
+.gbtn {
+  gap: 10px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  align-self: flex-start;
+}
+.gbtn:hover {
+  opacity: 1;
+  background: #faf9f6;
+}
+.gbtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.acct-hint {
+  font-size: 12px;
+  color: var(--soft);
+  margin: 0;
+}
+.acct-in {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.acct-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.acct-pic {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.acct-pic-ph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold);
+  color: #fff;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 16px;
+}
+.acct-tx {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.acct-tx b {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acct-tx small {
+  font-size: 11.5px;
+  color: var(--soft);
+}
+
+/* ----- aviso de sincronización (usuarios existentes) ----- */
+.sync-aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--gold-soft, rgba(195, 146, 0, 0.08));
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.sa-tx {
+  font-size: 13.5px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 200px;
+}
+.sa-acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sa-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.sa-x {
+  background: none;
+  border: 0;
+  color: var(--soft);
+  font-size: 14px;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.sa-x:hover {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.05);
 }

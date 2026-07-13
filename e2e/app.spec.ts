@@ -107,6 +107,10 @@ test('la bienvenida de primera visita pide el nombre y entra a la app', async ({
   await expect(welcome).toBeVisible()
   await expect(welcome.getByRole('heading')).toContainText('Cuánto me falta')
 
+  // paso 1 (intro) → paso 2: el botón .w-next es "Continuar" (sin backend) o
+  // "Seguir sin cuenta" (con backend configurado en .env.local)
+  await welcome.locator('.w-next').click()
+
   await page.getByPlaceholder('Tu nombre').fill('Luz')
   await page.getByRole('button', { name: /Empezá/ }).click()
 
@@ -125,6 +129,7 @@ test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => 
   })
   await page.reload()
   await expect(page.locator('.welcome')).toBeVisible()
+  await page.locator('.welcome .w-next').click() // intro → carrera/nombre
 
   await page.locator('.welcome .cselect-btn').click()
   await page.locator('.welcome .cselect-opt').filter({ hasText: 'Gestión de Tecnología' }).click()
@@ -162,7 +167,8 @@ test('el tutorial (coach marks) corre en la primera visita y no vuelve', async (
   })
   await page.reload()
 
-  // bienvenida → entrar
+  // bienvenida → entrar (paso 1: intro → paso 2: nombre)
+  await page.locator('.welcome .w-next').click()
   await page.getByPlaceholder('Tu nombre').fill('Luz')
   await page.getByRole('button', { name: /Empezá/ }).click()
 

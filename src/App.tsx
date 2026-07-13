@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { useDB } from './state/store'
+import { useEffect, useRef, useState } from 'react'
+import { store, useDB } from './state/store'
+import { useSession } from './state/auth'
+import { photoFromUrl } from './lib/image'
 import { plan } from './domain/Plan'
 import { PLANES, nombreUniversidad } from './data/planes'
 import { cambiarAPlan, planActivoId } from './state/planActivo'
@@ -12,6 +14,7 @@ import { PlanView } from './components/PlanView'
 import { PrintSummary } from './components/PrintSummary'
 import { ProfileModal } from './components/ProfileModal'
 import { StatePopover } from './components/StatePopover'
+import { SyncAviso } from './components/SyncAviso'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
 import { TreeView } from './components/Tree/TreeView'
@@ -36,6 +39,27 @@ type Modal = 'closed' | 'welcome' | 'edit'
 
 export function App() {
   const db = useDB()
+  const session = useSession()
+
+  // Usuario existente que inicia sesión (desde el perfil o el aviso): si su perfil
+  // local no tiene foto, adoptamos la de Google (y el nombre, si tampoco tenía).
+  // Un intento por sesión — si falla el fetch no se reintenta en cada render.
+  const fotoIntentada = useRef<string | null>(null)
+  useEffect(() => {
+    const meta = session?.user.user_metadata as
+      | { full_name?: string; name?: string; avatar_url?: string }
+      | undefined
+    const perfil = db.profile
+    if (!session || !perfil || perfil.photo || !meta?.avatar_url) return
+    if (fotoIntentada.current === session.user.id) return
+    fotoIntentada.current = session.user.id
+    void photoFromUrl(meta.avatar_url).then((photo) => {
+      if (!photo) return
+      const name = perfil.name || (meta.full_name || meta.name || '').trim()
+      store.setPerfil({ name, photo })
+    })
+  }, [session, db.profile])
+
   const [pop, setPop] = useState<PopState | null>(null)
   const [tree, setTree] = useState<{ focus: string | null } | null>(null)
   const [notas, setNotas] = useState(false)
@@ -93,6 +117,8 @@ export function App() {
           </div>
           <OptionsMenu onVerTutorial={() => setTourSeen(false)} />
         </header>
+
+        {modal === 'closed' && <SyncAviso />}
 
         <Dashboard db={db} onOpenTree={() => openTree(null)} onOpenNotas={openNotas} />
         <PlanView
