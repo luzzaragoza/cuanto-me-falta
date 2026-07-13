@@ -2,12 +2,18 @@ import type { PlanDef, Universidad } from '../model'
 import { ingInformatica } from './ing-informatica'
 import { gestionTecnologia } from './gestion-tecnologia'
 import { desarrolloSoftware } from './desarrollo-software'
+import { iaCienciaDatos } from './ia-ciencia-datos'
 
 // Registro de datos académicos (hoy en TS; mañana lo carga el rol admin en el backend).
 
 export const UNIVERSIDADES: Universidad[] = [{ id: 'uade', nombre: 'UADE' }]
 
-export const PLANES: PlanDef[] = [ingInformatica, gestionTecnologia, desarrolloSoftware]
+export const PLANES: PlanDef[] = [
+  ingInformatica,
+  gestionTecnologia,
+  desarrolloSoftware,
+  iaCienciaDatos,
+]
 
 /** Plan que se muestra por defecto (y clave de storage legacy — no cambiar el id). */
 export const PLAN_POR_DEFECTO = ingInformatica.id

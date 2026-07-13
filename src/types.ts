@@ -9,13 +9,14 @@ export interface MateriaDef {
   nom: string
 }
 
-/** Un cuatrimestre dentro de un año. */
+/** Un cuatrimestre dentro de un año. Puede otorgar un título si el hito cae a mitad de año. */
 export interface CuatriDef {
   n: number
+  titulo?: string
   mats: MateriaDef[]
 }
 
-/** Un año del plan. Algunos otorgan un título intermedio. */
+/** Un año del plan. Algunos otorgan un título al completarse. */
 export interface AnioDef {
   year: number
   titulo?: string

@@ -232,16 +232,43 @@ body {
   font-weight: 700;
   color: var(--ink);
 }
-.yhead .badge {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--soft);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 10px;
-  background: var(--card);
+/* banda de hito: el título que se obtiene al completar las materias de arriba */
+.titulo-hito {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 14px;
+  background: #faf3df;
+  border: 1px solid rgba(195, 146, 0, 0.4);
+  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+}
+.titulo-hito svg {
+  width: 19px;
+  height: 19px;
+  fill: var(--gold);
+  flex: none;
+}
+.titulo-hito .th-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.titulo-hito .th-k {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--gold);
+}
+.titulo-hito .th-n {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  color: var(--ink);
 }
 .cuatris {
   display: grid;

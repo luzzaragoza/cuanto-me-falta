@@ -256,7 +256,7 @@ Desde el navegador, el estudiante usa "Agregar a pantalla de inicio" (o el aviso
 
 1. La aplicación redirige a Google; el estudiante autoriza y vuelve con la sesión iniciada.
 2. **Primera vez con esa cuenta:** la aplicación muestra la pantalla de consentimiento —qué datos se van a guardar y los enlaces a los Términos y la Política de Privacidad— y el estudiante acepta. *(El consentimiento se registra y viaja con sus datos: no se vuelve a pedir en otros dispositivos.)*
-3. La aplicación compara el avance local con el de la cuenta y resuelve: si la cuenta está vacía, **sube** lo local; si el dispositivo está vacío, **baja** lo de la cuenta; si son iguales, no hace nada.
+3. La aplicación compara el avance local con el de la cuenta y resuelve: si la cuenta está vacía, **sube** lo local; si el dispositivo está vacío, **baja** lo de la cuenta; si son iguales, no hace nada. *(Si quedaron cambios locales sin subir —el estudiante editó o borró y recargó antes de que se guardara— lo local es más nuevo y **prevalece**: por ejemplo, un "Reiniciar todo" seguido de recargar no restaura el avance desde la cuenta.)*
 4. Desde entonces, cada cambio se sube automáticamente; el estado ("sincronizando", "tu avance se sincroniza") es visible junto a la cuenta en el perfil.
 
 **Flujos alternativos**

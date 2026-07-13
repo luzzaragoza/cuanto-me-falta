@@ -96,7 +96,7 @@ Estas historias son la **vista ágil del mismo alcance** definido en los requeri
 **Criterios de aceptación**
 
 1. **Dado** mi progreso cargado, **cuando** abro la aplicación, **entonces** veo el porcentaje de avance y los conteos por estado actualizados.
-2. **Dado** los títulos del plan, **cuando** miro los hitos, **entonces** cada uno indica cuántas materias me faltan aprobar hasta su año correspondiente (por ejemplo, Analista: hasta 3.º).
+2. **Dado** los títulos del plan, **cuando** miro los hitos, **entonces** cada uno indica cuántas materias me faltan aprobar hasta su corte (año o, si el hito cae a mitad de año, cuatrimestre; por ejemplo, Analista: hasta 3.º).
 3. **Dado** que apruebo una materia, **cuando** se guarda el cambio, **entonces** el porcentaje y los hitos lo reflejan de inmediato.
 4. **Dado** el avance por año, **cuando** lo consulto, **entonces** veo cuántas materias de cada año están aprobadas.
 

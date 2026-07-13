@@ -35,6 +35,7 @@ export interface Correlativa {
 export interface TituloPlan {
   nombre: string // 'Analista en Informática'
   hastaAnio: number // se consigue al aprobar todo hasta este año inclusive
+  hastaCuatri?: number // si el hito cae a mitad de año: hasta este cuatrimestre inclusive (sin esto: el año completo)
 }
 
 /** Un plan de estudios (una versión concreta de una carrera). Tabla `plan`. */

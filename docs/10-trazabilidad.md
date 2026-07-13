@@ -47,10 +47,10 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-06 | Definición de «disponible» | `selectors.disponibles` | Unit `selectors` |
 | RN-07 | Promedio solo con aprobadas con nota | `selectors.promedio` | Unit `selectors` · E2E 7 |
 | RN-08 | Nota entera entre 1 y 10 | `Store.setNota` (ajuste al rango) | Unit `Store` |
-| RN-09 | Títulos como hitos por año | `selectors.hitos` (`hastaAnio`) | Unit `selectors` · Integridad (títulos → años válidos) |
+| RN-09 | Títulos como hitos por año (con corte opcional por cuatrimestre) | `selectors.hitos` + `Plan.materiasHasta` (`hastaAnio`/`hastaCuatri`) | Unit `selectors` y `Plan` · Integridad (títulos → años/cuatrimestres válidos) |
 | RN-10 | Optativa renombrable, hasta 48 caracteres | `Store.setOptName` | Unit `Store` |
 | RN-11 | Progreso independiente por plan | Claves de storage por plan (`src/state`) | Unit `Store` (persistencia) · Manual |
-| RN-12 | Server solo con cuenta + consentimiento; conflicto lo decide el usuario | `lib/sync` (decidirMerge, consentimiento) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
+| RN-12 | Server solo con cuenta + consentimiento; conflicto lo decide el usuario; cambios sin subir prevalecen | `lib/sync` (decidirMerge, consentimiento, marca dirty) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación
 

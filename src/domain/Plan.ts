@@ -6,11 +6,13 @@ import { planActivoId } from '../state/planActivo'
 /** Materia del plan junto con dónde vive (año/cuatrimestre). */
 export interface MateriaUbicada extends MateriaDef {
   year: number
+  cuatri: number // número de cuatrimestre dentro del año (1 | 2)
   yi: number // índice de año (0-based)
   ci: number // índice de cuatrimestre (0-based)
 }
 
-/** Agrupa las materias planas del PlanDef en la vista año → cuatrimestre → materias. */
+/** Agrupa las materias planas del PlanDef en la vista año → cuatrimestre → materias.
+ *  Los títulos cuelgan del año que cierran, o del cuatrimestre si el hito cae a mitad de año. */
 function buildAnios(def: PlanDef): AnioDef[] {
   const porAnio = new Map<number, Map<number, MateriaDef[]>>()
   for (const m of def.materias) {
@@ -19,16 +21,25 @@ function buildAnios(def: PlanDef): AnioDef[] {
     if (!cuatris.has(m.cuatri)) cuatris.set(m.cuatri, [])
     cuatris.get(m.cuatri)!.push({ cod: m.cod, nom: m.nom })
   }
-  const tituloDe = (year: number) => def.titulos.find((t) => t.hastaAnio === year)?.nombre
   return [...porAnio.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([year, cuatriMap]) => ({
-      year,
-      titulo: tituloDe(year),
-      cuatris: [...cuatriMap.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([n, mats]) => ({ n, mats })),
-    }))
+    .map(([year, cuatriMap]) => {
+      const ns = [...cuatriMap.keys()]
+      const ultimo = Math.max(...ns)
+      const tituloDe = (cuatri?: number) =>
+        def.titulos.find((t) => {
+          if (t.hastaAnio !== year) return false
+          const corte = t.hastaCuatri != null && t.hastaCuatri < ultimo ? t.hastaCuatri : undefined
+          return corte === cuatri
+        })?.nombre
+      return {
+        year,
+        titulo: tituloDe(undefined),
+        cuatris: ns
+          .sort((a, b) => a - b)
+          .map((n) => ({ n, titulo: tituloDe(n), mats: cuatriMap.get(n)! })),
+      }
+    })
 }
 
 /** Lista de correlativas (aristas) → mapa `materia → [previas]`. */
@@ -66,10 +77,19 @@ export class Plan {
     const out: MateriaUbicada[] = []
     this.anios.forEach((a, yi) =>
       a.cuatris.forEach((q, ci) =>
-        q.mats.forEach((m) => out.push({ ...m, year: a.year, yi, ci })),
+        q.mats.forEach((m) => out.push({ ...m, year: a.year, cuatri: q.n, yi, ci })),
       ),
     )
     return out
+  }
+
+  /** Materias que exige un título: todas hasta su año/cuatrimestre inclusive. */
+  materiasHasta(t: TituloPlan): MateriaUbicada[] {
+    return this.materias().filter(
+      (m) =>
+        m.year < t.hastaAnio ||
+        (m.year === t.hastaAnio && m.cuatri <= (t.hastaCuatri ?? Infinity)),
+    )
   }
 
   /** Nombre base de una materia por código (sin nombres custom de optativas). */

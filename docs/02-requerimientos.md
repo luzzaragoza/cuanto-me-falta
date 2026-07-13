@@ -72,10 +72,10 @@ Las consecuencias observadas que motivaron el proyecto:
 | RN-06 | Una materia está **disponible para cursar** si está `pendiente`, no es especial ni personalizada, y todas sus correlativas directas están al menos en curso. Las materias sin correlativas son cursables desde el inicio. |
 | RN-07 | El **promedio** se calcula únicamente sobre materias `aprobadas` con nota cargada (promedio sin aplazos). Si no hay ninguna, no se muestra valor. |
 | RN-08 | Las **notas** son enteros entre 1 y 10; cualquier valor fuera de rango se ajusta al límite más cercano. |
-| RN-09 | Cada plan define sus **títulos** como hitos por año: un título se alcanza al aprobar **todas** las materias hasta su año correspondiente inclusive (por ejemplo, en Ingeniería en Informática: *Analista* hasta 3.º año, *Ingeniero* hasta 5.º). |
+| RN-09 | Cada plan define sus **títulos** como hitos: un título se alcanza al aprobar **todas** las materias hasta su año correspondiente inclusive (por ejemplo, en Ingeniería en Informática: *Analista* hasta 3.º año, *Ingeniero* hasta 5.º). Si el hito cae a mitad de año, el título indica también el **cuatrimestre** de corte (por ejemplo, en la Lic. en IA: *Técnico* hasta el 1.º cuatrimestre de 3.º). |
 | RN-10 | El nombre de una optativa lo define el usuario (RF-12); si no la renombró, se muestra el nombre genérico del plan. |
 | RN-11 | El progreso es **independiente por plan**: cambiar de carrera no mezcla ni borra datos de la otra. |
-| RN-12 | El progreso solo se almacena en el servidor **con sesión iniciada y consentimiento aceptado** (una vez por cuenta; el registro del consentimiento viaja con los datos). Sin cuenta, todo queda en el dispositivo. En caso de conflicto entre el avance local y el de la cuenta, **decide el usuario**. |
+| RN-12 | El progreso solo se almacena en el servidor **con sesión iniciada y consentimiento aceptado** (una vez por cuenta; el registro del consentimiento viaja con los datos). Sin cuenta, todo queda en el dispositivo. En caso de conflicto entre el avance local y el de la cuenta, **decide el usuario**. Si quedaron **cambios locales sin subir** (el usuario editó o borró y recargó antes de que se guardara en la cuenta), lo local es más nuevo y **prevalece**: un borrado reciente no se restaura desde la cuenta. |
 
 ## 2.6 Datos académicos precargados
 
@@ -86,5 +86,6 @@ Los planes se cargan curados en el repositorio y están protegidos por tests de 
 | Ingeniería en Informática (UADE) | 1621 | 52 | 35 | 3 | 2 | Analista en Informática (3.º) · Ingeniero en Informática (5.º) |
 | Lic. en Gestión de Tecnología de la Información (UADE) | 13121 | 41 | 20 | 4 | 0 | Licenciado en Gestión de TI (4.º) |
 | Tecnicatura Universitaria en Desarrollo de Software (UADE) | 1121 | 20 | 11 | 2 | 0 | Técnico Universitario en Desarrollo de Software (3.º) |
+| Lic. en Inteligencia Artificial y Ciencia de Datos (UADE) | 107425 | 39 | 23 | 3 | 0 | Técnico Universitario en Ciencia de Datos (3.º, 1.er cuatrimestre) · Licenciado en IA y Ciencia de Datos (4.º) |
 
-En total: **113 materias** y **66 relaciones de correlatividad** verificadas.
+En total: **152 materias** y **89 relaciones de correlatividad** verificadas.

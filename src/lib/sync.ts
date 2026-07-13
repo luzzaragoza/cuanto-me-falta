@@ -45,6 +45,37 @@ export function guardarConsent(): Consentimiento {
   return c
 }
 
+// ---- "hay cambios locales sin subir" ----
+// Marca que sobrevive al refresh: si el usuario borra/edita y recarga ANTES de que
+// el push con debounce llegue al server, el merge inicial NO debe resucitar lo
+// borrado bajándolo de la cuenta — lo local es más nuevo. Guarda el user id para
+// que un flag de una cuenta no le gane datos a otra en el mismo navegador.
+const DIRTY_KEY = 'cmf-sync-dirty'
+
+export function leerDirty(): string | null {
+  try {
+    return localStorage.getItem(DIRTY_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function marcarDirty(uid: string): void {
+  try {
+    localStorage.setItem(DIRTY_KEY, uid)
+  } catch {
+    /* modo incógnito, etc. */
+  }
+}
+
+export function limpiarDirty(): void {
+  try {
+    localStorage.removeItem(DIRTY_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
 const emptyDB = (): DB => ({ states: {}, notas: {}, optNames: {}, custom: [] })
 
 function leerDB(key: string): DB | null {
@@ -70,11 +101,13 @@ export function contarMarcadas(db: DB): number {
   return conEstado + Object.keys(db.notas).length
 }
 
-/** ¿Hay progreso real (más allá del perfil) en algún plan? */
+/** ¿Hay progreso real (más allá del perfil) en algún plan? Las materias custom
+ *  también cuentan: las cargó el usuario a mano y pisarlas sería perder trabajo. */
 export function hayProgreso(data: RemoteData | null): boolean {
   if (!data) return false
   return Object.values(data.planes).some(
-    (db) => contarMarcadas(db) > 0 || Object.keys(db.optNames).length > 0,
+    (db) =>
+      contarMarcadas(db) > 0 || Object.keys(db.optNames).length > 0 || db.custom.length > 0,
   )
 }
 
@@ -101,24 +134,32 @@ export function snapshotLocal(): RemoteData {
  * - 'pull'      → lo local está vacío y la cuenta tiene progreso: baja lo remoto.
  * - 'nada'      → son iguales: no hay nada que hacer.
  * - 'conflicto' → ambos tienen progreso distinto: decide el usuario (modal).
+ *
+ * `dirtyLocal` = quedaron cambios locales sin subir (el usuario editó/borró y el
+ * push no llegó antes del refresh). En ese caso lo local es más nuevo y manda:
+ * un borrado reciente NO se resucita bajando la cuenta, y lo pendiente se flushea.
+ * La única decisión que no cambia es 'conflicto' (progreso distinto en ambos
+ * lados): ahí se sigue preguntando.
  */
 export function decidirMerge(
   remoto: RemoteData | null,
   local: RemoteData,
+  dirtyLocal = false,
 ): 'push' | 'pull' | 'nada' | 'conflicto' {
   if (!hayProgreso(remoto)) return 'push'
-  if (!hayProgreso(local)) return 'pull'
-  if (igualProgreso(remoto!, local)) return 'nada'
+  if (!hayProgreso(local)) return dirtyLocal ? 'push' : 'pull'
+  if (igualProgreso(remoto!, local)) return dirtyLocal ? 'push' : 'nada'
   return 'conflicto'
 }
 
-/** Compara solo el progreso (estados/notas/optNames por plan), no el perfil. */
+/** Compara solo el progreso (estados/notas/optNames/custom por plan), no el perfil. */
 function igualProgreso(a: RemoteData, b: RemoteData): boolean {
   const ids = new Set([...Object.keys(a.planes), ...Object.keys(b.planes)])
   for (const id of ids) {
     const da = a.planes[id] ?? emptyDB()
     const db = b.planes[id] ?? emptyDB()
-    const core = (d: DB) => JSON.stringify({ s: d.states, n: d.notas, o: d.optNames })
+    const core = (d: DB) =>
+      JSON.stringify({ s: d.states, n: d.notas, o: d.optNames, c: d.custom })
     if (core(da) !== core(db)) return false
   }
   return true

@@ -11,7 +11,7 @@
 
 **¿Cuánto me falta?** es una aplicación web progresiva (PWA) que permite a estudiantes universitarios registrar el estado de cada materia de su carrera y visualizar, en tiempo real, su avance académico: qué aprobaron, qué están cursando, qué materias tienen disponibles según las correlatividades y cuánto les falta para cada título.
 
-La aplicación nació como herramienta personal para la carrera de Ingeniería en Informática de UADE (Plan 1621) y hoy cubre tres carreras de esa universidad, con un modelo de datos pensado para escalar a más planes y universidades. El progreso del usuario se guarda **en su dispositivo** y, si el usuario lo elige, se **sincroniza entre sus dispositivos con su cuenta de Google** — la cuenta es opcional: sin ella, la app funciona completa y nada sale del navegador.
+La aplicación nació como herramienta personal para la carrera de Ingeniería en Informática de UADE (Plan 1621) y hoy cubre cuatro carreras de esa universidad, con un modelo de datos pensado para escalar a más planes y universidades. El progreso del usuario se guarda **en su dispositivo** y, si el usuario lo elige, se **sincroniza entre sus dispositivos con su cuenta de Google** — la cuenta es opcional: sin ella, la app funciona completa y nada sale del navegador.
 
 ![Pantalla principal de la aplicación](captura-app.png)
 
@@ -72,7 +72,7 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 
 **Incluye (versión actual)**
 
-- Tres planes de estudio de UADE precargados: Ingeniería en Informática (Plan 1621), Licenciatura en Gestión de Tecnología de la Información y Tecnicatura Universitaria en Desarrollo de Software, con progreso independiente por carrera.
+- Cuatro planes de estudio de UADE precargados: Ingeniería en Informática (Plan 1621), Licenciatura en Gestión de Tecnología de la Información, Tecnicatura Universitaria en Desarrollo de Software y Licenciatura en Inteligencia Artificial y Ciencia de Datos (Plan 107425), con progreso independiente por carrera.
 - Gestión de estados y notas por materia, promedio, avance por año e hitos de título.
 - Consulta de correlativas por panel y por árbol interactivo.
 - Perfil local (nombre y foto), tutorial de primera visita, resumen imprimible/exportable a PDF y backup en JSON (exportar e importar).
@@ -88,7 +88,7 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 
 ## 1.9 Público objetivo
 
-- **Primario:** estudiantes de UADE de las tres carreras cargadas, en cualquier punto de la cursada.
+- **Primario:** estudiantes de UADE de las cuatro carreras cargadas, en cualquier punto de la cursada.
 - **Secundario:** ingresantes que quieren entender la estructura de la carrera y planificar sus primeros cuatrimestres.
 - **Futuro:** estudiantes de otras carreras y universidades, a medida que se incorporen nuevos planes.
 

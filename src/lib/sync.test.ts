@@ -10,6 +10,9 @@ import {
   guardarConsent,
   hayProgreso,
   leerConsent,
+  leerDirty,
+  limpiarDirty,
+  marcarDirty,
   snapshotLocal,
   totalMarcadas,
   type RemoteData,
@@ -100,6 +103,45 @@ describe('sync · decidirMerge', () => {
       p: db({ states: { A: 'aprobada' }, profile: { name: 'Luz', photo: 'x' } }),
     })
     expect(decidirMerge(conProgreso, conPerfil)).toBe('nada')
+  })
+
+  it('las materias custom cuentan como progreso y como diferencia', () => {
+    const conCustom = remote({ p: db({ custom: [{ cod: 'CUST1', nom: 'Extra', y: 1, c: 1 }] }) })
+    expect(hayProgreso(conCustom)).toBe(true)
+    // solo-custom local vs cuenta vacía → sube; distinto custom en ambos lados → pregunta
+    expect(decidirMerge(vacio, conCustom)).toBe('push')
+    expect(decidirMerge(conProgreso, conCustom)).toBe('conflicto')
+  })
+})
+
+describe('sync · cambios sin subir (dirty)', () => {
+  const conProgreso = remote({ p: db({ states: { A: 'aprobada' } }) })
+  const vacio = remote({ p: db() })
+
+  it('la marca va y viene por localStorage', () => {
+    expect(leerDirty()).toBeNull()
+    marcarDirty('user-1')
+    expect(leerDirty()).toBe('user-1')
+    limpiarDirty()
+    expect(leerDirty()).toBeNull()
+  })
+
+  it('con cambios sin subir, un borrado local NO se resucita con pull: gana lo local', () => {
+    // el caso "Reiniciar todo + F5 antes del push": local vacío pero más nuevo
+    expect(decidirMerge(conProgreso, vacio, true)).toBe('push')
+    expect(decidirMerge(conProgreso, vacio, false)).toBe('pull')
+  })
+
+  it('con cambios sin subir e igual progreso, flushea lo pendiente (push)', () => {
+    // ej.: cambió solo el perfil y refrescó antes del debounce
+    const igual = remote({ p: db({ states: { A: 'aprobada' } }) })
+    expect(decidirMerge(conProgreso, igual, true)).toBe('push')
+    expect(decidirMerge(conProgreso, igual, false)).toBe('nada')
+  })
+
+  it('el conflicto sigue preguntando aunque haya cambios sin subir', () => {
+    const otro = remote({ p: db({ states: { A: 'cursando' } }) })
+    expect(decidirMerge(conProgreso, otro, true)).toBe('conflicto')
   })
 })
 

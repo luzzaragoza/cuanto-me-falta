@@ -76,9 +76,14 @@ for (const plan of PLANES) {
       expect(ciclos).toEqual([])
     })
 
-    it('los títulos apuntan a años que existen en el plan', () => {
+    it('los títulos apuntan a años y cuatrimestres que existen en el plan', () => {
       const anios = new Set(plan.materias.map((m) => m.anio))
-      const rotos = plan.titulos.filter((t) => !anios.has(t.hastaAnio))
+      const cuatris = new Set(plan.materias.map((m) => `${m.anio}.${m.cuatri}`))
+      const rotos = plan.titulos.filter(
+        (t) =>
+          !anios.has(t.hastaAnio) ||
+          (t.hastaCuatri != null && !cuatris.has(`${t.hastaAnio}.${t.hastaCuatri}`)),
+      )
       expect(rotos).toEqual([])
     })
 

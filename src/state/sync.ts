@@ -5,7 +5,10 @@
 // Reglas:
 // - Al entrar: se trae lo remoto y se decide (lib/sync.decidirMerge). Si ambos
 //   lados tienen progreso distinto → 'conflicto' y decide el usuario (modal).
-// - Cada cambio local (Store.commit → notify) programa un push con debounce.
+// - Cada cambio local (Store.commit → notify) programa un push con debounce, y
+//   deja la marca `cmf-sync-dirty` (por user id) hasta que el push aterriza. Si
+//   el usuario refresca en esa ventana, el merge sabe que lo local es más nuevo
+//   y NO lo pisa con un pull (ej.: "Reiniciar todo" + F5 queda borrado).
 // - Sin backend o sin sesión: todo es no-op y la app queda 100% local.
 
 import { useSyncExternalStore } from 'react'
@@ -17,6 +20,9 @@ import {
   escribirLocal,
   guardarConsent,
   leerConsent,
+  leerDirty,
+  limpiarDirty,
+  marcarDirty,
   snapshotLocal,
   totalMarcadas,
   type RemoteData,
@@ -81,6 +87,9 @@ async function push(): Promise<void> {
     console.warn('[sync] push falló:', error.message)
     setEstado('error')
   } else {
+    // llegó al server: ya no hay cambios pendientes… salvo que hayan editado
+    // DURANTE el vuelo (quedó otro push programado) — ahí la marca sigue viva
+    if (!timer) limpiarDirty()
     setEstado('listo')
   }
 }
@@ -88,6 +97,9 @@ async function push(): Promise<void> {
 function programarPush(): void {
   // sin sesión, sin consentimiento aceptado, o con conflicto sin resolver: no se sube nada
   if (!userId || estado === 'conflicto' || estado === 'consentimiento') return
+  // 'off' = el merge inicial todavía no corrió (o se rechazó el consentimiento):
+  // no es un cambio "por encima de la cuenta", no marca nada
+  if (estado !== 'off') marcarDirty(userId)
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     timer = null
@@ -99,6 +111,10 @@ function programarPush(): void {
 
 async function alEntrar(uid: string): Promise<void> {
   if (!supabase) return
+  // una marca de cambios pendientes de OTRA cuenta no vale acá (navegador compartido)
+  const flag = leerDirty()
+  if (flag && flag !== uid) limpiarDirty()
+
   const { data, error } = await supabase
     .from('progreso')
     .select('data')
@@ -139,12 +155,16 @@ function marcarTourVisto(): void {
 
 function continuarMerge(remoto: RemoteData | null): void {
   const local = snapshotLocal()
+  // quedaron cambios de ESTE usuario sin subir (editó/borró y refrescó antes del
+  // push con debounce): lo local es más nuevo, no se baja nada arriba de eso
+  const dirty = leerDirty() === userId
 
-  switch (decidirMerge(remoto, local)) {
+  switch (decidirMerge(remoto, local, dirty)) {
     case 'push':
       void push()
       break
     case 'pull':
+      limpiarDirty() // lo local queda reconciliado con la cuenta
       escribirLocal(remoto!)
       marcarTourVisto()
       location.reload() // el singleton del Store se reconstruye con lo bajado
@@ -187,6 +207,7 @@ export function resolverConflicto(eleccion: 'cuenta' | 'dispositivo'): void {
   const remoto = conflicto.remoto
   conflicto = null
   if (eleccion === 'cuenta') {
+    limpiarDirty() // eligió la cuenta: los cambios locales pendientes se descartan
     escribirLocal(remoto)
     marcarTourVisto()
     location.reload()

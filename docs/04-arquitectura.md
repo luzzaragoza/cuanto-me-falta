@@ -41,7 +41,7 @@ flowchart TB
     end
     subgraph DATA["Datos académicos — src/data"]
         MODEL["model.ts — entidades normalizadas"]
-        PLANES["planes/*.ts — 3 planes UADE curados"]
+        PLANES["planes/*.ts — 4 planes UADE curados"]
     end
     subgraph PERS["Persistencia"]
         LS[("localStorage del navegador")]
@@ -77,7 +77,7 @@ cuanto-me-falta/
 │   │   └── selectors.ts   #   avance, promedio, hitos, disponibles, previas faltantes
 │   ├── data/
 │   │   ├── model.ts       # Entidades normalizadas (la "futura base de datos")
-│   │   ├── planes/        # Los 3 planes UADE como datos
+│   │   ├── planes/        # Los 4 planes UADE como datos
 │   │   └── integrity.test.ts  # Tests de integridad del grafo académico
 │   ├── state/             # Puente React: store singleton + plan activo
 │   ├── lib/               # io, toast, image, analytics
@@ -130,6 +130,7 @@ erDiagram
     TITULO {
         string nombre "ej. Analista en Informatica"
         int hastaAnio "se logra al aprobar todo hasta este anio"
+        int hastaCuatri "opcional: corte a mitad de anio (hasta este cuatrimestre)"
     }
     ESTADO_USUARIO {
         string estado "pendiente | cursando | final | aprobada"

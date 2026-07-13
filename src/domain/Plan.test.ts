@@ -35,6 +35,7 @@ describe('Plan · estructura', () => {
     expect(mats.map((m) => m.cod)).toEqual(['A', 'B', 'C', 'D'])
     const c = mats.find((m) => m.cod === 'C')!
     expect(c.year).toBe(2)
+    expect(c.cuatri).toBe(1)
     expect(c.yi).toBe(1)
     expect(c.ci).toBe(0)
   })
@@ -85,6 +86,52 @@ describe('Plan · cadenas recursivas', () => {
     expect(niveles.get('B')).toBe(1)
     expect(niveles.get('C')).toBe(2)
     expect(niveles.get('D')).toBe(2)
+  })
+})
+
+describe('Plan · títulos por cuatrimestre', () => {
+  // Como la Lic. en IA: el título intermedio cae tras el 1° cuatri del último año.
+  //   Año 1: A (c1), B (c2) · Año 2: C (c1), D (c2)
+  const def2: PlanDef = {
+    ...def,
+    titulos: [
+      { nombre: 'Intermedio', hastaAnio: 2, hastaCuatri: 1 },
+      { nombre: 'Final', hastaAnio: 2 },
+    ],
+    materias: [
+      { cod: 'A', nom: 'Materia A', anio: 1, cuatri: 1 },
+      { cod: 'B', nom: 'Materia B', anio: 1, cuatri: 2 },
+      { cod: 'C', nom: 'Materia C', anio: 2, cuatri: 1 },
+      { cod: 'D', nom: 'Materia D', anio: 2, cuatri: 2 },
+    ],
+    correlativas: [],
+  }
+  const p2 = new Plan(def2)
+
+  it('un título a mitad de año cuelga de su cuatrimestre', () => {
+    expect(p2.anios[1].cuatris[0].titulo).toBe('Intermedio')
+    expect(p2.anios[1].cuatris[1].titulo).toBeUndefined()
+  })
+
+  it('un título de año completo cuelga del año, no de un cuatrimestre', () => {
+    expect(p2.anios[1].titulo).toBe('Final')
+    expect(p2.anios[0].titulo).toBeUndefined()
+    expect(p2.anios[0].cuatris.every((q) => q.titulo === undefined)).toBe(true)
+  })
+
+  it('hastaCuatri en el último cuatrimestre del año equivale al año completo', () => {
+    const p3 = new Plan({
+      ...def2,
+      titulos: [{ nombre: 'Final', hastaAnio: 2, hastaCuatri: 2 }],
+    })
+    expect(p3.anios[1].titulo).toBe('Final')
+    expect(p3.anios[1].cuatris.every((q) => q.titulo === undefined)).toBe(true)
+  })
+
+  it('materiasHasta() corta por año y cuatrimestre inclusive', () => {
+    const [intermedio, final] = def2.titulos
+    expect(p2.materiasHasta(intermedio).map((m) => m.cod)).toEqual(['A', 'B', 'C'])
+    expect(p2.materiasHasta(final).map((m) => m.cod)).toEqual(['A', 'B', 'C', 'D'])
   })
 })
 

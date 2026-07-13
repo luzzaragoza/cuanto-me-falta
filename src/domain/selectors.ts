@@ -105,12 +105,10 @@ export interface Hito {
   ok: boolean
 }
 
-/** Hitos de título del plan activo. `falta` = materias no aprobadas hasta ese año. */
+/** Hitos de título del plan activo. `falta` = materias no aprobadas hasta su año/cuatrimestre. */
 export function hitos(db: DB): Hito[] {
   return plan.titulos().map((t) => {
-    const falta = plan
-      .materias()
-      .filter((m) => m.year <= t.hastaAnio && estadoDe(db, m.cod) !== 'aprobada').length
+    const falta = plan.materiasHasta(t).filter((m) => estadoDe(db, m.cod) !== 'aprobada').length
     return { titulo: t.nombre, falta, ok: falta === 0 }
   })
 }

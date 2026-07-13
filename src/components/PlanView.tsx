@@ -14,6 +14,24 @@ interface Props {
 
 const rowId = (cod: string) => `mat-${cod}`
 
+/** Banda de hito: el título que se obtiene al completar las materias que tiene arriba.
+ *  Va al pie del año (o del cuatrimestre, si el hito cae a mitad de año), no en el
+ *  encabezado: pedido de los usuarios del soft-launch. */
+function TituloHito({ nombre }: { nombre: string }) {
+  return (
+    <div className="titulo-hito">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3 1 8l11 5 9-4.09V15h2V8z" />
+        <path d="M5 11.18V15c0 1.66 3.13 3 7 3s7-1.34 7-3v-3.82l-7 3.18z" />
+      </svg>
+      <span className="th-tx">
+        <span className="th-k">Título</span>
+        <span className="th-n">{nombre}</span>
+      </span>
+    </div>
+  )
+}
+
 export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
   const [corr, setCorr] = useState<Set<string>>(new Set())
   const [flash, setFlash] = useState<string | null>(null)
@@ -40,7 +58,6 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
           <div className="yhead">
             <span className="n">{anio.year}°</span>
             <span className="l">Año</span>
-            {anio.titulo && <span className="badge">→ {anio.titulo}</span>}
           </div>
           <div className="cuatris">
             {anio.cuatris.map((q) => (
@@ -65,9 +82,11 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
                     )}
                   </Fragment>
                 ))}
+                {q.titulo && <TituloHito nombre={q.titulo} />}
               </div>
             ))}
           </div>
+          {anio.titulo && <TituloHito nombre={anio.titulo} />}
         </section>
       ))}
     </div>
