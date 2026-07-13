@@ -2740,6 +2740,12 @@ body {
 .sync-err {
   color: #b3403d;
 }
+/* aviso de instalación iOS: el iconito de compartir va inline con el texto */
+.ios-aviso .sa-ic {
+  display: inline-flex;
+  vertical-align: -3px;
+  color: var(--gold);
+}
 
 /* ----- modal de conflicto de sync ----- */
 .conf-opts {

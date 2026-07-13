@@ -13,6 +13,7 @@ import { OptionsMenu } from './components/OptionsMenu'
 import { PlanView } from './components/PlanView'
 import { PrintSummary } from './components/PrintSummary'
 import { ProfileModal } from './components/ProfileModal'
+import { InstallAviso } from './components/InstallAviso'
 import { StatePopover } from './components/StatePopover'
 import { SyncAviso } from './components/SyncAviso'
 import { SyncConflicto } from './components/SyncConflicto'
@@ -130,6 +131,7 @@ export function App() {
         </header>
 
         {modal === 'closed' && <SyncAviso />}
+        {modal === 'closed' && <InstallAviso />}
 
         <Dashboard db={db} onOpenTree={() => openTree(null)} onOpenNotas={openNotas} />
         <PlanView

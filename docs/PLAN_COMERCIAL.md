@@ -107,6 +107,7 @@ vacías.
 | 14 | **Backend Supabase**: auth + sync; localStorage queda como modo offline | Multi-device + la base para todo lo B2B |
 | 15 | **Editor de planes** (interno primero) | El moat: mantener planes al día a costo bajo |
 | 16 | **Panel B2B**: analytics agregada y anónima (materias cuello de botella, avance por cohorte) | El producto que se le vende a instituciones |
+| 17 | **App Store (iOS)** vía Capacitor — requiere Apple Developer (USD 99/año), Sign in with Apple (guideline 4.8, obligatorio al ofrecer Google) y eliminar cuenta in-app (5.1.1v) | Solo con ingresos que paguen el peaje anual. Google Play descartado (decisión jul-2026). Mientras: la PWA cubre iPhone (banner de instalación iOS) |
 
 ---
 
