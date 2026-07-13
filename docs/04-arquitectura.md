@@ -207,7 +207,7 @@ sequenceDiagram
 
 ## 4.10 Decisiones de arquitectura (ADR)
 
-**ADR-01 · Local-first, sin backend.**
+**ADR-01 · Local-first, sin backend.** *(Superado por ADR-09 — se conserva como registro histórico.)*
 *Contexto:* los datos son personales y el proyecto debe costar $0 de operar. *Decisión:* toda la lógica y la persistencia viven en el cliente. *Consecuencias:* privacidad total, cero infraestructura y funcionamiento offline; a cambio, no hay sincronización entre dispositivos (mitigado con backup portable) y el "servidor" futuro es una evolución, no un requisito.
 
 **ADR-02 · Modelo de datos normalizado como "la base de datos del mañana".**
@@ -231,10 +231,13 @@ sequenceDiagram
 **ADR-08 · Compatibilidad con datos de versiones anteriores.**
 *Contexto:* la app ya tenía usuarios con progreso guardado cuando se migró de la versión original (HTML autocontenido) a React. *Decisión:* conservar la clave histórica de storage para el plan por defecto. *Consecuencias:* nadie perdió su progreso en la migración; el costo es una asimetría documentada en las claves de storage.
 
+**ADR-09 · Sincronización opcional con Supabase + login de Google.** *(Supersede a ADR-01.)*
+*Contexto:* las primeras métricas del lanzamiento (jul-2026) mostraron que el 81 % de los visitantes no marcaba ninguna materia; el análisis del embudo y el feedback directo señalaron la misma causa: sin sincronización, cargar el progreso "se siente efímero" (cambiar de dispositivo lo pierde). El backend dejó de ser una apuesta y pasó a ser respuesta a demanda medida. *Decisión:* incorporar **Supabase** (Postgres gestionado + auth) con **login de Google** como única vía inicial. El modelo remoto es deliberadamente simple: una fila por usuario con todo el progreso en JSON (`user_id`, `data`, `updated_at`), protegida por **Row Level Security** (cada cuenta lee y escribe solo su fila). El cliente sigue siendo local-first: `localStorage` es la fuente inmediata y la caché offline; cada cambio se sube con *debounce*; al iniciar sesión se decide el merge (subir / bajar / nada / **conflicto que resuelve el usuario** — nunca se pisa progreso sin preguntar). Sin credenciales configuradas, toda la capa desaparece y la app queda 100 % local (dev, CI y quien no quiera cuenta). *Consecuencias:* sincronización multi-dispositivo (el pedido n.º 1), la base del futuro panel institucional, y la app sigue completa sin cuenta; a cambio, las notas pasan a ser datos personales almacenados (Ley 25.326) — de ahí el consentimiento explícito previo al primer sincronizado y las páginas de Términos y Privacidad — y aparece el primer costo operativo potencial (free tier de Supabase hoy).
+
 ## 4.11 Evolución futura (técnica)
 
 La arquitectura deja preparado el camino sin hipotecar el presente:
 
-- **Backend y sincronización:** el modelo normalizado (§4.5) migra a tablas; el dominio puro (§ADR-03) se reutiliza del lado del servidor; el `Store` local pasa a ser caché con sincronización.
+- **Backend y sincronización:** ✅ primera etapa hecha (ADR-09): auth con Google y sync del progreso vía Supabase. Queda para el futuro migrar el modelo académico normalizado (§4.5) a tablas y reutilizar el dominio puro del lado del servidor.
 - **Rol administrador:** la carga de planes que hoy se hace por código pasa a una interfaz de administración que escribe las mismas entidades.
 - **Más planes y universidades:** ya soportado por datos; el selector de carrera y el registro de planes están diseñados para N planes de M universidades.

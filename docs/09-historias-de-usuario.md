@@ -15,6 +15,7 @@ Estas historias son la **vista ágil del mismo alcance** definido en los requeri
 | E3 · Entender las correlatividades | Consultar el grafo de la carrera en dos niveles de detalle | HU-09, HU-10 |
 | E4 · Mis datos, míos | Respaldar, restaurar, exportar y borrar el progreso propio | HU-11 a HU-14 |
 | E5 · Una app cómoda | Perfil, ayuda e instalación como app | HU-15 a HU-17 |
+| E6 · Mi avance en todos lados | Cuenta opcional y sincronización entre dispositivos | HU-18, HU-19 |
 
 ## C.3 Épica E1 · Empezar a usar la app
 
@@ -233,3 +234,32 @@ Estas historias son la **vista ágil del mismo alcance** definido en los requeri
 
 1. **Dado** un navegador compatible, **cuando** uso «Agregar a pantalla de inicio», **entonces** la aplicación queda instalada con su ícono y se abre a pantalla completa, como una app nativa.
 2. **Dado** que ya la cargué al menos una vez, **cuando** pierdo la conexión, **entonces** puedo seguir consultando y marcando mi progreso.
+
+## C.8 Épica E6 · Mi avance en todos lados
+
+### HU-18 · Entrar con mi cuenta y sincronizar
+
+> **Como** estudiante que usa la app en el celular y en la compu, **quiero** entrar con mi cuenta de Google, **para** que mi avance me siga a todos mis dispositivos sin cargarlo dos veces.
+
+**Prioridad:** Alta · **Refs:** RF-19, RF-20 · CU-15 · RN-12
+
+**Criterios de aceptación**
+
+1. **Dado** que toco «Entrar con Google» (en la bienvenida, en mi perfil o en el aviso), **cuando** autorizo, **entonces** vuelvo a la aplicación con la sesión iniciada, y mi nombre y foto pueden tomarse de mi cuenta.
+2. **Dado** que es la primera vez que sincronizo con esa cuenta, **cuando** vuelvo logueada, **entonces** debo **aceptar de forma explícita** los Términos y la Política de Privacidad antes de que se suba nada; si no acepto, la sesión se cierra y todo sigue local.
+3. **Dado** que mi cuenta ya tiene avance y este dispositivo está vacío, **cuando** entro, **entonces** mi avance aparece solo.
+4. **Dado** que tengo la sesión iniciada, **cuando** cambio un estado o una nota, **entonces** el cambio se sube automáticamente (todas mis carreras) y veo el estado de la sincronización en mi perfil.
+5. **Dado** que no tengo conexión, **cuando** uso la app, **entonces** todo sigue funcionando local y se reintenta con el próximo cambio.
+6. **Dado** que no quiero cuenta, **cuando** uso la aplicación, **entonces** funciona completa y mis datos no salen del dispositivo.
+
+### HU-19 · Decidir yo ante un conflicto
+
+> **Como** estudiante que cargó avance en dos lados, **quiero** que la app me pregunte cuál conservar, **para** no perder mi progreso por una sincronización automática.
+
+**Prioridad:** Alta · **Refs:** RF-20 · CU-15 · RN-12
+
+**Criterios de aceptación**
+
+1. **Dado** que mi cuenta y este dispositivo tienen progreso distinto, **cuando** inicio sesión, **entonces** veo las dos opciones con la cantidad de materias con carga de cada lado.
+2. **Dado** el conflicto en pantalla, **cuando** todavía no elegí, **entonces** no se sube ni se baja nada.
+3. **Dado** que elijo una opción, **cuando** confirmo, **entonces** ese avance queda tanto en la cuenta como en el dispositivo, y el otro se reemplaza.

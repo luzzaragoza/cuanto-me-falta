@@ -6,20 +6,21 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
-| Unitario | Vitest | Las reglas de dominio: `Plan`, `Store`, `selectors` | 48 tests |
+| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`) | 61 tests |
 | Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 26 tests |
 | End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 11 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **85 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **98 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
-## 6.2 Tests unitarios de dominio (48)
+## 6.2 Tests unitarios (61)
 
-Gracias a que el dominio es TypeScript puro (ADR-03), se testea sin navegador y en milisegundos:
+Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se testean sin navegador y en milisegundos:
 
 - **`Plan` (11):** construcción del plan por año/cuatrimestre, correlativas directas (`antes`/`después`), cadenas recursivas completas (`chainUp`/`chainDown`) y niveles BFS para el árbol.
 - **`Store` (12):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado) y suscripciones.
 - **`selectors` (25):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, hitos de título por año e iniciales del avatar.
+- **`sync` (13):** conteos de progreso, la decisión de merge al iniciar sesión (subir / bajar / nada / conflicto — el perfil no cuenta como diferencia), snapshot y escritura local de todas las carreras (ida y vuelta sin pérdida) y el registro de consentimiento que viaja con los datos.
 
 ## 6.3 Tests de integridad de datos académicos (26)
 
@@ -62,7 +63,7 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 74"]
+    L --> U["unit + integridad · vitest · 87"]
     U --> E["end-to-end · Playwright · 11"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]

@@ -42,12 +42,14 @@ Las consecuencias observadas que motivaron el proyecto:
 | RF-16 | En la primera visita debe ejecutarse un **tutorial** (coach marks) que recorra las funciones principales; debe poder repetirse a demanda y no volver a aparecer solo. | Media |
 | RF-17 | El estudiante debe poder **reiniciar** todos sus datos locales, con confirmación previa. | Media |
 | RF-18 | La aplicación debe poder **instalarse como PWA** ("agregar a inicio") y abrirse como una app más del dispositivo. | Media |
+| RF-19 | El estudiante debe poder **iniciar sesión con su cuenta de Google** (opcional) para sincronizar su avance; el primer sincronizado requiere **aceptar de forma explícita** los Términos y la Política de Privacidad, y debe poder cerrar sesión en cualquier momento. | Alta |
+| RF-20 | Con sesión iniciada, el progreso de **todas las carreras** debe **sincronizarse automáticamente** con la cuenta; al ingresar en otro dispositivo, el avance debe recuperarse, y si ambos lados tienen progreso distinto, la aplicación debe **preguntar cuál conservar** (nunca pisar sin preguntar). | Alta |
 
 ## 2.4 Requerimientos no funcionales
 
 | ID | Requerimiento | Categoría |
 |---|---|---|
-| RNF-01 | Todos los datos del estudiante (estados, notas, perfil) se almacenan **exclusivamente en su dispositivo**; no existen cuentas ni envío de datos personales a servidores. | Privacidad |
+| RNF-01 | Por defecto, los datos del estudiante (estados, notas, perfil) se almacenan **en su dispositivo** y no se envían a ningún servidor. Solo si el estudiante **inicia sesión y consiente de forma explícita**, su progreso se guarda además en el servidor de sincronización, protegido por reglas de acceso por fila (solo su cuenta puede leerlo). | Privacidad |
 | RNF-02 | La analítica de uso, si está habilitada, debe ser **agregada, anónima y sin cookies** (no requiere banner de consentimiento) y debe poder desactivarse por configuración. | Privacidad |
 | RNF-03 | La aplicación debe funcionar **sin conexión** una vez cargada (service worker + PWA). | Disponibilidad |
 | RNF-04 | Al ser una SPA estática sin backend, la carga debe ser rápida y el uso, fluido, también en dispositivos móviles de gama media. | Rendimiento |
@@ -73,6 +75,7 @@ Las consecuencias observadas que motivaron el proyecto:
 | RN-09 | Cada plan define sus **títulos** como hitos por año: un título se alcanza al aprobar **todas** las materias hasta su año correspondiente inclusive (por ejemplo, en Ingeniería en Informática: *Analista* hasta 3.º año, *Ingeniero* hasta 5.º). |
 | RN-10 | El nombre de una optativa lo define el usuario (RF-12); si no la renombró, se muestra el nombre genérico del plan. |
 | RN-11 | El progreso es **independiente por plan**: cambiar de carrera no mezcla ni borra datos de la otra. |
+| RN-12 | El progreso solo se almacena en el servidor **con sesión iniciada y consentimiento aceptado** (una vez por cuenta; el registro del consentimiento viaja con los datos). Sin cuenta, todo queda en el dispositivo. En caso de conflicto entre el avance local y el de la cuenta, **decide el usuario**. |
 
 ## 2.6 Datos académicos precargados
 

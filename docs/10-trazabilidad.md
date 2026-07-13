@@ -32,6 +32,8 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-16 | Tutorial de primera visita | HU-01, HU-16 | CU-01, CU-12 | — | E2E 11 |
 | RF-17 | Reinicio de datos | HU-14 | CU-13 | — | Manual |
 | RF-18 | Instalación como PWA | HU-17 | CU-14 | — | Manual |
+| RF-19 | Login con Google + consentimiento | HU-18 | CU-15, CU-16 | RN-12 | Unit `sync` (consentimiento) · Manual (OAuth real) |
+| RF-20 | Sincronización multi-dispositivo | HU-18, HU-19 | CU-15 | RN-12 | Unit `sync` (merge/conteos/ida-y-vuelta) · Manual (2 dispositivos + RLS con 2 cuentas) |
 
 ## D.3 Reglas de negocio: definición → implementación → verificación
 
@@ -48,12 +50,13 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-09 | Títulos como hitos por año | `selectors.hitos` (`hastaAnio`) | Unit `selectors` · Integridad (títulos → años válidos) |
 | RN-10 | Optativa renombrable, hasta 48 caracteres | `Store.setOptName` | Unit `Store` |
 | RN-11 | Progreso independiente por plan | Claves de storage por plan (`src/state`) | Unit `Store` (persistencia) · Manual |
+| RN-12 | Server solo con cuenta + consentimiento; conflicto lo decide el usuario | `lib/sync` (decidirMerge, consentimiento) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación
 
 | RNF | Requerimiento (resumen) | Mecanismo | Verificación |
 |---|---|---|---|
-| RNF-01 | Datos solo en el dispositivo | Arquitectura local-first, sin backend (ADR-01) | Diseño · Revisión de código |
+| RNF-01 | Datos en el dispositivo; server solo con cuenta y consentimiento | Local-first (ADR-01) + sync opcional con RLS y gate de consentimiento (ADR-09) | Diseño · Revisión de código · Manual (RLS con 2 cuentas) |
 | RNF-02 | Analítica anónima y sin cookies | `lib/analytics` cookieless, configurada por entorno (ADR-07) | Revisión · Manual |
 | RNF-03 | Funcionamiento offline | Service worker + manifest (PWA) | Manual |
 | RNF-04 | Carga rápida y uso fluido | SPA estática (Vite), sin servidor | Manual |
@@ -66,13 +69,13 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 
 ## D.5 Resumen de cobertura y brechas
 
-**Cobertura de los 18 RF:**
+**Cobertura de los 20 RF:**
 
 - **12 con verificación automatizada** (unitaria y/o end-to-end): RF-01, RF-03 a RF-08, RF-10, RF-11, RF-12, RF-15 y RF-16.
-- **2 con cobertura parcial:** RF-02 (el e2e cubre la elección de carrera en la bienvenida, no el cambio posterior) y RF-13 (las iniciales del avatar tienen test; la carga de foto es manual).
+- **4 con cobertura parcial:** RF-02 (el e2e cubre la elección de carrera en la bienvenida, no el cambio posterior), RF-13 (las iniciales del avatar tienen test; la carga de foto es manual), y RF-19/RF-20 (la lógica de merge y consentimiento tiene tests unitarios; el flujo OAuth real y el sync entre dispositivos se verifican manualmente — el e2e no puede loguearse en Google).
 - **4 con verificación manual:** RF-09, RF-14, RF-17 y RF-18.
 
-**Cobertura de las 11 RN:** 10 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
+**Cobertura de las 12 RN:** 11 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
 
 **Brechas conocidas y próximos tests candidatos** (mejoras honestas, no defectos):
 

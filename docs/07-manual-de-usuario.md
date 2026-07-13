@@ -40,9 +40,21 @@ Las optativas cambian todos los años, así que el plan trae "slots": tocá el n
 
 Tocá el avatar (arriba a la izquierda) para cambiar tu nombre o ponerte una foto. La foto queda **en tu dispositivo**, no se sube a ningún lado. Sin foto, se muestran tus iniciales.
 
+## Tu cuenta (opcional): sincronizá entre dispositivos
+
+¿Usás la app en el celu y en la compu? Entrá con tu cuenta de Google (desde la bienvenida,
+tu perfil o el aviso) y tu avance te sigue a todos lados:
+
+- La primera vez te pedimos aceptar los [Términos](https://cuantomefalta.app/terminos.html) y la [Política de Privacidad](https://cuantomefalta.app/privacidad.html) — una sola vez.
+- Desde ahí, cada cambio se guarda solo en tu cuenta. Si entrás en otro dispositivo, tu avance aparece.
+- Si los dos lados tienen avance distinto, **la app te pregunta cuál conservar** — nunca decide sola.
+- Podés cerrar sesión cuando quieras (perfil → Cerrar sesión); lo local queda intacto.
+
+**¿Es obligatorio?** No. Sin cuenta, la app funciona completa y tus datos no salen de tu dispositivo.
+
 ## Backup: tus datos son tuyos
 
-Todo se guarda solo en tu navegador. Por eso conviene hacer backup cada tanto:
+Sin cuenta, todo se guarda solo en tu navegador. Por eso conviene hacer backup cada tanto:
 
 - **Guardar:** Opciones → **Exportar backup (.json)**. Se descarga un archivito con todo tu progreso.
 - **Restaurar (o pasar a otro celu/compu):** Opciones → **Importar backup** y elegí ese archivo.
@@ -70,9 +82,9 @@ Opciones → **Reiniciar** (el botón rojo). Te pide confirmación porque borra 
 
 ## Preguntas frecuentes
 
-**¿Necesito crear una cuenta?** No. No hay cuentas, ni mail, ni contraseña.
+**¿Necesito crear una cuenta?** No, es opcional. Sirve solo para sincronizar tu avance entre dispositivos (con tu cuenta de Google). Sin cuenta, la app funciona completa.
 
-**¿Quién ve mi progreso?** Nadie. Queda en tu dispositivo.
+**¿Quién ve mi progreso?** Nadie. Sin cuenta queda en tu dispositivo; con cuenta se guarda cifrado en tránsito y solo tu cuenta puede leerlo — ni otras cuentas ni el público.
 
 **¿Los datos del plan son oficiales?** No — es un proyecto independiente, sin afiliación con UADE. Las materias y correlativas se cargaron a mano y pueden tener errores: ante cualquier decisión importante, verificá con la información oficial de la facultad.
 

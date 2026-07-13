@@ -11,7 +11,7 @@
 
 **¿Cuánto me falta?** es una aplicación web progresiva (PWA) que permite a estudiantes universitarios registrar el estado de cada materia de su carrera y visualizar, en tiempo real, su avance académico: qué aprobaron, qué están cursando, qué materias tienen disponibles según las correlatividades y cuánto les falta para cada título.
 
-La aplicación nació como herramienta personal para la carrera de Ingeniería en Informática de UADE (Plan 1621) y hoy cubre tres carreras de esa universidad, con un modelo de datos pensado para escalar a más planes y universidades. Todo el progreso del usuario se guarda **exclusivamente en su dispositivo**: no hay cuentas, no hay servidor y nadie más ve sus datos.
+La aplicación nació como herramienta personal para la carrera de Ingeniería en Informática de UADE (Plan 1621) y hoy cubre tres carreras de esa universidad, con un modelo de datos pensado para escalar a más planes y universidades. El progreso del usuario se guarda **en su dispositivo** y, si el usuario lo elige, se **sincroniza entre sus dispositivos con su cuenta de Google** — la cuenta es opcional: sin ella, la app funciona completa y nada sale del navegador.
 
 ![Pantalla principal de la aplicación](captura-app.png)
 
@@ -77,11 +77,12 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 - Consulta de correlativas por panel y por árbol interactivo.
 - Perfil local (nombre y foto), tutorial de primera visita, resumen imprimible/exportable a PDF y backup en JSON (exportar e importar).
 - Instalación como PWA con funcionamiento offline.
+- **Cuenta opcional con Google** para sincronizar el avance entre dispositivos (con consentimiento explícito y resolución de conflictos a cargo del usuario); sin cuenta, la app funciona completa y 100 % local.
 
 **Fuera de alcance (por diseño, en esta versión)**
 
-- Cuentas de usuario, autenticación y sincronización entre dispositivos.
-- Backend o base de datos remota: no existe servidor propio.
+- Registro con email y contraseña (el único proveedor de identidad es Google).
+- Servidor propio: la sincronización usa Supabase como backend gestionado; no hay API ni lógica de dominio del lado del servidor.
 - Edición de planes y correlativas por parte del usuario final (los planes se cargan curados en el código; el usuario solo renombra sus optativas).
 - Aplicaciones nativas (iOS/Android): la distribución móvil es vía PWA.
 
@@ -95,10 +96,10 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 
 | Aspecto | Detalle |
 |---|---|
-| Tipo de aplicación | SPA / PWA, 100 % del lado del cliente (local-first) |
+| Tipo de aplicación | SPA / PWA local-first, con sincronización opcional |
 | Stack | React 19 · TypeScript · Vite |
 | Visualización de grafos | @xyflow/react (React Flow) con layout propio |
-| Persistencia | `localStorage` del navegador, con backup JSON portable |
+| Persistencia | `localStorage` del navegador, con backup JSON portable · sync opcional vía Supabase (login con Google, RLS) |
 | Testing | Vitest (unitario + integridad de datos) · Playwright (end-to-end) |
 | CI/CD | GitHub Actions → GitHub Pages, con gate de calidad |
 | Dominio | [cuantomefalta.app](https://cuantomefalta.app) |

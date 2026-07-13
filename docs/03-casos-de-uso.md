@@ -26,6 +26,8 @@
 | CU-12 | Repetir el tutorial | RF-16 |
 | CU-13 | Reiniciar el progreso | RF-17 |
 | CU-14 | Instalar la aplicación (PWA) | RF-18 |
+| CU-15 | Iniciar sesión y sincronizar | RF-19, RF-20 |
+| CU-16 | Cerrar sesión | RF-19 |
 
 ## 3.4 Especificación
 
@@ -239,3 +241,38 @@ Previa confirmación explícita, la aplicación borra el progreso local del plan
 **Actor:** Estudiante · **Precondición:** navegador con soporte de PWA.
 
 Desde el navegador, el estudiante usa "Agregar a pantalla de inicio" (o el aviso de instalación). La aplicación queda instalada con su ícono y nombre, se abre a pantalla completa como una app nativa y funciona sin conexión gracias al service worker.
+
+---
+
+### CU-15 · Iniciar sesión y sincronizar
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Estudiante |
+| **Precondiciones** | La sincronización está configurada en el sitio publicado. |
+| **Disparador** | El estudiante toca **"Entrar con Google"** (en la bienvenida, en su perfil o en el aviso de sincronización). |
+
+**Flujo principal**
+
+1. La aplicación redirige a Google; el estudiante autoriza y vuelve con la sesión iniciada.
+2. **Primera vez con esa cuenta:** la aplicación muestra la pantalla de consentimiento —qué datos se van a guardar y los enlaces a los Términos y la Política de Privacidad— y el estudiante acepta. *(El consentimiento se registra y viaja con sus datos: no se vuelve a pedir en otros dispositivos.)*
+3. La aplicación compara el avance local con el de la cuenta y resuelve: si la cuenta está vacía, **sube** lo local; si el dispositivo está vacío, **baja** lo de la cuenta; si son iguales, no hace nada.
+4. Desde entonces, cada cambio se sube automáticamente; el estado ("sincronizando", "tu avance se sincroniza") es visible junto a la cuenta en el perfil.
+
+**Flujos alternativos**
+
+- **2a. No acepta el consentimiento:** la sesión se cierra y la aplicación sigue 100 % local; nada se subió.
+- **3a. Conflicto:** el dispositivo y la cuenta tienen progreso distinto. La aplicación muestra las dos opciones con el conteo de materias de cada lado y **el estudiante decide** cuál conservar; hasta que no elige, no se sube nada (RN-12).
+- **4a. Sin conexión:** la aplicación sigue funcionando local; el próximo cambio con conexión reintenta la subida.
+
+**Postcondiciones**
+
+- El avance del estudiante queda asociado a su cuenta y disponible en sus otros dispositivos.
+
+---
+
+### CU-16 · Cerrar sesión
+
+**Actor:** Estudiante · **Disparador:** tocar **"Cerrar sesión"** en el perfil (avatar → editar).
+
+La sesión se cierra; el progreso local queda intacto y la aplicación vuelve al modo 100 % local. Los datos ya sincronizados permanecen en la cuenta para el próximo inicio de sesión.
