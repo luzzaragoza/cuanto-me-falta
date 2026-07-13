@@ -15,6 +15,8 @@ import { PrintSummary } from './components/PrintSummary'
 import { ProfileModal } from './components/ProfileModal'
 import { StatePopover } from './components/StatePopover'
 import { SyncAviso } from './components/SyncAviso'
+import { SyncConflicto } from './components/SyncConflicto'
+import { getConflicto, useSyncEstado } from './state/sync'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
 import { TreeView } from './components/Tree/TreeView'
@@ -40,6 +42,8 @@ type Modal = 'closed' | 'welcome' | 'edit'
 export function App() {
   const db = useDB()
   const session = useSession()
+  const syncEstado = useSyncEstado()
+  const conflicto = syncEstado === 'conflicto' ? getConflicto() : null
 
   // Usuario existente que inicia sesión (desde el perfil o el aviso): si su perfil
   // local no tiene foto, adoptamos la de Google (y el nombre, si tampoco tenía).
@@ -148,6 +152,8 @@ export function App() {
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 
         {modal === 'welcome' && <Welcome onClose={() => setModal('closed')} />}
+
+        {conflicto && <SyncConflicto conflicto={conflicto} />}
 
         {modal === 'edit' && (
           <ProfileModal welcome={false} perfil={db.profile} onClose={() => setModal('closed')} />

@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
 import { entrarConGoogle, salir, useSession } from '../state/auth'
+import { useSyncEstado } from '../state/sync'
+
+const SYNC_LABEL: Record<string, string> = {
+  guardando: 'Sincronizando…',
+  listo: 'Sesión iniciada · tu avance se sincroniza',
+  error: 'No pude sincronizar — reintento con el próximo cambio',
+  conflicto: 'Esperando que elijas qué avance conservar',
+  off: 'Sesión iniciada',
+}
 
 // Logo "G" oficial de Google (4 colores). Va dentro del botón de ingreso.
 const GoogleG = () => (
@@ -19,6 +28,7 @@ const GoogleG = () => (
  */
 export function AccountBox() {
   const session = useSession()
+  const sync = useSyncEstado()
   const [cargando, setCargando] = useState(false)
 
   if (!authHabilitado) return null
@@ -37,7 +47,7 @@ export function AccountBox() {
           )}
           <div className="acct-tx">
             <b>{nombre}</b>
-            <small>Sesión iniciada · tu avance se sincroniza</small>
+            <small className={sync === 'error' ? 'sync-err' : undefined}>{SYNC_LABEL[sync]}</small>
           </div>
         </div>
         <button className="lnk" onClick={() => void salir()}>
