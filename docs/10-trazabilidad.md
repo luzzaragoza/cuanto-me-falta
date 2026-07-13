@@ -41,7 +41,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-02 | Para cursar: previas al menos en curso | `selectors.previasParaEstado` | Unit `selectors` · E2E 3 |
 | RN-03 | Para aprobar: previas aprobadas | `selectors.previasParaEstado` | Unit `selectors` |
 | RN-04 | El aviso informa, no bloquea | `StatePopover` + toast con acción | E2E 3 y 4 |
-| RN-05 | Optativas y especiales exentas del chequeo | `isSpecial` (`Plan`) · `StatePopover` | Unit `selectors` |
+| RN-05 | Optativas y especiales exentas del chequeo | `isSpecial`/`isOpt` (`Plan`) · `StatePopover` | Unit `selectors` · Integridad (optativas sin correlativas) |
 | RN-06 | Definición de «disponible» | `selectors.disponibles` | Unit `selectors` |
 | RN-07 | Promedio solo con aprobadas con nota | `selectors.promedio` | Unit `selectors` · E2E 7 |
 | RN-08 | Nota entera entre 1 y 10 | `Store.setNota` (ajuste al rango) | Unit `Store` |

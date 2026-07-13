@@ -81,5 +81,14 @@ for (const plan of PLANES) {
       const rotos = plan.titulos.filter((t) => !anios.has(t.hastaAnio))
       expect(rotos).toEqual([])
     })
+
+    it('ninguna optativa participa de las correlativas', () => {
+      // Invariante de RN-05: las optativas quedan exentas del chequeo de previas
+      // (se habilitan por la oferta anual, no por correlativas). Si un plan futuro
+      // necesita una optativa con correlativas, esto obliga a decidirlo a conciencia.
+      const opts = new Set(plan.materias.filter((m) => m.opt).map((m) => m.cod))
+      const tocanOpt = plan.correlativas.filter((c) => opts.has(c.cod) || opts.has(c.requiere))
+      expect(tocanOpt).toEqual([])
+    })
   })
 }

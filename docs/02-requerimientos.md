@@ -81,7 +81,7 @@ Los planes se cargan curados en el repositorio y están protegidos por tests de 
 | Plan | Código | Materias | Correlativas | Optativas | Especiales | Títulos |
 |---|---|---|---|---|---|---|
 | Ingeniería en Informática (UADE) | 1621 | 52 | 35 | 3 | 2 | Analista en Informática (3.º) · Ingeniero en Informática (5.º) |
-| Lic. en Gestión de Tecnología de la Información (UADE) | — | 41 | 20 | 4 | 0 | Licenciado en Gestión de TI (4.º) |
-| Tecnicatura Universitaria en Desarrollo de Software (UADE) | — | 20 | 11 | 2 | 0 | Técnico Universitario en Desarrollo de Software (3.º) |
+| Lic. en Gestión de Tecnología de la Información (UADE) | 13121 | 41 | 20 | 4 | 0 | Licenciado en Gestión de TI (4.º) |
+| Tecnicatura Universitaria en Desarrollo de Software (UADE) | 1121 | 20 | 11 | 2 | 0 | Técnico Universitario en Desarrollo de Software (3.º) |
 
 En total: **113 materias** y **66 relaciones de correlatividad** verificadas.

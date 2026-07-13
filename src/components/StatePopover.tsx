@@ -80,7 +80,9 @@ export function StatePopover({ cod, anchor, db, onClose, onVerArbol }: Props) {
     const av = avance(store.getSnapshot())
     trackActivacion(av.aprobadas + av.final + av.cursando)
     // El aviso de previas ahora es un toast flotante: no atamos el popover a mostrarlo.
-    if (!special) {
+    // Optativas y especiales quedan exentas del chequeo (RN-05): se habilitan por otro
+    // requisito (oferta anual / año o % de carrera), no por correlativas.
+    if (!special && !isOpt) {
       const faltan = previasParaEstado(store.getSnapshot(), cod, k)
       if (faltan.length > 0) {
         const nombres = faltan.map((p) => nombreDe(db, p)).join(', ')

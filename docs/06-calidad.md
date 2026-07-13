@@ -7,11 +7,11 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
 | Unitario | Vitest | Las reglas de dominio: `Plan`, `Store`, `selectors` | 48 tests |
-| Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 23 tests |
+| Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 26 tests |
 | End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 11 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **82 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **85 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
 ## 6.2 Tests unitarios de dominio (48)
 
@@ -21,9 +21,9 @@ Gracias a que el dominio es TypeScript puro (ADR-03), se testea sin navegador y 
 - **`Store` (12):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado) y suscripciones.
 - **`selectors` (25):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, hitos de título por año e iniciales del avatar.
 
-## 6.3 Tests de integridad de datos académicos (23)
+## 6.3 Tests de integridad de datos académicos (26)
 
-Los planes se cargan a mano; estos tests convierten cada error de carga en un build rojo. Dos verificaciones cubren el registro completo (los ids de plan son únicos; el plan por defecto existe) y, además, las siete siguientes se ejecutan **para cada uno de los tres planes** (7 × 3 = 21):
+Los planes se cargan a mano; estos tests convierten cada error de carga en un build rojo. Dos verificaciones cubren el registro completo (los ids de plan son únicos; el plan por defecto existe) y, además, las ocho siguientes se ejecutan **para cada uno de los tres planes** (8 × 3 = 24):
 
 1. No hay códigos de materia duplicados.
 2. Ninguna materia tiene código o nombre vacío.
@@ -32,6 +32,7 @@ Los planes se cargan a mano; estos tests convierten cada error de carga en un bu
 5. No hay correlativas duplicadas.
 6. **El grafo de correlativas no tiene ciclos** (un ciclo haría la carrera imposible de cursar).
 7. Los títulos apuntan a años que existen en el plan.
+8. Ninguna optativa participa de las correlativas (invariante de RN-05: las optativas se habilitan por la oferta anual, no por correlativas).
 
 Agregar una carrera nueva es agregar datos — y estos tests la validan automáticamente sin escribir un test más: el archivo recorre el registro completo de planes.
 
@@ -61,7 +62,7 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 71"]
+    L --> U["unit + integridad · vitest · 74"]
     U --> E["end-to-end · Playwright · 11"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]
