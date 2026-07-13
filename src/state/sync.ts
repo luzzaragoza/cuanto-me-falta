@@ -10,16 +10,25 @@
 
 import { useSyncExternalStore } from 'react'
 import { supabase } from '../lib/supabase'
+import { salir } from './auth'
 import { store } from './store'
 import {
   decidirMerge,
   escribirLocal,
+  guardarConsent,
+  leerConsent,
   snapshotLocal,
   totalMarcadas,
   type RemoteData,
 } from '../lib/sync'
 
-export type SyncEstado = 'off' | 'listo' | 'guardando' | 'error' | 'conflicto'
+export type SyncEstado =
+  | 'off'
+  | 'consentimiento'
+  | 'listo'
+  | 'guardando'
+  | 'error'
+  | 'conflicto'
 
 export interface Conflicto {
   remoto: RemoteData
@@ -77,8 +86,8 @@ async function push(): Promise<void> {
 }
 
 function programarPush(): void {
-  // sin sesión, o con un conflicto sin resolver, no se sube nada
-  if (!userId || estado === 'conflicto') return
+  // sin sesión, sin consentimiento aceptado, o con conflicto sin resolver: no se sube nada
+  if (!userId || estado === 'conflicto' || estado === 'consentimiento') return
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     timer = null
@@ -103,11 +112,27 @@ async function alEntrar(uid: string): Promise<void> {
   }
 
   const remoto = (data?.data as RemoteData | undefined) ?? null
+
+  // Gate de consentimiento (Ley 25.326): antes de guardar nada en el servidor,
+  // el usuario tiene que aceptar los TyC/Privacidad UNA vez por cuenta. El registro
+  // viaja con los datos: si ya aceptó en otro dispositivo, no se le vuelve a pedir.
+  if (!remoto?.consentimiento && !leerConsent()) {
+    remotoPendiente = remoto
+    setEstado('consentimiento')
+    return
+  }
+
+  continuarMerge(remoto)
+}
+
+let remotoPendiente: RemoteData | null = null
+
+function continuarMerge(remoto: RemoteData | null): void {
   const local = snapshotLocal()
 
   switch (decidirMerge(remoto, local)) {
     case 'push':
-      await push()
+      void push()
       break
     case 'pull':
       escribirLocal(remoto!)
@@ -125,6 +150,21 @@ async function alEntrar(uid: string): Promise<void> {
       setEstado('conflicto')
       break
   }
+}
+
+/** El usuario aceptó los TyC/Privacidad: se registra y sigue el merge normal. */
+export function aceptarConsentimiento(): void {
+  guardarConsent()
+  const remoto = remotoPendiente
+  remotoPendiente = null
+  continuarMerge(remoto)
+}
+
+/** No aceptó: se cierra la sesión y la app sigue 100% local (nada se subió). */
+export function rechazarConsentimiento(): void {
+  remotoPendiente = null
+  setEstado('off')
+  void salir()
 }
 
 /** El usuario eligió en el modal de conflicto. */

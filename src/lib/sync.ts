@@ -6,12 +6,43 @@ import type { DB } from '../types'
 import { PLANES } from '../data/planes'
 import { planActivoId, storageKey } from '../state/planActivo'
 
+/** Consentimiento a los Términos y la Política de Privacidad (Ley 25.326). */
+export interface Consentimiento {
+  version: string
+  fecha: string // ISO
+}
+
 /** Lo que viaja a la fila `progreso` de Supabase (columna `data`, JSON). */
 export interface RemoteData {
   version: 1
   planActivo: string
   /** DB completa por plan, indexada por id de plan (solo los que tienen algo). */
   planes: Record<string, DB>
+  /** Registro del consentimiento (viaja con los datos: aceptás una vez por cuenta). */
+  consentimiento?: Consentimiento
+}
+
+/** Versión vigente de los TyC/Privacidad. Subirla re-pide consentimiento. */
+export const CONSENT_VERSION = '2026-07'
+const CONSENT_KEY = 'cmf-consent'
+
+export function leerConsent(): Consentimiento | null {
+  try {
+    const raw = localStorage.getItem(CONSENT_KEY)
+    return raw ? (JSON.parse(raw) as Consentimiento) : null
+  } catch {
+    return null
+  }
+}
+
+export function guardarConsent(): Consentimiento {
+  const c: Consentimiento = { version: CONSENT_VERSION, fecha: new Date().toISOString() }
+  try {
+    localStorage.setItem(CONSENT_KEY, JSON.stringify(c))
+  } catch {
+    /* modo incógnito, etc. */
+  }
+  return c
 }
 
 const emptyDB = (): DB => ({ states: {}, notas: {}, optNames: {}, custom: [] })
@@ -60,7 +91,8 @@ export function snapshotLocal(): RemoteData {
     const db = leerDB(storageKey(p.id))
     if (db) planes[p.id] = db
   }
-  return { version: 1, planActivo: planActivoId(), planes }
+  const consentimiento = leerConsent() ?? undefined
+  return { version: 1, planActivo: planActivoId(), planes, consentimiento }
 }
 
 /**
@@ -105,4 +137,12 @@ export function escribirLocal(data: RemoteData): void {
     localStorage.setItem(key, JSON.stringify(merged))
   }
   localStorage.setItem('cmf-plan-activo', data.planActivo)
+  // el consentimiento viaja con los datos: aceptado en un dispositivo, vale en todos
+  if (data.consentimiento) {
+    try {
+      localStorage.setItem('cmf-consent', JSON.stringify(data.consentimiento))
+    } catch {
+      /* noop */
+    }
+  }
 }

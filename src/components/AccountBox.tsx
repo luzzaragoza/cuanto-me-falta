@@ -70,7 +70,17 @@ export function AccountBox() {
         <GoogleG />
         {cargando ? 'Abriendo Google…' : 'Entrar con Google'}
       </button>
-      <p className="acct-hint">Sincronizá tu avance entre tus dispositivos.</p>
+      <p className="acct-hint">
+        Sincronizá tu avance entre tus dispositivos. Al continuar aceptás los{' '}
+        <a href={`${import.meta.env.BASE_URL}terminos.html`} target="_blank" rel="noreferrer">
+          Términos
+        </a>{' '}
+        y la{' '}
+        <a href={`${import.meta.env.BASE_URL}privacidad.html`} target="_blank" rel="noreferrer">
+          Privacidad
+        </a>
+        .
+      </p>
     </div>
   )
 }

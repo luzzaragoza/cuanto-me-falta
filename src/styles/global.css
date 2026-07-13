@@ -2630,6 +2630,14 @@ body {
   color: var(--soft);
   margin: 0;
 }
+.acct-hint a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.acct-hint a:hover {
+  color: var(--ink);
+}
 .acct-in {
   flex-direction: row;
   align-items: center;

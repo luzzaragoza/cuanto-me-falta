@@ -3,10 +3,13 @@ import type { DB } from '../types'
 import { PLAN_POR_DEFECTO } from '../data/planes'
 import { storageKey } from '../state/planActivo'
 import {
+  CONSENT_VERSION,
   contarMarcadas,
   decidirMerge,
   escribirLocal,
+  guardarConsent,
   hayProgreso,
+  leerConsent,
   snapshotLocal,
   totalMarcadas,
   type RemoteData,
@@ -131,6 +134,23 @@ describe('sync · snapshot y escritura local', () => {
     const guardado = JSON.parse(localStorage.getItem(storageKey(PLAN_POR_DEFECTO))!)
     expect(guardado.states.A).toBe('aprobada')
     expect(guardado.profile.name).toBe('Luz') // no se perdió
+  })
+
+  it('el consentimiento se guarda, entra al snapshot y viaja con escribirLocal', () => {
+    expect(leerConsent()).toBeNull()
+    expect(snapshotLocal().consentimiento).toBeUndefined()
+
+    const c = guardarConsent()
+    expect(c.version).toBe(CONSENT_VERSION)
+    expect(leerConsent()?.version).toBe(CONSENT_VERSION)
+    expect(snapshotLocal().consentimiento?.version).toBe(CONSENT_VERSION)
+
+    // otro dispositivo: baja la data remota y adopta el consentimiento que viene en ella
+    const snap = snapshotLocal()
+    globalThis.localStorage = fakeLocalStorage() // "dispositivo nuevo"
+    expect(leerConsent()).toBeNull()
+    escribirLocal(snap)
+    expect(leerConsent()?.version).toBe(CONSENT_VERSION)
   })
 
   it('ida y vuelta: snapshot → escribir → mismo snapshot', () => {

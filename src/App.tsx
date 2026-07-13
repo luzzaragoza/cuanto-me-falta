@@ -16,6 +16,7 @@ import { ProfileModal } from './components/ProfileModal'
 import { StatePopover } from './components/StatePopover'
 import { SyncAviso } from './components/SyncAviso'
 import { SyncConflicto } from './components/SyncConflicto'
+import { ConsentModal } from './components/ConsentModal'
 import { getConflicto, useSyncEstado } from './state/sync'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
@@ -152,6 +153,8 @@ export function App() {
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 
         {modal === 'welcome' && <Welcome onClose={() => setModal('closed')} />}
+
+        {syncEstado === 'consentimiento' && <ConsentModal />}
 
         {conflicto && <SyncConflicto conflicto={conflicto} />}
 
