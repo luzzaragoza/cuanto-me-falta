@@ -31,10 +31,33 @@ function esLocal(): boolean {
   )
 }
 
+/** ¿La URL trae restos del redirect de OAuth? (credenciales, no las queremos en métricas) */
+function urlConAuth(): boolean {
+  return /[?&#](code|access_token|error_description)=/.test(location.search + location.hash)
+}
+
 /** Inyecta el script del proveedor. Llamar una sola vez, al arrancar la app. */
 export function initAnalytics(): void {
   if (!inCliente() || esLocal()) return
 
+  // Aterrizando de un redirect de OAuth, la pageview inicial registraría la URL
+  // con credenciales (?code= de PKCE). auth.ts la limpia apenas resuelve la
+  // sesión → se espera esa limpieza y recién ahí se inyecta el script. Tope de
+  // ~4s por si algo falla: mejor una fila fea que perder la visita.
+  if (urlConAuth()) {
+    let intentos = 0
+    const timer = setInterval(() => {
+      if (!urlConAuth() || ++intentos >= 13) {
+        clearInterval(timer)
+        inyectarScript()
+      }
+    }, 300)
+    return
+  }
+  inyectarScript()
+}
+
+function inyectarScript(): void {
   if (provider === 'umami') {
     const src = env.VITE_UMAMI_SRC
     const id = env.VITE_UMAMI_WEBSITE_ID
@@ -44,6 +67,11 @@ export function initAnalytics(): void {
     s.defer = true
     s.src = src
     s.setAttribute('data-website-id', id)
+    // El hash nunca aporta a las métricas (no hay hash-routing) y era por donde
+    // se colaba el token de OAuth. OJO: NO agregar `data-exclude-search` — el
+    // tracker borra TODOS los query params, utm_* incluidos (verificado contra
+    // el script de cloud.umami.is), y mataría la atribución de campañas.
+    s.setAttribute('data-exclude-hash', 'true')
     document.head.appendChild(s)
   } else if (provider === 'plausible') {
     const src = env.VITE_PLAUSIBLE_SRC
@@ -91,6 +119,31 @@ export function trackActivacion(marcadas: number): void {
     if (marcadas >= 5 && !localStorage.getItem('cmf-ev-activado')) {
       localStorage.setItem('cmf-ev-activado', '1')
       track('activado')
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Señales de instalación como app (PWA) — las dos que existen:
+ * - `pwa_instalada`: el navegador confirma que se instaló (evento `appinstalled`,
+ *   solo Chromium: Android y desktop). iOS no lo emite nunca.
+ * - `pwa_abierta`: primera vez POR DISPOSITIVO que la app corre instalada
+ *   (standalone). Es la única señal observable en iOS; en Android además mide
+ *   quién, aparte de instalarla, la abre. La diferencia entre ambas = instalan
+ *   pero no vuelven.
+ */
+export function trackPwa(): void {
+  if (!inCliente()) return
+  try {
+    window.addEventListener('appinstalled', () => track('pwa_instalada'))
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as { standalone?: boolean }).standalone === true
+    if (standalone && !localStorage.getItem('cmf-ev-pwa')) {
+      localStorage.setItem('cmf-ev-pwa', '1')
+      track('pwa_abierta')
     }
   } catch {
     /* noop */

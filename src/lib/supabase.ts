@@ -17,7 +17,15 @@ const url = env.VITE_SUPABASE_URL
 const key = env.VITE_SUPABASE_ANON_KEY
 
 /** Cliente único, o `null` si no hay backend configurado. */
-export const supabase: SupabaseClient | null = url && key ? createClient(url, key) : null
+export const supabase: SupabaseClient | null =
+  url && key
+    ? createClient(url, key, {
+        // PKCE en vez del flujo implícito (el default): Google vuelve con un
+        // `?code=` de un solo uso en lugar de `#access_token=` (un JWT vivo en
+        // la URL, que quedaba en el historial y hasta en Umami como "página").
+        auth: { flowType: 'pkce' },
+      })
+    : null
 
 /** ¿Está la capa de cuenta habilitada? (hay credenciales de Supabase) */
 export const authHabilitado = supabase !== null

@@ -2,10 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/global.css'
 import { App } from './App.tsx'
-import { initAnalytics } from './lib/analytics'
+import { initAnalytics, trackPwa } from './lib/analytics'
 import { initSync } from './state/sync'
 
 initAnalytics()
+trackPwa() // instalación/uso como app instalada (no-op sin analytics)
 initSync() // no-op sin backend configurado (dev/CI sin credenciales)
 
 // PWA: registrar el service worker solo en producción (en dev molesta con el cache).

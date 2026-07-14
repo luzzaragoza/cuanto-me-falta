@@ -11,14 +11,28 @@ let session: Session | null = null
 const listeners = new Set<() => void>()
 const emit = () => listeners.forEach((l) => l())
 
+/**
+ * Tras el redirect de OAuth quedan credenciales en la URL (`?code=` con PKCE,
+ * `#access_token=` en el flujo viejo, `?error=` si canceló). Para cuando llega
+ * cualquier evento de auth el cliente ya las consumió → se sacan de la barra:
+ * no van al historial ni a las métricas (analytics espera esta limpieza antes
+ * de inyectar su script al aterrizar de un redirect).
+ */
+function limpiarUrlAuth(): void {
+  const resto = location.search + location.hash
+  if (!/[?&#](code|access_token|error|error_description)=/.test(resto)) return
+  history.replaceState(history.state, '', location.pathname)
+}
+
 if (supabase) {
   // sesión inicial (si el usuario ya estaba logueado) + cambios (login/logout,
-  // y el parseo del token cuando Google redirige de vuelta a la app)
+  // y el canje del code cuando Google redirige de vuelta a la app)
   supabase.auth.getSession().then(({ data }) => {
     session = data.session
     emit()
   })
   supabase.auth.onAuthStateChange((_evento, nueva) => {
+    limpiarUrlAuth()
     session = nueva
     emit()
   })
