@@ -6,21 +6,22 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
-| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`) | 70 tests |
+| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`) y de materias compartidas (`espejo`) | 79 tests |
 | Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 34 tests |
-| End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 11 escenarios |
+| End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 12 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **115 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **125 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
-## 6.2 Tests unitarios (70)
+## 6.2 Tests unitarios (79)
 
 Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se testean sin navegador y en milisegundos:
 
 - **`Plan` (15):** construcción del plan por año/cuatrimestre, correlativas directas (`antes`/`después`), cadenas recursivas completas (`chainUp`/`chainDown`), niveles BFS para el árbol, y títulos con corte por cuatrimestre (`hastaCuatri`: dónde cuelga el hito y qué materias exige vía `materiasHasta`).
-- **`Store` (12):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado) y suscripciones.
+- **`Store` (15):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado), suscripciones, y el **espejo de otras carreras** (RN-13: la materia compartida se ve con el avance heredado, la marca propia gana, y el espejo no se persiste ni se exporta).
 - **`selectors` (25):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, hitos de título e iniciales del avatar.
 - **`sync` (18):** conteos de progreso (las materias custom también cuentan), la decisión de merge al iniciar sesión (subir / bajar / nada / conflicto — el perfil no cuenta como diferencia), la marca de **cambios sin subir** (si el usuario edita o borra y refresca antes del push, lo local es más nuevo y no se pisa con un pull), snapshot y escritura local de todas las carreras (ida y vuelta sin pérdida) y el registro de consentimiento que viaja con los datos.
+- **`espejo` (6):** materias compartidas entre carreras (RN-13): qué se hereda y qué no (optativas y otras universidades quedan afuera), entre varias carreras gana el estado más avanzado, y la nota acompaña al estado ganador.
 
 ## 6.3 Tests de integridad de datos académicos (34)
 
@@ -37,7 +38,7 @@ Los planes se cargan a mano; estos tests convierten cada error de carga en un bu
 
 Agregar una carrera nueva es agregar datos — y estos tests la validan automáticamente sin escribir un test más: el archivo recorre el registro completo de planes.
 
-## 6.4 Tests end-to-end (11)
+## 6.4 Tests end-to-end (12)
 
 Playwright ejercita la aplicación real en Chromium, como un usuario:
 
@@ -50,10 +51,11 @@ Playwright ejercita la aplicación real en Chromium, como un usuario:
 7. Cargar una nota actualiza el promedio.
 8. La bienvenida de primera visita pide el nombre y entra a la app.
 9. Elegir otra carrera en la bienvenida carga ese plan.
-10. El resumen en PDF usa la carrera del plan activo (no una fija).
-11. El tutorial corre en la primera visita y no vuelve a aparecer.
+10. Una materia aprobada en una carrera figura aprobada en la otra que la comparte (y sin duplicar datos).
+11. El resumen en PDF usa la carrera del plan activo (no una fija).
+12. El tutorial corre en la primera visita y no vuelve a aparecer.
 
-Cubren de punta a punta los flujos principales: primer ingreso y elección de carrera (CU-01), estados y aviso de correlativas (CU-03), notas y promedio (CU-04), árbol de correlativas (CU-06), resumen en PDF (CU-11) y tutorial (CU-12).
+Cubren de punta a punta los flujos principales: primer ingreso y elección de carrera (CU-01), estados y aviso de correlativas (CU-03), notas y promedio (CU-04), árbol de correlativas (CU-06), materias compartidas entre carreras (RN-13), resumen en PDF (CU-11) y tutorial (CU-12).
 
 ## 6.5 Pipeline de CI/CD
 
@@ -63,8 +65,8 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 104"]
-    U --> E["end-to-end · Playwright · 11"]
+    L --> U["unit + integridad · vitest · 113"]
+    U --> E["end-to-end · Playwright · 12"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]
     L -. falla .-> X["❌ no se publica"]

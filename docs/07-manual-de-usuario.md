@@ -76,6 +76,8 @@ Queda con su ícono, abre a pantalla completa y funciona aunque no tengas señal
 
 Tocá tu carrera en el encabezado y elegí otra. Cada carrera guarda su propio progreso: podés ir y volver sin perder nada.
 
+Si tus carreras **comparten materias** (mismo código en la misma universidad), lo que aprobaste en una figura automáticamente en la otra, con su nota. No hace falta marcarla dos veces — y si en una carrera le cambiás el estado a mano, en esa carrera vale lo que marcaste vos.
+
 ## Empezar de cero
 
 Opciones → **Reiniciar** (el botón rojo). Te pide confirmación porque borra todo el progreso de esa carrera. Si tenés dudas, exportá un backup antes.

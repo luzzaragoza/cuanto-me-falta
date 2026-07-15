@@ -113,6 +113,34 @@ describe('Store · suscripción (observable)', () => {
   })
 })
 
+describe('Store · espejo de otras carreras', () => {
+  const espejo = { states: { COMP: 'aprobada' as const }, notas: { COMP: 9 } }
+
+  it('la materia compartida se ve con el estado y la nota de la otra carrera', () => {
+    const s = new Store('k', espejo)
+    expect(s.estado('COMP')).toBe('aprobada')
+    expect(s.nota('COMP')).toBe(9)
+    expect(s.getSnapshot().states.COMP).toBe('aprobada')
+  })
+
+  it('una marca explícita de este plan le gana al espejo (incluso pendiente)', () => {
+    const s = new Store('k', espejo)
+    s.setEstado('COMP', 'pendiente')
+    expect(s.estado('COMP')).toBe('pendiente')
+    expect(s.getSnapshot().states.COMP).toBe('pendiente')
+  })
+
+  it('el espejo no se persiste ni se exporta (es vista, no datos del plan)', () => {
+    const s = new Store('k', espejo)
+    s.setEstado('PROPIA', 'cursando') // fuerza un persist
+    const guardado = JSON.parse(localStorage.getItem('k')!)
+    expect(guardado.states.COMP).toBeUndefined()
+    expect(JSON.parse(s.exportar()).states.COMP).toBeUndefined()
+    // y un Store nuevo SIN espejo (otra sesión, sin otras carreras) no lo ve
+    expect(new Store('k').estado('COMP')).toBe('pendiente')
+  })
+})
+
 describe('Store · export / import', () => {
   it('exportar produce un JSON que importar entiende (round-trip)', () => {
     const s1 = new Store('k1')

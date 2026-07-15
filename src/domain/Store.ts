@@ -1,4 +1,4 @@
-import type { DB, Estado, Perfil } from '../types'
+import type { DB, Espejo, Estado, Perfil } from '../types'
 
 /** DB vacía por defecto. */
 function emptyDB(): DB {
@@ -14,26 +14,36 @@ function emptyDB(): DB {
  *
  * Reusa la clave `plan-uade-v3` de la versión anterior, así los datos ya
  * guardados en el navegador se mantienen al migrar.
+ *
+ * Si recibe un `espejo` (avance heredado de las otras carreras, ver
+ * `lib/espejo.ts`), el snapshot que ve la UI lo pone DEBAJO de las marcas
+ * propias: una materia compartida ya aprobada en otra carrera figura aprobada
+ * acá, pero cualquier marca explícita de este plan gana. El espejo NUNCA se
+ * persiste ni se exporta — es una vista, no datos de este plan.
  */
 export class Store {
   private db: DB
+  private vista: DB
+  private readonly espejo?: Espejo
   private readonly listeners = new Set<() => void>()
   private readonly key: string
 
-  constructor(key = 'plan-uade-v3') {
+  constructor(key = 'plan-uade-v3', espejo?: Espejo) {
     this.key = key
+    this.espejo = espejo
     this.db = this.load()
+    this.vista = this.conEspejo(this.db)
   }
 
-  // ---- lectura ----
+  // ---- lectura (sobre la vista: marcas propias + espejo debajo) ----
   estado(cod: string): Estado {
-    return this.db.states[cod] ?? 'pendiente'
+    return this.vista.states[cod] ?? 'pendiente'
   }
   nota(cod: string): number | undefined {
-    return this.db.notas[cod]
+    return this.vista.notas[cod]
   }
   optName(cod: string): string | undefined {
-    return this.db.optNames[cod]
+    return this.vista.optNames[cod]
   }
 
   // ---- suscripción (para React) ----
@@ -41,7 +51,7 @@ export class Store {
     this.listeners.add(cb)
     return () => this.listeners.delete(cb)
   }
-  getSnapshot = (): DB => this.db
+  getSnapshot = (): DB => this.vista
 
   // ---- mutaciones ----
   setEstado(cod: string, estado: Estado): void {
@@ -104,8 +114,18 @@ export class Store {
 
   // ---- internos ----
   private commit(): void {
+    this.vista = this.conEspejo(this.db)
     this.persist()
     this.listeners.forEach((l) => l())
+  }
+  /** La DB que ve la UI: el espejo de otras carreras debajo de lo propio. */
+  private conEspejo(db: DB): DB {
+    if (!this.espejo) return db
+    return {
+      ...db,
+      states: { ...this.espejo.states, ...db.states },
+      notas: { ...this.espejo.notas, ...db.notas },
+    }
   }
   private persist(): void {
     try {

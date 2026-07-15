@@ -141,6 +141,32 @@ test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => 
   await expect(page.locator('#plan')).toContainText('Testing de Aplicaciones')
 })
 
+test('una materia aprobada en una carrera figura aprobada en la otra (compartida)', async ({ page }) => {
+  // 3.4.164 Sistemas de Información I existe en Ing. Informática y en Lic. Gestión TI.
+  // La aprobamos en Informática y abrimos la app en Gestión TI. Va en un init
+  // script (no un evaluate) porque el seed del beforeEach corre en CADA
+  // navegación y pisaría la marca; este corre después, en orden de registro.
+  await page.addInitScript(() => {
+    const d = JSON.parse(localStorage.getItem('plan-uade-v3')!)
+    d.states['3.4.164'] = 'aprobada'
+    localStorage.setItem('plan-uade-v3', JSON.stringify(d))
+    localStorage.setItem('cmf-plan-activo', 'uade-lic-gestion-ti')
+    localStorage.setItem(
+      'plan-uade-lic-gestion-ti-v3',
+      JSON.stringify({ states: {}, notas: {}, optNames: {}, custom: [], profile: { name: 'Test', photo: '' } }),
+    )
+  })
+  await page.reload()
+
+  await expect(page.locator('.head .sub')).toContainText('Gestión de Tecnología')
+  await expect(page.locator('.counts')).toContainText('1 aprobadas')
+  // y la clave de Gestión TI sigue sin marcas propias: el avance heredado no se duplica
+  const guardado = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('plan-uade-lic-gestion-ti-v3')!),
+  )
+  expect(guardado.states['3.4.164']).toBeUndefined()
+})
+
 test('el resumen PDF usa la carrera del plan activo (no hardcodeada)', async ({ page }) => {
   await page.evaluate(() => {
     localStorage.setItem('cmf-plan-activo', 'uade-lic-gestion-ti')

@@ -76,6 +76,7 @@ Las consecuencias observadas que motivaron el proyecto:
 | RN-10 | El nombre de una optativa lo define el usuario (RF-12); si no la renombró, se muestra el nombre genérico del plan. |
 | RN-11 | El progreso es **independiente por plan**: cambiar de carrera no mezcla ni borra datos de la otra. |
 | RN-12 | El progreso solo se almacena en el servidor **con sesión iniciada y consentimiento aceptado** (una vez por cuenta; el registro del consentimiento viaja con los datos). Sin cuenta, todo queda en el dispositivo. En caso de conflicto entre el avance local y el de la cuenta, **decide el usuario**. Si quedaron **cambios locales sin subir** (el usuario editó o borró y recargó antes de que se guardara en la cuenta), lo local es más nuevo y **prevalece**: un borrado reciente no se restaura desde la cuenta. |
+| RN-13 | Las materias **compartidas** (mismo código en dos carreras de la **misma universidad**) reflejan el avance entre carreras: si en una está en curso o aprobada (con su nota), en la otra se muestra igual. Es una **vista derivada** que no contradice a RN-11: cada plan sigue guardando solo sus propias marcas, y una marca explícita del plan activo prevalece sobre lo heredado. Las optativas y las materias personalizadas quedan afuera. |
 
 ## 2.6 Datos académicos precargados
 

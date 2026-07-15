@@ -37,6 +37,18 @@ export interface Perfil {
   photo: string
 }
 
+/**
+ * Avance "espejado" desde las OTRAS carreras del usuario: para cada materia
+ * compartida (mismo código en la misma universidad), el mejor estado y su nota
+ * registrados en otro plan. Es DERIVADO y de solo lectura: el Store lo pone
+ * DEBAJO de las marcas propias al armar el snapshot que ve la UI, pero nunca
+ * se persiste (cada plan sigue guardando únicamente lo suyo).
+ */
+export interface Espejo {
+  states: Record<string, Estado>
+  notas: Record<string, number>
+}
+
 /** Todo el estado del usuario que persiste en el navegador. */
 export interface DB {
   states: Record<string, Estado>

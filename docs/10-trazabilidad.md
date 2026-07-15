@@ -51,6 +51,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-10 | Optativa renombrable, hasta 48 caracteres | `Store.setOptName` | Unit `Store` |
 | RN-11 | Progreso independiente por plan | Claves de storage por plan (`src/state`) | Unit `Store` (persistencia) · Manual |
 | RN-12 | Server solo con cuenta + consentimiento; conflicto lo decide el usuario; cambios sin subir prevalecen | `lib/sync` (decidirMerge, consentimiento, marca dirty) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
+| RN-13 | Materias compartidas entre carreras (misma universidad): vista derivada, la marca propia prevalece, optativas afuera | `lib/espejo` (espejoDe) · `domain/Store` (vista con espejo) · `state/store` (espejo del plan activo) | Unit `espejo` + `Store` · E2E compartida |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación
 
@@ -75,7 +76,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 - **4 con cobertura parcial:** RF-02 (el e2e cubre la elección de carrera en la bienvenida, no el cambio posterior), RF-13 (las iniciales del avatar tienen test; la carga de foto es manual), y RF-19/RF-20 (la lógica de merge y consentimiento tiene tests unitarios; el flujo OAuth real y el sync entre dispositivos se verifican manualmente — el e2e no puede loguearse en Google).
 - **4 con verificación manual:** RF-09, RF-14, RF-17 y RF-18.
 
-**Cobertura de las 12 RN:** 11 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
+**Cobertura de las 13 RN:** 12 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
 
 **Brechas conocidas y próximos tests candidatos** (mejoras honestas, no defectos):
 
