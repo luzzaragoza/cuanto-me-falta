@@ -6,21 +6,21 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
-| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`) y de materias compartidas (`espejo`) | 79 tests |
+| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`) y de materias compartidas (`espejo`) | 86 tests |
 | Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 34 tests |
 | End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 12 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **125 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **132 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
-## 6.2 Tests unitarios (79)
+## 6.2 Tests unitarios (86)
 
 Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se testean sin navegador y en milisegundos:
 
 - **`Plan` (15):** construcción del plan por año/cuatrimestre, correlativas directas (`antes`/`después`), cadenas recursivas completas (`chainUp`/`chainDown`), niveles BFS para el árbol, y títulos con corte por cuatrimestre (`hastaCuatri`: dónde cuelga el hito y qué materias exige vía `materiasHasta`).
 - **`Store` (15):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado), suscripciones, y el **espejo de otras carreras** (RN-13: la materia compartida se ve con el avance heredado, la marca propia gana, y el espejo no se persiste ni se exporta).
 - **`selectors` (25):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, hitos de título e iniciales del avatar.
-- **`sync` (18):** conteos de progreso (las materias custom también cuentan), la decisión de merge al iniciar sesión (subir / bajar / nada / conflicto — el perfil no cuenta como diferencia), la marca de **cambios sin subir** (si el usuario edita o borra y refresca antes del push, lo local es más nuevo y no se pisa con un pull), snapshot y escritura local de todas las carreras (ida y vuelta sin pérdida) y el registro de consentimiento que viaja con los datos.
+- **`sync` (25):** conteos de progreso (las materias custom también cuentan), la decisión de merge al iniciar sesión (subir / bajar / nada / conflicto — el perfil no cuenta como diferencia), la **base de última sincronización** (RN-12: un dispositivo ya sincronizado baja o sube solo según quién avanzó, y la pregunta queda para la primera vez o el avance simultáneo; la huella es canónica — el orden de inserción no inventa diferencias), la marca de **cambios sin subir** (si el usuario edita o borra y refresca antes del push, lo local es más nuevo y no se pisa con un pull), snapshot y escritura local de todas las carreras (ida y vuelta sin pérdida) y el registro de consentimiento que viaja con los datos.
 - **`espejo` (6):** materias compartidas entre carreras (RN-13): qué se hereda y qué no (optativas y otras universidades quedan afuera), entre varias carreras gana el estado más avanzado, y la nota acompaña al estado ganador.
 
 ## 6.3 Tests de integridad de datos académicos (34)
@@ -65,7 +65,7 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 113"]
+    L --> U["unit + integridad · vitest · 120"]
     U --> E["end-to-end · Playwright · 12"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]

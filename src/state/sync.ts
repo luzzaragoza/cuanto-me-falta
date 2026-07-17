@@ -3,12 +3,16 @@
 // conflicto) con el mismo patrón useSyncExternalStore del resto de la app.
 //
 // Reglas:
-// - Al entrar: se trae lo remoto y se decide (lib/sync.decidirMerge). Si ambos
-//   lados tienen progreso distinto → 'conflicto' y decide el usuario (modal).
+// - Al entrar: se trae lo remoto y se decide (lib/sync.decidirMerge) usando la
+//   BASE de la última sincronización: si solo la nube avanzó → baja solo; si solo
+//   lo local avanzó → sube solo. El modal de conflicto queda para la primera vez
+//   de la cuenta en este dispositivo (con avance previo) o si avanzaron los dos.
 // - Cada cambio local (Store.commit → notify) programa un push con debounce, y
 //   deja la marca `cmf-sync-dirty` (por user id) hasta que el push aterriza. Si
 //   el usuario refresca en esa ventana, el merge sabe que lo local es más nuevo
 //   y NO lo pisa con un pull (ej.: "Reiniciar todo" + F5 queda borrado).
+// - Cada push que aterriza (y cada pull) actualiza la base — el estado que la
+//   nube y este dispositivo tienen en común.
 // - Sin backend o sin sesión: todo es no-op y la app queda 100% local.
 
 import { useSyncExternalStore } from 'react'
@@ -18,7 +22,9 @@ import { store } from './store'
 import {
   decidirMerge,
   escribirLocal,
+  guardarBase,
   guardarConsent,
+  leerBase,
   leerConsent,
   leerDirty,
   limpiarDirty,
@@ -78,9 +84,10 @@ const DEBOUNCE_MS = 1500
 async function push(): Promise<void> {
   if (!supabase || !userId) return
   setEstado('guardando')
+  const data = snapshotLocal()
   const { error } = await supabase.from('progreso').upsert({
     user_id: userId,
-    data: snapshotLocal(),
+    data,
     updated_at: new Date().toISOString(),
   })
   if (error) {
@@ -90,6 +97,7 @@ async function push(): Promise<void> {
     // llegó al server: ya no hay cambios pendientes… salvo que hayan editado
     // DURANTE el vuelo (quedó otro push programado) — ahí la marca sigue viva
     if (!timer) limpiarDirty()
+    guardarBase(userId, data) // esto es lo que la nube tiene ahora
     setEstado('listo')
   }
 }
@@ -154,22 +162,30 @@ function marcarTourVisto(): void {
 }
 
 function continuarMerge(remoto: RemoteData | null): void {
+  if (!userId) return
   const local = snapshotLocal()
   // quedaron cambios de ESTE usuario sin subir (editó/borró y refrescó antes del
   // push con debounce): lo local es más nuevo, no se baja nada arriba de eso
   const dirty = leerDirty() === userId
+  // huella de la última sincronización de esta cuenta EN ESTE dispositivo:
+  // permite bajar/subir solo según quién se movió, sin preguntar cada vez
+  const base = leerBase(userId)
 
-  switch (decidirMerge(remoto, local, dirty)) {
+  switch (decidirMerge(remoto, local, dirty, base)) {
     case 'push':
+      // la marca sobrevive a un push fallido + refresh: lo local sigue mandando
+      marcarDirty(userId)
       void push()
       break
     case 'pull':
       limpiarDirty() // lo local queda reconciliado con la cuenta
+      guardarBase(userId, remoto!)
       escribirLocal(remoto!)
       marcarTourVisto()
       location.reload() // el singleton del Store se reconstruye con lo bajado
       break
     case 'nada':
+      guardarBase(userId, local)
       // si la fila remota todavía no tiene el consentimiento (cuentas creadas
       // antes de este build), lo subimos ya — si no, otro dispositivo lo re-pediría
       if (!remoto?.consentimiento && leerConsent()) void push()
@@ -201,18 +217,21 @@ export function rechazarConsentimiento(): void {
   void salir()
 }
 
-/** El usuario eligió en el modal de conflicto. */
-export function resolverConflicto(eleccion: 'cuenta' | 'dispositivo'): void {
-  if (!conflicto) return
+/** El usuario eligió en el modal de conflicto: quedarse con la nube o con lo local. */
+export function resolverConflicto(eleccion: 'nube' | 'local'): void {
+  if (!conflicto || !userId) return
   const remoto = conflicto.remoto
   conflicto = null
-  if (eleccion === 'cuenta') {
-    limpiarDirty() // eligió la cuenta: los cambios locales pendientes se descartan
+  if (eleccion === 'nube') {
+    limpiarDirty() // eligió la nube: los cambios locales pendientes se descartan
+    guardarBase(userId, remoto)
     escribirLocal(remoto)
     marcarTourVisto()
     location.reload()
   } else {
-    // decisión explícita del usuario: lo local pisa la cuenta
+    // decisión explícita del usuario: lo local pisa la nube (la marca sobrevive
+    // a un push fallido + refresh, para que la elección no se pierda)
+    marcarDirty(userId)
     void push()
   }
 }

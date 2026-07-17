@@ -76,6 +76,33 @@ export function limpiarDirty(): void {
   }
 }
 
+// ---- "base": huella de la última sincronización ----
+// Recuerda QUÉ estado quedó sincronizado con la cuenta la última vez (por user id).
+// Con eso, al reentrar sabemos quién se movió: si la nube sigue igual a la base,
+// solo lo local avanzó → se sube solo; si lo local sigue igual a la base, solo la
+// nube avanzó → se baja solo. La pregunta queda para la PRIMERA vez de la cuenta
+// en este dispositivo, o si avanzaron los dos a la vez (ahí sí puede perderse algo).
+const BASE_KEY = 'cmf-sync-base'
+
+export function leerBase(uid: string): string | null {
+  try {
+    const raw = localStorage.getItem(BASE_KEY)
+    if (!raw) return null
+    const b = JSON.parse(raw) as { uid: string; huella: string }
+    return b.uid === uid ? b.huella : null // la base de otra cuenta no vale
+  } catch {
+    return null
+  }
+}
+
+export function guardarBase(uid: string, data: RemoteData): void {
+  try {
+    localStorage.setItem(BASE_KEY, JSON.stringify({ uid, huella: huellaProgreso(data) }))
+  } catch {
+    /* modo incógnito, etc. */
+  }
+}
+
 const emptyDB = (): DB => ({ states: {}, notas: {}, optNames: {}, custom: [] })
 
 function leerDB(key: string): DB | null {
@@ -129,40 +156,72 @@ export function snapshotLocal(): RemoteData {
 }
 
 /**
- * Decisión al iniciar sesión, con la regla de oro "nunca pisar datos sin preguntar":
- * - 'push'      → la cuenta está vacía (o sin progreso real): sube lo local.
- * - 'pull'      → lo local está vacío y la cuenta tiene progreso: baja lo remoto.
+ * Decisión al iniciar sesión, con la regla de oro "nunca perder datos sin preguntar":
+ * - 'push'      → la cuenta está vacía, o solo lo local avanzó: sube lo local.
+ * - 'pull'      → lo local está vacío, o solo la nube avanzó: baja lo remoto.
  * - 'nada'      → son iguales: no hay nada que hacer.
- * - 'conflicto' → ambos tienen progreso distinto: decide el usuario (modal).
+ * - 'conflicto' → ambos tienen progreso distinto y no se puede saber (o los dos
+ *                 avanzaron a la vez): decide el usuario (modal).
  *
  * `dirtyLocal` = quedaron cambios locales sin subir (el usuario editó/borró y el
  * push no llegó antes del refresh). En ese caso lo local es más nuevo y manda:
  * un borrado reciente NO se resucita bajando la cuenta, y lo pendiente se flushea.
- * La única decisión que no cambia es 'conflicto' (progreso distinto en ambos
- * lados): ahí se sigue preguntando.
+ *
+ * `base` = huella de la última sincronización de ESTA cuenta en este dispositivo
+ * (ver leerBase). Es lo que evita preguntar en cada cambio de dispositivo: si la
+ * nube sigue igual a la base, solo lo local se movió → push; si lo local sigue
+ * igual a la base, solo la nube se movió → pull. Sin base (primera vez de la
+ * cuenta acá) o con los dos lados movidos, se pregunta.
  */
 export function decidirMerge(
   remoto: RemoteData | null,
   local: RemoteData,
   dirtyLocal = false,
+  base: string | null = null,
 ): 'push' | 'pull' | 'nada' | 'conflicto' {
   if (!hayProgreso(remoto)) return 'push'
   if (!hayProgreso(local)) return dirtyLocal ? 'push' : 'pull'
   if (igualProgreso(remoto!, local)) return dirtyLocal ? 'push' : 'nada'
+  if (base !== null) {
+    if (huellaProgreso(remoto) === base) return 'push' // solo lo local avanzó (p.ej. offline)
+    if (huellaProgreso(local) === base) return 'pull' // solo la nube avanzó (otro dispositivo)
+  }
   return 'conflicto'
+}
+
+/**
+ * Huella canónica del PROGRESO (sin perfil, plan activo ni consentimiento).
+ * Canónica en serio: claves ordenadas (el orden de inserción de dos dispositivos
+ * no puede inventar diferencias), sin estados 'pendiente' explícitos (marcar y
+ * desmarcar = nunca haberla tocado) y sin planes vacíos (presente-vacío = ausente).
+ */
+export function huellaProgreso(data: RemoteData | null): string {
+  if (!data) return '{}'
+  const orden = <T,>(o: Record<string, T>): Record<string, T> =>
+    Object.fromEntries(Object.entries(o).sort(([a], [b]) => (a < b ? -1 : 1)))
+  const planes: Record<string, unknown> = {}
+  for (const id of Object.keys(data.planes).sort()) {
+    const d = data.planes[id] ?? emptyDB()
+    const s = orden(
+      Object.fromEntries(Object.entries(d.states).filter(([, e]) => e !== 'pendiente')),
+    )
+    const n = orden(d.notas)
+    const o = orden(d.optNames)
+    if (
+      Object.keys(s).length === 0 &&
+      Object.keys(n).length === 0 &&
+      Object.keys(o).length === 0 &&
+      d.custom.length === 0
+    )
+      continue
+    planes[id] = { s, n, o, c: d.custom }
+  }
+  return JSON.stringify(planes)
 }
 
 /** Compara solo el progreso (estados/notas/optNames/custom por plan), no el perfil. */
 function igualProgreso(a: RemoteData, b: RemoteData): boolean {
-  const ids = new Set([...Object.keys(a.planes), ...Object.keys(b.planes)])
-  for (const id of ids) {
-    const da = a.planes[id] ?? emptyDB()
-    const db = b.planes[id] ?? emptyDB()
-    const core = (d: DB) =>
-      JSON.stringify({ s: d.states, n: d.notas, o: d.optNames, c: d.custom })
-    if (core(da) !== core(db)) return false
-  }
-  return true
+  return huellaProgreso(a) === huellaProgreso(b)
 }
 
 /**

@@ -50,7 +50,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-09 | Títulos como hitos por año (con corte opcional por cuatrimestre) | `selectors.hitos` + `Plan.materiasHasta` (`hastaAnio`/`hastaCuatri`) | Unit `selectors` y `Plan` · Integridad (títulos → años/cuatrimestres válidos) |
 | RN-10 | Optativa renombrable, hasta 48 caracteres | `Store.setOptName` | Unit `Store` |
 | RN-11 | Progreso independiente por plan | Claves de storage por plan (`src/state`) | Unit `Store` (persistencia) · Manual |
-| RN-12 | Server solo con cuenta + consentimiento; conflicto lo decide el usuario; cambios sin subir prevalecen | `lib/sync` (decidirMerge, consentimiento, marca dirty) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
+| RN-12 | Server solo con cuenta + consentimiento; dispositivo sincronizado no re-pregunta (base de última sincronización); conflicto real lo decide el usuario; cambios sin subir prevalecen | `lib/sync` (decidirMerge, base/huella, consentimiento, marca dirty) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
 | RN-13 | Materias compartidas entre carreras (misma universidad): vista derivada, la marca propia prevalece, optativas afuera | `lib/espejo` (espejoDe) · `domain/Store` (vista con espejo) · `state/store` (espejo del plan activo) | Unit `espejo` + `Store` · E2E compartida |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación

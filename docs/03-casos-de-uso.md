@@ -262,7 +262,7 @@ Desde el navegador, el estudiante usa "Agregar a pantalla de inicio" (o el aviso
 **Flujos alternativos**
 
 - **2a. No acepta el consentimiento:** la sesión se cierra y la aplicación sigue 100 % local; nada se subió.
-- **3a. Conflicto:** el dispositivo y la cuenta tienen progreso distinto. La aplicación muestra las dos opciones con el conteo de materias de cada lado y **el estudiante decide** cuál conservar; hasta que no elige, no se sube nada (RN-12).
+- **3a. Conflicto:** la memoria local y la nube tienen progreso distinto **y no se puede saber cuál es el más nuevo** (primera vez de la cuenta en este dispositivo, o avanzaron los dos a la vez). La aplicación muestra las dos opciones con el conteo de materias de cada lado y **el estudiante decide** cuál conservar; hasta que no elige, no se sube nada (RN-12). En un dispositivo ya sincronizado no se pregunta: la aplicación recuerda la última sincronización y adopta sola el lado que avanzó.
 - **4a. Sin conexión:** la aplicación sigue funcionando local; el próximo cambio con conexión reintenta la subida.
 
 **Postcondiciones**

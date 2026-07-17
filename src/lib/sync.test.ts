@@ -7,8 +7,11 @@ import {
   contarMarcadas,
   decidirMerge,
   escribirLocal,
+  guardarBase,
   guardarConsent,
   hayProgreso,
+  huellaProgreso,
+  leerBase,
   leerConsent,
   leerDirty,
   limpiarDirty,
@@ -142,6 +145,47 @@ describe('sync · cambios sin subir (dirty)', () => {
   it('el conflicto sigue preguntando aunque haya cambios sin subir', () => {
     const otro = remote({ p: db({ states: { A: 'cursando' } }) })
     expect(decidirMerge(conProgreso, otro, true)).toBe('conflicto')
+  })
+})
+
+describe('sync · base de última sincronización (no preguntar en cada dispositivo)', () => {
+  const comun = remote({ p: db({ states: { A: 'aprobada' } }) })
+  const avanceNube = remote({ p: db({ states: { A: 'aprobada', B: 'cursando' } }) })
+  const avanceLocal = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 9 } }) })
+
+  it('la base va y viene por localStorage, y es por cuenta', () => {
+    expect(leerBase('user-1')).toBeNull()
+    guardarBase('user-1', comun)
+    expect(leerBase('user-1')).toBe(huellaProgreso(comun))
+    expect(leerBase('user-2')).toBeNull() // la base de otra cuenta no vale
+  })
+
+  it('solo la nube avanzó desde la última sincronización → pull, sin preguntar', () => {
+    expect(decidirMerge(avanceNube, comun, false, huellaProgreso(comun))).toBe('pull')
+  })
+
+  it('solo lo local avanzó (p.ej. offline) → push, sin preguntar', () => {
+    expect(decidirMerge(comun, avanceLocal, false, huellaProgreso(comun))).toBe('push')
+  })
+
+  it('avanzaron los dos a la vez → sigue preguntando (algo se puede perder)', () => {
+    expect(decidirMerge(avanceNube, avanceLocal, false, huellaProgreso(comun))).toBe('conflicto')
+  })
+
+  it('sin base (1ª vez de la cuenta en este dispositivo) → pregunta, como siempre', () => {
+    expect(decidirMerge(avanceNube, avanceLocal, false, null)).toBe('conflicto')
+  })
+
+  it('la huella es canónica: el orden de inserción no inventa diferencias', () => {
+    const unOrden = remote({ p: db({ states: { A: 'aprobada', B: 'cursando' } }) })
+    const otroOrden = remote({ p: db({ states: { B: 'cursando', A: 'aprobada' } }) })
+    expect(huellaProgreso(unOrden)).toBe(huellaProgreso(otroOrden))
+    expect(decidirMerge(unOrden, otroOrden)).toBe('nada')
+  })
+
+  it('un pendiente explícito o un plan presente-pero-vacío no cuentan en la huella', () => {
+    const conRuido = remote({ p: db({ states: { A: 'aprobada', Z: 'pendiente' } }), q: db() })
+    expect(huellaProgreso(conRuido)).toBe(huellaProgreso(comun))
   })
 })
 
