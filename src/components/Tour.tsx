@@ -4,9 +4,13 @@ interface Step {
   sel: string // selector del elemento real a resaltar
   titulo: string
   texto: string
+  cta?: boolean // paso de cierre: el botón primario invita a marcar, no a avanzar
 }
 
 // Tour sobre los elementos REALES de la app (guía en contexto, no pantallas previas).
+// Cierra sobre la 1ª materia con una llamada a la acción: el dato del embudo dice
+// que el 64% entra y no marca nada, así que el tour no termina explicando — termina
+// empujando el primer toque (la métrica de activación del Gate A).
 const STEPS: Step[] = [
   {
     sel: '#plan .mat',
@@ -33,11 +37,17 @@ const STEPS: Step[] = [
     titulo: 'Opciones',
     texto: 'Exportá un PDF o un backup, cambiá de carrera y más.',
   },
+  {
+    sel: '#plan .mat',
+    titulo: '¡Ahora probá vos!',
+    texto: 'Empezá por esta: tocala y marcá cómo la llevás. Tu avance se calcula solo.',
+    cta: true,
+  },
 ]
 
 const CARD_W = 300
 
-export function Tour({ onClose }: { onClose: () => void }) {
+export function Tour({ onClose, onMark }: { onClose: () => void; onMark: () => void }) {
   const [i, setI] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const step = STEPS[i]
@@ -107,13 +117,19 @@ export function Tour({ onClose }: { onClose: () => void }) {
                 Atrás
               </button>
             )}
-            <button
-              className="tour-next"
-              type="button"
-              onClick={() => (last ? onClose() : setI(i + 1))}
-            >
-              {last ? 'Listo' : 'Siguiente'}
-            </button>
+            {step.cta ? (
+              <button className="tour-next tour-cta" type="button" onClick={onMark}>
+                Marcar una materia
+              </button>
+            ) : (
+              <button
+                className="tour-next"
+                type="button"
+                onClick={() => (last ? onClose() : setI(i + 1))}
+              >
+                {last ? 'Listo' : 'Siguiente'}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -104,6 +104,17 @@ export function App() {
     setNotas(true)
   }
 
+  // Cierre del tour con acción: abre el selector de estado sobre la 1ª materia del
+  // plan (1° año, sin correlativas) para que el recién llegado haga su primera
+  // marca ahí mismo. `primera_materia` se dispara solo al elegir estado; `tour_marcar`
+  // mide cuántos aceptan el empujón.
+  const marcarPrimera = () => {
+    track('tour_marcar')
+    closeTour()
+    const el = document.querySelector<HTMLElement>('#plan .mat')
+    if (el) setPop({ cod: el.id.replace(/^mat-/, ''), anchor: el })
+  }
+
   return (
     <>
       <div className="wrap">
@@ -156,7 +167,7 @@ export function App() {
 
         {tree && <TreeView focus={tree.focus} onClose={() => setTree(null)} />}
 
-        {showTour && <Tour onClose={closeTour} />}
+        {showTour && <Tour onClose={closeTour} onMark={marcarPrimera} />}
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 

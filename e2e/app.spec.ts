@@ -198,15 +198,19 @@ test('el tutorial (coach marks) corre en la primera visita y no vuelve', async (
   await page.getByPlaceholder('Tu nombre').fill('Luz')
   await page.getByRole('button', { name: /Empezá/ }).click()
 
-  // aparece el tour, arranca en 1/5
+  // aparece el tour, arranca en 1/6
   const tour = page.locator('.tour')
   await expect(tour).toBeVisible()
-  await expect(tour).toContainText('1 / 5')
+  await expect(tour).toContainText('1 / 6')
 
-  // recorrerlo hasta el final
-  for (let s = 0; s < 4; s++) await page.getByRole('button', { name: 'Siguiente' }).click()
-  await page.getByRole('button', { name: 'Listo' }).click()
+  // recorrerlo hasta el paso de cierre (con acción)
+  for (let s = 0; s < 5; s++) await page.getByRole('button', { name: 'Siguiente' }).click()
+  await expect(tour).toContainText('6 / 6')
+
+  // el cierre invita a marcar: abre el selector sobre la 1ª materia y cierra el tour
+  await page.getByRole('button', { name: 'Marcar una materia' }).click()
   await expect(page.locator('.tour')).toHaveCount(0)
+  await expect(page.locator('.spop')).toBeVisible()
 
   // quedó marcado como visto → no vuelve
   expect(await page.evaluate(() => localStorage.getItem('cmf-tour-visto'))).toBe('1')

@@ -1482,6 +1482,11 @@ body {
   cursor: pointer;
   font-family: var(--sans);
 }
+/* Paso de cierre: el botón invita a marcar → dorado de acento, no el oscuro de "Siguiente". */
+.tour-cta {
+  background: var(--gold);
+  color: #fff;
+}
 @keyframes tour-in {
   from {
     opacity: 0;

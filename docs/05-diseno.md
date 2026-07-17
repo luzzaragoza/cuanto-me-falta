@@ -53,7 +53,7 @@ La decisión de diseño central: **el color codifica significado de manera consi
 - **Avisos que proponen el paso siguiente.** El aviso de correlativas no es un error: dice exactamente qué falta y ofrece un botón para ver el árbol con foco en esa materia. Informar + accionar en el mismo gesto.
 - **Paneles de correlativas múltiples.** Se pueden abrir varios a la vez para comparar materias — la consulta real nunca es de a una.
 - **El tablero responde la pregunta del título.** Porcentaje grande, hitos de título con cuántas materias faltan y avance por año: la respuesta a "¿cuánto me falta?" está arriba de todo, siempre.
-- **Onboarding guiado, una sola vez.** Tour de coach marks en la primera visita, repetible a demanda desde Opciones; nunca vuelve a interrumpir solo.
+- **Onboarding guiado que termina en acción.** Tour de coach marks en la primera visita, repetible a demanda desde Opciones; nunca vuelve a interrumpir solo. El paso de cierre no explica: invita a marcar la primera materia y abre ahí mismo el selector de estado — el tutorial desemboca en la acción que arranca el uso (activación), no en una despedida.
 - **Acciones peligrosas, visualmente peligrosas.** Reiniciar el progreso está separado, marcado en rojo y pide confirmación.
 - **Resumen pensado para papel.** La vista de impresión no es la pantalla "como salga": es un documento propio, diseñado con `@media print`, con identidad, métricas y materias por estado.
 
