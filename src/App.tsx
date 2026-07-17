@@ -104,13 +104,15 @@ export function App() {
     setNotas(true)
   }
 
-  // Cierre del tour con acción: abre el selector de estado sobre la 1ª materia del
-  // plan (1° año, sin correlativas) para que el recién llegado haga su primera
-  // marca ahí mismo. `primera_materia` se dispara solo al elegir estado; `tour_marcar`
-  // mide cuántos aceptan el empujón.
-  const marcarPrimera = () => {
+  // Cierre del tour con acción: el recién llegado hace su primera marca ahí mismo.
+  // `directo` = tocó la materia resaltada (su propio clic abre el selector); sin
+  // `directo` vino por el botón de la tarjeta → abrimos el selector sobre la 1ª
+  // materia del plan (1° año, sin correlativas). `primera_materia` se dispara solo
+  // al elegir estado; `tour_marcar` mide cuántos aceptan el empujón.
+  const marcarPrimera = (directo = false) => {
     track('tour_marcar')
     closeTour()
+    if (directo) return
     const el = document.querySelector<HTMLElement>('#plan .mat')
     if (el) setPop({ cod: el.id.replace(/^mat-/, ''), anchor: el })
   }

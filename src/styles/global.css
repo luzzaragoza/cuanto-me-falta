@@ -31,12 +31,20 @@
 html,
 body {
   margin: 0;
+  /* Lock horizontal. El contenido no desborda a lo ancho (verificado en 390/375px),
+     pero iOS —sobre todo instalada como app (standalone)— deja arrastrar la página
+     a los costados igual (rubber band). Sin scroll lateral y sin rebote. */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
+  /* El gesto lateral ni arranca: solo paneo vertical (+ pinch para zoom, que no se
+     toca). No afecta al árbol: su lienzo maneja los gestos por su cuenta. */
+  touch-action: pan-y pinch-zoom;
 }
 
 .wrap {
@@ -1486,6 +1494,14 @@ body {
 .tour-cta {
   background: var(--gold);
   color: #fff;
+}
+/* En el cierre el overlay DEJA PASAR los clics: la materia resaltada se toca directo
+   (el spotlight invita a tocarla — tocarla tiene que funcionar). La tarjeta sigue viva. */
+.tour.cta {
+  pointer-events: none;
+}
+.tour.cta .tour-card {
+  pointer-events: auto;
 }
 @keyframes tour-in {
   from {

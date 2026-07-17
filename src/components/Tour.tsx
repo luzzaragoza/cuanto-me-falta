@@ -47,7 +47,14 @@ const STEPS: Step[] = [
 
 const CARD_W = 300
 
-export function Tour({ onClose, onMark }: { onClose: () => void; onMark: () => void }) {
+export function Tour({
+  onClose,
+  onMark,
+}: {
+  onClose: () => void
+  /** Aceptó el empujón final. `directo`: tocó la materia (el clic ya abre su selector). */
+  onMark: (directo?: boolean) => void
+}) {
   const [i, setI] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const step = STEPS[i]
@@ -80,6 +87,23 @@ export function Tour({ onClose, onMark }: { onClose: () => void; onMark: () => v
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Paso de cierre: el overlay deja pasar los clics (ver .tour.cta en CSS) para que
+  // la materia resaltada se toque DIRECTO — el spotlight invita a tocarla, así que
+  // tocarla tiene que funcionar. Captura: si el clic cayó en una materia, es el
+  // nudge aceptado (el propio clic abre su selector); cualquier otro clic fuera de
+  // la tarjeta solo despide el tour y deja que el clic haga lo suyo.
+  useEffect(() => {
+    if (!step.cta) return
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (!t || t.closest('.tour-card')) return
+      if (t.closest('.mat')) onMark(true)
+      else onClose()
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
+  }, [step.cta, onMark, onClose])
+
   if (!rect) return null
 
   const pad = 8
@@ -96,7 +120,7 @@ export function Tour({ onClose, onMark }: { onClose: () => void; onMark: () => v
     : { left, bottom: window.innerHeight - hole.top + 12 }
 
   return (
-    <div className="tour" role="dialog" aria-label="Tutorial">
+    <div className={'tour' + (step.cta ? ' cta' : '')} role="dialog" aria-label="Tutorial">
       <div
         className="tour-hole"
         style={{ left: hole.left, top: hole.top, width: hole.width, height: hole.height }}
@@ -118,7 +142,7 @@ export function Tour({ onClose, onMark }: { onClose: () => void; onMark: () => v
               </button>
             )}
             {step.cta ? (
-              <button className="tour-next tour-cta" type="button" onClick={onMark}>
+              <button className="tour-next tour-cta" type="button" onClick={() => onMark()}>
                 Marcar una materia
               </button>
             ) : (

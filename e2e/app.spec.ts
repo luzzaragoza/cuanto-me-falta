@@ -207,8 +207,9 @@ test('el tutorial (coach marks) corre en la primera visita y no vuelve', async (
   for (let s = 0; s < 5; s++) await page.getByRole('button', { name: 'Siguiente' }).click()
   await expect(tour).toContainText('6 / 6')
 
-  // el cierre invita a marcar: abre el selector sobre la 1ª materia y cierra el tour
-  await page.getByRole('button', { name: 'Marcar una materia' }).click()
+  // en el cierre la materia resaltada se toca DIRECTO (el overlay deja pasar el
+  // clic): se abre su selector de estado y el tour se despide solo
+  await page.locator('#plan .mat').first().click()
   await expect(page.locator('.tour')).toHaveCount(0)
   await expect(page.locator('.spop')).toBeVisible()
 
