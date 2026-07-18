@@ -16,6 +16,7 @@ import {
   leerDirty,
   limpiarDirty,
   marcarDirty,
+  merge3,
   snapshotLocal,
   totalMarcadas,
   type RemoteData,
@@ -156,8 +157,13 @@ describe('sync · base de última sincronización (no preguntar en cada disposit
   it('la base va y viene por localStorage, y es por cuenta', () => {
     expect(leerBase('user-1')).toBeNull()
     guardarBase('user-1', comun)
-    expect(leerBase('user-1')).toBe(huellaProgreso(comun))
+    expect(leerBase('user-1')?.huella).toBe(huellaProgreso(comun))
     expect(leerBase('user-2')).toBeNull() // la base de otra cuenta no vale
+  })
+
+  it('guardarBase guarda la data completa y leerBase la devuelve (habilita merge3)', () => {
+    guardarBase('user-1', comun)
+    expect(leerBase('user-1')?.data?.planes.p.states.A).toBe('aprobada')
   })
 
   it('solo la nube avanzó desde la última sincronización → pull, sin preguntar', () => {
@@ -186,6 +192,53 @@ describe('sync · base de última sincronización (no preguntar en cada disposit
   it('un pendiente explícito o un plan presente-pero-vacío no cuentan en la huella', () => {
     const conRuido = remote({ p: db({ states: { A: 'aprobada', Z: 'pendiente' } }), q: db() })
     expect(huellaProgreso(conRuido)).toBe(huellaProgreso(comun))
+  })
+})
+
+describe('sync · merge3 (avanzaron los dos: fusionar sin perder nada)', () => {
+  const base = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 8 } }) })
+
+  it('cambios en materias distintas se fusionan: cada lado aporta lo suyo', () => {
+    const local = remote({ p: db({ states: { A: 'aprobada', B: 'cursando' }, notas: { A: 8 } }) })
+    const nube = remote({ p: db({ states: { A: 'aprobada', C: 'final' }, notas: { A: 8, C: 7 } }) })
+    const f = merge3(base, local, nube)!
+    expect(f.planes.p.states).toEqual({ A: 'aprobada', B: 'cursando', C: 'final' })
+    expect(f.planes.p.notas).toEqual({ A: 8, C: 7 })
+  })
+
+  it('la misma materia tocada distinto en los dos lados → null (conflicto real)', () => {
+    const local = remote({ p: db({ states: { A: 'cursando' } }) })
+    const nube = remote({ p: db({ states: { A: 'final' } }) })
+    expect(merge3(base, local, nube)).toBeNull()
+  })
+
+  it('la misma materia tocada IGUAL en los dos lados no es conflicto', () => {
+    const cambio = { states: { A: 'aprobada' as const, B: 'cursando' as const }, notas: { A: 8 } }
+    expect(merge3(base, remote({ p: db(cambio) }), remote({ p: db(cambio) }))!.planes.p.states.B).toBe('cursando')
+  })
+
+  it('borrar en un lado y no tocar en el otro queda borrado (nada resucita)', () => {
+    const local = remote({ p: db({ notas: { A: 8 } }) }) // desmarcó A acá
+    const nube = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 8, B: 9 } }) }) // y allá sumó una nota
+    const f = merge3(base, local, nube)!
+    expect(f.planes.p.states.A).toBeUndefined()
+    expect(f.planes.p.notas).toEqual({ A: 8, B: 9 })
+  })
+
+  it('una materia custom agregada en cada lado: quedan las dos', () => {
+    const aBase = { states: { A: 'aprobada' as const }, notas: { A: 8 } }
+    const local = remote({ p: db({ ...aBase, custom: [{ cod: 'X1', nom: 'Extra local', y: 1, c: 1 }] }) })
+    const nube = remote({ p: db({ ...aBase, custom: [{ cod: 'X2', nom: 'Extra nube', y: 2, c: 1 }] }) })
+    const f = merge3(base, local, nube)!
+    expect(f.planes.p.custom.map((m) => m.cod).sort()).toEqual(['X1', 'X2'])
+  })
+
+  it('un plan que solo existe de un lado viaja entero a la fusión', () => {
+    const local = remote({ p: base.planes.p, q: db({ states: { Q1: 'cursando' } }) })
+    const nube = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 8, Z: 10 } }) })
+    const f = merge3(base, local, nube)!
+    expect(f.planes.q.states.Q1).toBe('cursando')
+    expect(f.planes.p.notas.Z).toBe(10)
   })
 })
 

@@ -76,20 +76,29 @@ export function limpiarDirty(): void {
   }
 }
 
-// ---- "base": huella de la última sincronización ----
-// Recuerda QUÉ estado quedó sincronizado con la cuenta la última vez (por user id).
-// Con eso, al reentrar sabemos quién se movió: si la nube sigue igual a la base,
-// solo lo local avanzó → se sube solo; si lo local sigue igual a la base, solo la
-// nube avanzó → se baja solo. La pregunta queda para la PRIMERA vez de la cuenta
-// en este dispositivo, o si avanzaron los dos a la vez (ahí sí puede perderse algo).
+// ---- "base": la última sincronización ----
+// Recuerda QUÉ estado quedó sincronizado con la cuenta la última vez (por user id):
+// la huella (para decidir rápido quién se movió) y la data completa (para poder
+// FUSIONAR cuando se movieron los dos). Si la nube sigue igual a la base, solo lo
+// local avanzó → se sube solo; si lo local sigue igual a la base, solo la nube
+// avanzó → se baja solo; si avanzaron los dos en materias distintas → merge3 los
+// fusiona sin preguntar. La pregunta queda para la PRIMERA vez de la cuenta en
+// este dispositivo, o si tocaron la MISMA materia con valores distintos.
 const BASE_KEY = 'cmf-sync-base'
 
-export function leerBase(uid: string): string | null {
+export interface Base {
+  huella: string
+  /** Data completa de la última sincronización (habilita merge3). Puede faltar
+   *  en bases guardadas por builds anteriores — ahí solo vale la huella. */
+  data?: RemoteData
+}
+
+export function leerBase(uid: string): Base | null {
   try {
     const raw = localStorage.getItem(BASE_KEY)
     if (!raw) return null
-    const b = JSON.parse(raw) as { uid: string; huella: string }
-    return b.uid === uid ? b.huella : null // la base de otra cuenta no vale
+    const b = JSON.parse(raw) as { uid: string } & Base
+    return b.uid === uid ? { huella: b.huella, data: b.data } : null // la de otra cuenta no vale
   } catch {
     return null
   }
@@ -97,7 +106,7 @@ export function leerBase(uid: string): string | null {
 
 export function guardarBase(uid: string, data: RemoteData): void {
   try {
-    localStorage.setItem(BASE_KEY, JSON.stringify({ uid, huella: huellaProgreso(data) }))
+    localStorage.setItem(BASE_KEY, JSON.stringify({ uid, huella: huellaProgreso(data), data }))
   } catch {
     /* modo incógnito, etc. */
   }
@@ -222,6 +231,73 @@ export function huellaProgreso(data: RemoteData | null): string {
 /** Compara solo el progreso (estados/notas/optNames/custom por plan), no el perfil. */
 function igualProgreso(a: RemoteData, b: RemoteData): boolean {
   return huellaProgreso(a) === huellaProgreso(b)
+}
+
+// ---- fusión de a tres (local y nube avanzaron a la vez) ----
+
+const sinPendientes = (s: DB['states']): DB['states'] =>
+  Object.fromEntries(Object.entries(s).filter(([, e]) => e !== 'pendiente'))
+
+/**
+ * Fusiona un registro clave→valor tomando de cada lado lo que CAMBIÓ respecto
+ * de la base. Si los dos lados tocaron la MISMA clave con valores distintos,
+ * devuelve null: conflicto real, lo decide el usuario.
+ */
+function fusionRegistro<T>(
+  b: Record<string, T>,
+  l: Record<string, T>,
+  r: Record<string, T>,
+): Record<string, T> | null {
+  const out: Record<string, T> = {}
+  const j = (v: T | undefined) => JSON.stringify(v ?? null)
+  for (const k of new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(r)])) {
+    let v: T | undefined
+    if (j(l[k]) === j(r[k])) v = l[k]
+    else if (j(l[k]) === j(b[k])) v = r[k] // solo la nube lo tocó
+    else if (j(r[k]) === j(b[k])) v = l[k] // solo lo local lo tocó
+    else return null // los dos lo tocaron distinto
+    if (v !== undefined) out[k] = v
+  }
+  return out
+}
+
+/**
+ * Fusión de a tres: la base común (última sincronización) contra lo local y la
+ * nube. Cada lado aporta lo que cambió; borrar en un lado y no tocar en el otro
+ * queda borrado. Devuelve null solo si tocaron la misma materia con valores
+ * distintos en ambos lados — ahí no hay fusión sin perder algo, y se pregunta.
+ */
+export function merge3(base: RemoteData, local: RemoteData, remoto: RemoteData): RemoteData | null {
+  const ids = new Set([
+    ...Object.keys(base.planes),
+    ...Object.keys(local.planes),
+    ...Object.keys(remoto.planes),
+  ])
+  const planes: Record<string, DB> = {}
+  for (const id of ids) {
+    const b = base.planes[id] ?? emptyDB()
+    const l = local.planes[id] ?? emptyDB()
+    const r = remoto.planes[id] ?? emptyDB()
+    const states = fusionRegistro(sinPendientes(b.states), sinPendientes(l.states), sinPendientes(r.states))
+    const notas = fusionRegistro(b.notas, l.notas, r.notas)
+    const optNames = fusionRegistro(b.optNames, l.optNames, r.optNames)
+    const porCod = (c: DB['custom']) => Object.fromEntries(c.map((m) => [m.cod, m]))
+    const custom = fusionRegistro(porCod(b.custom), porCod(l.custom), porCod(r.custom))
+    if (!states || !notas || !optNames || !custom) return null
+    planes[id] = {
+      states,
+      notas,
+      optNames,
+      custom: Object.values(custom),
+      profile: l.profile ?? r.profile, // la foto/nombre pueden ser por-dispositivo
+    }
+  }
+  return {
+    version: 1,
+    planActivo: local.planActivo,
+    planes,
+    consentimiento: remoto.consentimiento ?? local.consentimiento,
+  }
 }
 
 /**

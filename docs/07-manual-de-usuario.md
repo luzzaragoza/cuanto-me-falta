@@ -47,7 +47,8 @@ tu perfil o el aviso) y tu avance te sigue a todos lados:
 
 - La primera vez te pedimos aceptar los [Términos](https://cuantomefalta.app/terminos.html) y la [Política de Privacidad](https://cuantomefalta.app/privacidad.html) — una sola vez.
 - Desde ahí, cada cambio se guarda solo en tu cuenta. Si entrás en otro dispositivo, tu avance aparece — y al alternar entre tus dispositivos todo se sincroniza solo, sin preguntarte nada.
-- La única vez que la app pregunta es cuando **no puede saber cuál avance es el bueno**: entraste con tu cuenta en un dispositivo que ya tenía un avance distinto (o cambiaste en dos lados a la vez sin conexión). Ahí elegís entre **la memoria local y la nube** — nunca decide sola si puede perderse algo.
+- Si llegaste a cambiar cosas en dos dispositivos a la vez (por ejemplo, sin conexión), la app **fusiona los dos avances** sola, siempre que hayan sido materias distintas.
+- La única vez que la app pregunta es cuando **no puede saber cuál avance es el bueno**: entraste con tu cuenta en un dispositivo que ya tenía un avance distinto, o tocaste **la misma materia** de forma distinta en dos lados a la vez. Ahí elegís entre **la memoria local y la nube** — nunca decide sola si puede perderse algo.
 - Podés cerrar sesión cuando quieras (perfil → Cerrar sesión); lo local queda intacto.
 
 **¿Es obligatorio?** No. Sin cuenta, la app funciona completa y tus datos no salen de tu dispositivo.

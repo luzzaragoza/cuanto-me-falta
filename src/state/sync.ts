@@ -24,11 +24,13 @@ import {
   escribirLocal,
   guardarBase,
   guardarConsent,
+  huellaProgreso,
   leerBase,
   leerConsent,
   leerDirty,
   limpiarDirty,
   marcarDirty,
+  merge3,
   snapshotLocal,
   totalMarcadas,
   type RemoteData,
@@ -167,11 +169,12 @@ function continuarMerge(remoto: RemoteData | null): void {
   // quedaron cambios de ESTE usuario sin subir (editó/borró y refrescó antes del
   // push con debounce): lo local es más nuevo, no se baja nada arriba de eso
   const dirty = leerDirty() === userId
-  // huella de la última sincronización de esta cuenta EN ESTE dispositivo:
-  // permite bajar/subir solo según quién se movió, sin preguntar cada vez
+  // la última sincronización de esta cuenta EN ESTE dispositivo: la huella decide
+  // quién se movió (bajar/subir solo, sin preguntar) y la data completa habilita
+  // la fusión cuando se movieron los dos
   const base = leerBase(userId)
 
-  switch (decidirMerge(remoto, local, dirty, base)) {
+  switch (decidirMerge(remoto, local, dirty, base?.huella ?? null)) {
     case 'push':
       // la marca sobrevive a un push fallido + refresh: lo local sigue mandando
       marcarDirty(userId)
@@ -191,7 +194,22 @@ function continuarMerge(remoto: RemoteData | null): void {
       if (!remoto?.consentimiento && leerConsent()) void push()
       else setEstado('listo')
       break
-    case 'conflicto':
+    case 'conflicto': {
+      // ¿Avanzaron los dos pero en materias DISTINTAS? Con la base completa se
+      // fusiona sin perder nada de ningún lado — el modal queda solo para el
+      // choque real (misma materia con valores distintos) o sin base (1ª vez).
+      const fusion = base?.data ? merge3(base.data, local, remoto!) : null
+      if (fusion) {
+        marcarDirty(userId) // la fusión manda hasta que el push aterrice
+        if (huellaProgreso(fusion) === huellaProgreso(local)) {
+          void push() // lo local ya ES la fusión: solo falta subirla
+        } else {
+          escribirLocal(fusion)
+          marcarTourVisto()
+          location.reload() // remonta con la fusión; el próximo merge la sube
+        }
+        break
+      }
       conflicto = {
         remoto: remoto!,
         marcadasLocal: totalMarcadas(local),
@@ -199,6 +217,7 @@ function continuarMerge(remoto: RemoteData | null): void {
       }
       setEstado('conflicto')
       break
+    }
   }
 }
 
@@ -258,4 +277,19 @@ export function initSync(): void {
 
   // cada cambio del usuario (estado/nota/optativa/perfil) programa un push
   store.subscribe(programarPush)
+
+  // El push va con debounce, pero en el celu nadie espera 1.5s: marcás algo y
+  // cambiás de app (o bloqueás la pantalla) y el timer congelado nunca dispara →
+  // ese cambio viajaba recién "la próxima vez" y generaba divergencias. Al perder
+  // el foco, lo pendiente se sube YA. (pagehide cubre además el cierre de pestaña.)
+  const flush = () => {
+    if (!timer) return
+    clearTimeout(timer)
+    timer = null
+    void push()
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flush()
+  })
+  window.addEventListener('pagehide', flush)
 }
