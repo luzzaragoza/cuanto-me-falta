@@ -1,51 +1,38 @@
-import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react'
+import { BaseEdge, type EdgeProps } from '@xyflow/react'
+import type { Punto } from '../../lib/arbolLayout'
 
 export interface TreeEdgeData {
-  // 'over' = intra-año (rutea por encima de la fila) · 'nearTarget' = salto de varios años
-  // (tramo horizontal pegado al destino) · 'mid' = contigua (a mitad de camino). lane = carril.
-  mode?: 'over' | 'nearTarget' | 'mid'
-  lane?: number
+  /** Polilínea absoluta calculada por ELK (arbolLayout). Sin ella: recta directa. */
+  pts?: Punto[]
   [key: string]: unknown
 }
 
-/** Arista del árbol: elige el carril del tramo horizontal según el tipo de salto,
- *  para que las flechas no se encimen (ver [[layout]] y TreeView). */
-export function TreeEdge({
-  sourceX,
-  sourceY,
-  sourcePosition,
-  targetX,
-  targetY,
-  targetPosition,
-  markerEnd,
-  style,
-  data,
-}: EdgeProps) {
-  const d = (data ?? {}) as TreeEdgeData
-  const lane = d.lane ?? 0
-
-  let centerY: number | undefined
-  if (d.mode === 'over') {
-    // intra-año: el tramo horizontal va por ARRIBA de la fila (hueco vacío), escalonado por carril
-    centerY = sourceY - (34 + lane * 13)
-  } else if (d.mode === 'nearTarget') {
-    // salto de varios años: horizontal en el hueco justo sobre el destino (evita cortar la fila del medio)
-    centerY = targetY - 30
-  } else {
-    // contigua: a mitad de camino, con un pequeño escalón por carril para no encimar paralelas
-    centerY = (sourceY + targetY) / 2 + (lane - 1.5) * 7
+/** Camino ortogonal con esquinas redondeadas a partir de los puntos de quiebre. */
+function orthPath(pts: Punto[], r = 10): string {
+  let d = `M ${pts[0].x} ${pts[0].y}`
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[i - 1]
+    const c = pts[i]
+    const b = pts[i + 1]
+    const inX = Math.sign(c.x - a.x)
+    const inY = Math.sign(c.y - a.y)
+    const outX = Math.sign(b.x - c.x)
+    const outY = Math.sign(b.y - c.y)
+    if (inX === outX && inY === outY) continue // colineal: no hay esquina
+    // radio acotado por la mitad del tramo más corto (evita rulos en tramos chicos)
+    const rr = Math.min(r, Math.hypot(c.x - a.x, c.y - a.y) / 2, Math.hypot(b.x - c.x, b.y - c.y) / 2)
+    d += ` L ${c.x - inX * rr} ${c.y - inY * rr} Q ${c.x} ${c.y} ${c.x + outX * rr} ${c.y + outY * rr}`
   }
+  const fin = pts[pts.length - 1]
+  return `${d} L ${fin.x} ${fin.y}`
+}
 
-  const [path] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 12,
-    centerY,
-  })
-
-  return <BaseEdge path={path} markerEnd={markerEnd} style={style} />
+/** Arista del árbol: dibuja la polilínea que decidió el motor de layout (ELK).
+ *  El ruteo ya viene garantizado sin cruces ni encimadas (invariantes en CI);
+ *  acá solo se pinta. Si no hay puntos (no debería pasar), recta y listo. */
+export function TreeEdge({ sourceX, sourceY, targetX, targetY, markerEnd, style, data }: EdgeProps) {
+  const pts = (data as TreeEdgeData | undefined)?.pts
+  const camino =
+    pts && pts.length >= 2 ? orthPath(pts) : `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`
+  return <BaseEdge path={camino} markerEnd={markerEnd} style={style} />
 }

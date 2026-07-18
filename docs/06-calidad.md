@@ -6,14 +6,14 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
-| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`) y de materias compartidas (`espejo`) | 93 tests |
-| Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 34 tests |
+| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`), de materias compartidas (`espejo`) y el layout del árbol (`arbolLayout`) | 105 tests |
+| Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 38 tests |
 | End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 12 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **139 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **155 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
-## 6.2 Tests unitarios (93)
+## 6.2 Tests unitarios (105)
 
 Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se testean sin navegador y en milisegundos:
 
@@ -22,10 +22,11 @@ Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se t
 - **`selectors` (25):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, hitos de título e iniciales del avatar.
 - **`sync` (32):** conteos de progreso (las materias custom también cuentan), la decisión de merge al iniciar sesión (subir / bajar / nada / conflicto — el perfil no cuenta como diferencia), la **base de última sincronización** (RN-12: un dispositivo ya sincronizado baja o sube solo según quién avanzó; la huella es canónica — el orden de inserción no inventa diferencias), la **fusión de a tres** cuando avanzaron los dos lados (`merge3`: cambios en materias distintas se combinan sin perder nada; un borrado no resucita; la pregunta queda solo para la misma materia tocada distinto en ambos lados), la marca de **cambios sin subir** (si el usuario edita o borra y refresca antes del push, lo local es más nuevo y no se pisa con un pull), snapshot y escritura local de todas las carreras (ida y vuelta sin pérdida) y el registro de consentimiento que viaja con los datos.
 - **`espejo` (6):** materias compartidas entre carreras (RN-13): qué se hereda y qué no (optativas y otras universidades quedan afuera), entre varias carreras gana el estado más avanzado, y la nota acompaña al estado ganador.
+- **`arbolLayout` (12):** el motor de layout del árbol (ADR-10) corre el layout REAL y verifica los **invariantes geométricos** por plan: la malla es una grilla exacta sin flechas (columnas en slots, filas en orden temporal, sin superposiciones) y la rama de **cada materia con cadena** (~150 subgrafos ELK) sale sin aristas que crucen tarjetas, sin verticales de distinto origen pegadas y con todo fluyendo hacia abajo. "El árbol quedó mal" es un build rojo, también para planes futuros.
 
-## 6.3 Tests de integridad de datos académicos (34)
+## 6.3 Tests de integridad de datos académicos (38)
 
-Los planes se cargan a mano; estos tests convierten cada error de carga en un build rojo. Dos verificaciones cubren el registro completo (los ids de plan son únicos; el plan por defecto existe) y, además, las ocho siguientes se ejecutan **para cada uno de los cuatro planes** (8 × 4 = 32):
+Los planes se cargan a mano; estos tests convierten cada error de carga en un build rojo. Dos verificaciones cubren el registro completo (los ids de plan son únicos; el plan por defecto existe) y, además, las nueve siguientes se ejecutan **para cada uno de los cuatro planes** (9 × 4 = 36):
 
 1. No hay códigos de materia duplicados.
 2. Ninguna materia tiene código o nombre vacío.
@@ -35,6 +36,7 @@ Los planes se cargan a mano; estos tests convierten cada error de carga en un bu
 6. **El grafo de correlativas no tiene ciclos** (un ciclo haría la carrera imposible de cursar).
 7. Los títulos apuntan a años y cuatrimestres que existen en el plan.
 8. Ninguna optativa participa de las correlativas (invariante de RN-05: las optativas se habilitan por la oferta anual, no por correlativas).
+9. **Toda correlativa apunta a un cuatrimestre anterior** (invariante del árbol: una fila por cuatrimestre → toda flecha fluye hacia abajo; un plan que lo rompa no es cursable tal como está cargado).
 
 Agregar una carrera nueva es agregar datos — y estos tests la validan automáticamente sin escribir un test más: el archivo recorre el registro completo de planes.
 
@@ -65,7 +67,7 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 127"]
+    L --> U["unit + integridad · vitest · 143"]
     U --> E["end-to-end · Playwright · 12"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]

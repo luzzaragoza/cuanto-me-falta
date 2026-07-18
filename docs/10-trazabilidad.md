@@ -23,7 +23,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-07 | Carga de notas | HU-07 | CU-04 | RN-08 | Unit `Store` · E2E 7 |
 | RF-08 | Cálculo de promedio | HU-07 | CU-04 | RN-07 | Unit `selectors` · E2E 6 y 7 |
 | RF-09 | Panel de correlativas | HU-09 | CU-05 | — | Manual (base de datos del grafo: Unit `Plan`) |
-| RF-10 | Árbol de correlativas | HU-10 | CU-06 | — | Unit `Plan` · E2E 4 y 5 |
+| RF-10 | Árbol de correlativas (malla + modo rama) | HU-10 | CU-06 | — | Unit `Plan` + `arbolLayout` (invariantes por plan y por rama) · E2E 4 y 5 |
 | RF-11 | Tablero de avance e hitos | HU-06 | (transversal) | RN-07, RN-09 | Unit `selectors` · E2E 1 y 2 |
 | RF-12 | Renombrado de optativas | HU-08 | CU-07 | RN-10 | Unit `Store` |
 | RF-13 | Perfil local | HU-15 | CU-08 | — | Unit `selectors` (iniciales) · Manual (foto) |

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { store, useDB } from './state/store'
 import { useSession } from './state/auth'
 import { photoFromUrl } from './lib/image'
@@ -21,8 +21,14 @@ import { ConsentModal } from './components/ConsentModal'
 import { getConflicto, useSyncEstado } from './state/sync'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
-import { TreeView } from './components/Tree/TreeView'
 import { Tour } from './components/Tour'
+
+// El árbol vive en un chunk aparte (elkjs + React Flow pesan ~medio MB gz y no
+// hacen falta para abrir la app). Se precalienta en idle (abajo) así la primera
+// apertura es instantánea y el service worker lo deja cacheado para offline.
+const TreeView = lazy(() =>
+  import('./components/Tree/TreeView').then((m) => ({ default: m.TreeView })),
+)
 import { track } from './lib/analytics'
 
 const TOUR_KEY = 'cmf-tour-visto'
@@ -68,6 +74,12 @@ export function App() {
 
   const [pop, setPop] = useState<PopState | null>(null)
   const [tree, setTree] = useState<{ focus: string | null } | null>(null)
+
+  // precalentar el chunk del árbol cuando la app ya quedó tranquila
+  useEffect(() => {
+    const t = setTimeout(() => void import('./components/Tree/TreeView'), 2500)
+    return () => clearTimeout(t)
+  }, [])
   const [notas, setNotas] = useState(false)
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
   const [tourSeen, setTourSeen] = useState(tourVisto)
@@ -167,7 +179,11 @@ export function App() {
           />
         )}
 
-        {tree && <TreeView focus={tree.focus} onClose={() => setTree(null)} />}
+        {tree && (
+          <Suspense fallback={<div className="tv-cargando" aria-label="Abriendo el árbol…" />}>
+            <TreeView focus={tree.focus} onClose={() => setTree(null)} />
+          </Suspense>
+        )}
 
         {showTour && <Tour onClose={closeTour} onMark={marcarPrimera} />}
 

@@ -1,9 +1,8 @@
 import type { NodeProps } from '@xyflow/react'
-import type { CuatriMark } from './layout'
+import type { CuatriMark } from './bandas'
 
 export interface BandNodeData {
   year: number
-  titulo?: string
   width: number
   height: number
   alt: boolean
@@ -11,8 +10,8 @@ export interface BandNodeData {
   [key: string]: unknown
 }
 
-/** Banda de fondo de un año. El rótulo del año va aparte (rail sticky); acá se marcan
- *  los cuatrimestres. No interactiva. */
+/** Banda de fondo de un año (abarca sus filas de cuatrimestre). El rótulo del año va
+ *  aparte (rail sticky); acá se marca la franja de cada cuatrimestre. No interactiva. */
 export function BandNode({ data }: NodeProps) {
   const d = data as BandNodeData
   return (
@@ -21,7 +20,7 @@ export function BandNode({ data }: NodeProps) {
         <div
           key={c.n}
           className={'tv-cuatri' + (c.n % 2 === 0 ? ' alt' : '')}
-          style={{ left: c.x, width: c.w }}
+          style={{ top: c.y, height: c.h }}
         >
           <span className="tv-cuatri-lbl">{c.n}° cuatrimestre</span>
         </div>

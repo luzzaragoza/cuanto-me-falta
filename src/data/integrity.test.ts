@@ -95,5 +95,14 @@ for (const plan of PLANES) {
       const tocanOpt = plan.correlativas.filter((c) => opts.has(c.cod) || opts.has(c.requiere))
       expect(tocanOpt).toEqual([])
     })
+
+    it('toda correlativa apunta a un cuatrimestre anterior', () => {
+      // Invariante del árbol (una fila por cuatrimestre): la previa vive SIEMPRE
+      // más arriba, así toda flecha fluye hacia abajo. Un plan que lo rompa no es
+      // cursable tal como está cargado (pedirían la materia y su previa a la vez).
+      const idx = new Map(plan.materias.map((m) => [m.cod, (m.anio - 1) * 2 + (m.cuatri - 1)]))
+      const alReves = plan.correlativas.filter((c) => idx.get(c.requiere)! >= idx.get(c.cod)!)
+      expect(alReves).toEqual([])
+    })
   })
 }

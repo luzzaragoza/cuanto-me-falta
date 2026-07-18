@@ -702,6 +702,7 @@ body {
 
 /* nodo de materia */
 .tnode {
+  position: relative;
   width: 200px;
   background: var(--card);
   border: 1px solid var(--line);
@@ -716,6 +717,23 @@ body {
   font-family: var(--mono);
   font-size: 9.5px;
   color: var(--soft);
+}
+/* rótulo de fila del modo rama: cada escalón dice su año·cuatrimestre una sola
+   vez, al costado (las bandas del fondo quedan borrosas y no acompañan) */
+.rot-rama {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 3px 11px;
+  white-space: nowrap;
+  animation: arista-in 0.3s ease 0.42s both;
+}
+.react-flow__node-rotulo {
+  pointer-events: none !important;
 }
 .tnode .tn-nom {
   font-size: 12px;
@@ -758,29 +776,36 @@ body {
 
 /* bandas de año (fondo) + marca de cuatrimestre */
 .react-flow__node-band {
-  pointer-events: none;
+  pointer-events: none !important; /* React Flow pone inline pointer-events en el wrapper */
 }
+/* Cada año es un BLOQUE visible: banda con fondo propio, borde y esquinas — el
+   respiro entre bandas (YEAR_GAP del layout) + la alternancia de tono hacen
+   obvio dónde termina un año y empieza el otro. */
 .tv-band {
   position: relative;
-  border-top: 1px dashed var(--line);
   box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(93, 82, 60, 0.1);
+  border-radius: 18px;
 }
-/* franja de cuatrimestre (se desliza con el contenido). El 2° va tinte tenue para distinguirlo. */
+.tv-band.alt {
+  background: rgba(93, 82, 60, 0.07);
+}
+/* franja de cuatrimestre (horizontal: una fila por cuatri). El 2° va tinte tenue. */
 .tv-cuatri {
   position: absolute;
-  top: 6px;
-  bottom: 10px;
+  left: 6px;
+  right: 6px;
   box-sizing: border-box;
   border-radius: 12px;
 }
 .tv-cuatri.alt {
   background: rgba(93, 82, 60, 0.05);
 }
-/* rótulo DEBAJO de la fila de materias: aprovecha el espacio libre de abajo y no
-   choca con las flechas que pasan por arriba de la fila (las intra-año). */
+/* rótulo ARRIBA de su fila, en la franja libre que le reserva el layout (LBL_H) */
 .tv-cuatri-lbl {
   position: absolute;
-  top: 106px;
+  top: 6px;
   left: 12px;
   font-family: var(--sans);
   font-size: 10px;
@@ -963,6 +988,72 @@ body {
   font-weight: 500;
   color: var(--soft);
   margin-left: 2px;
+}
+
+/* ── Árbol v2: viaje de tarjetas + modo rama ──
+   Al tocar una materia su cadena se JUNTA como un árbol (re-layout del subgrafo):
+   las tarjetas viajan (transition del transform que pone React Flow), el resto
+   queda atrás apagado y apenas borroso (suave a propósito), y las aristas de la
+   rama entran con un fade cuando las tarjetas ya aterrizaron. */
+.tv-canvas .react-flow__node {
+  transition:
+    transform 480ms cubic-bezier(0.22, 0.9, 0.3, 1),
+    opacity 0.35s ease,
+    filter 0.35s ease;
+}
+.tv-canvas.rama .react-flow__node.fondo {
+  opacity: 0.3;
+  filter: blur(2.5px);
+  pointer-events: none; /* clic sobre el fondo = clic afuera → vuelve a la malla */
+}
+.tv-canvas.rama .react-flow__node.fondo-banda {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.tv-rail {
+  transition: opacity 0.35s ease;
+}
+.tv-canvas.rama .tv-rail {
+  opacity: 0.25;
+}
+@keyframes arista-in {
+  from {
+    opacity: 0;
+  }
+}
+.react-flow__edge.e-rama {
+  animation: arista-in 0.3s ease 0.42s both;
+}
+/* spinner: mientras baja el chunk del árbol (Suspense) o corre el layout */
+.tv-cargando {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(245, 243, 238, 0.55);
+}
+.tv-cargando::after {
+  content: '';
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  border-top-color: var(--gold);
+  animation: tv-spin 0.8s linear infinite;
+}
+@keyframes tv-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-canvas .react-flow__node {
+    transition: none;
+  }
+  .react-flow__edge.e-rama {
+    animation: none;
+  }
 }
 
 /* ----- perfil / avatar ----- */

@@ -25,7 +25,6 @@ const PORT = 5199 // propio, para no chocar con un `npm run dev` abierto
 // Fundamentos; habilita Proceso de Desarrollo y Aplicaciones Interactivas, que a
 // su vez habilitan las dos Desarrollo de Aplicaciones). Muestra violeta Y teal.
 const FOCO = '3.4.074' // Programación II
-const ZOOM_OUT = 2 // pasos de alejado tras el paneo al foco (ver más abajo)
 
 // Avance de ejemplo: alumna promediando 3° año de Ing. en Informática (Plan 1621).
 // Respeta las correlativas del plan (nada marcado sin sus previas), así la demo es
@@ -109,30 +108,16 @@ const run = async () => {
   await page.screenshot({ path: join(OUT, 'captura-app.png') })
   console.log('✓ docs/captura-app.png')
 
-  // ── 2. Árbol con una materia seleccionada (cadena violeta ↑ y teal ↓) ──
+  // ── 2. Árbol en MODO RAMA (árbol v2, ADR-10): abrir con foco entra directo en
+  // la rama de la materia, ya encuadrada por fitView — sin zoom ni paneo manual.
   // Camino real del usuario: fila de la materia → "Ver correlativas" → "Ver árbol".
   await page.locator(`[id="mat-${FOCO}"] > .corr-btn`).click()
   await page.locator('.corr').waitFor()
   await page.locator('.corr-tree').click()
   await page.locator('.react-flow').waitFor()
-  await page.locator('.tv-hint').filter({ hasText: 'necesitás' }).waitFor()
-  // Alto a la medida de los 5 años a este zoom: con el alto de la app sobra lienzo
-  // vacío abajo (el grafo es ancho y bajo) y la captura queda desbalanceada.
   await page.setViewportSize({ width: 1240, height: 660 })
-  await page.waitForTimeout(900) // el paneo al foco arranca en zoom 1.05
-  // Alejar un par de pasos: enfocada se abre muy cerca y la cadena queda cortada.
-  // Con esto entran las 2 correlativas que necesita y las que habilita, y el texto
-  // todavía se lee al ancho del README.
-  for (let i = 0; i < ZOOM_OUT; i++) {
-    await page.locator('.react-flow__controls-zoomout').click()
-    await page.waitForTimeout(250)
-  }
-  // Subir el lienzo: centrado en la materia queda una franja muerta arriba.
-  await page.mouse.move(620, 500)
-  await page.mouse.down()
-  await page.mouse.move(560, 395, { steps: 10 })
-  await page.mouse.up()
-  await page.waitForTimeout(900) // aristas animadas ya en régimen
+  await page.locator('.tv-canvas.rama').waitFor() // la rama se juntó
+  await page.waitForTimeout(1600) // viaje de tarjetas + fitView + fade de flechas/rótulos
   await page.screenshot({ path: join(OUT, 'captura-arbol.png') })
   console.log('✓ docs/captura-arbol.png')
 

@@ -26,7 +26,7 @@ Con cada cambio se actualizan solos el porcentaje de avance, el avance por año 
 ## Correlativas
 
 - **Consulta rápida:** abrí el panel de una materia y vas a ver qué **necesitás** antes (violeta) y qué **habilita** después (teal). Podés dejar varios paneles abiertos para comparar.
-- **El árbol completo:** desde el tablero abrís el mapa de toda la carrera. Tocá una materia y se ilumina toda su cadena: lo que necesita, nivel por nivel, y todo lo que destraba. Se cierra con la ✕ o con `Escape`.
+- **El árbol completo:** desde el tablero abrís el **mapa de toda la carrera** — la malla con cada año como un bloque y cada cuatrimestre como una fila. Tocá una materia y su línea de correlatividades **se junta como un árbol**: la vista se encuadra en esa cadena (violeta lo que necesita, teal lo que destraba, con el año·cuatrimestre de cada escalón al costado) y el resto queda desenfocado detrás. Un clic en cualquier otro lado (o `Escape`) te devuelve a la malla; tocar otra materia de la rama salta a su cadena. Se cierra con la ✕ o con `Escape`.
 
 ## Notas y promedio
 

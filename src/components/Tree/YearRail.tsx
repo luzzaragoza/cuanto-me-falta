@@ -1,5 +1,5 @@
 import { useViewport } from '@xyflow/react'
-import type { Banda } from './layout'
+import type { Banda } from './bandas'
 
 /** Rótulos de año fijados a la izquierda que acompañan el paneo vertical del árbol.
  *  Se renderizan FUERA del viewport transformado (por eso no se van al deslizar) y se
@@ -9,8 +9,8 @@ export function YearRail({ bands }: { bands: Banda[] }) {
   return (
     <div className="tv-rail" aria-hidden="true">
       {bands.map((b) => {
-        // centro vertical de la fila de materias (banda +42 = borde sup. de la fila, +~26 = centro)
-        const top = y + (b.y + 68) * zoom
+        // centrado vertical en la banda del año (que ahora abarca sus dos filas)
+        const top = y + (b.y + b.height / 2) * zoom
         return (
           <div className="tv-rail-item" key={b.year} style={{ top }}>
             <b>{b.year}°</b>

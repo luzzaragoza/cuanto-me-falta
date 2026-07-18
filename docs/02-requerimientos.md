@@ -33,7 +33,7 @@ Las consecuencias observadas que motivaron el proyecto:
 | RF-07 | El estudiante debe poder cargar, editar y borrar una **nota entera de 1 a 10** por materia. | Media |
 | RF-08 | La aplicación debe calcular el **promedio** considerando únicamente materias aprobadas con nota cargada (RN-07), sin romperse si no hay ninguna. | Media |
 | RF-09 | Para cada materia debe poder consultarse un **panel de correlativas** con lo que *necesita* y lo que *habilita*; pueden estar abiertos varios paneles a la vez. | Alta |
-| RF-10 | La aplicación debe ofrecer un **árbol interactivo de correlativas** del plan completo, con foco por materia y visualización por niveles de toda la cadena ascendente ("necesitás") y descendente ("habilita"). | Alta |
+| RF-10 | La aplicación debe ofrecer un **árbol interactivo de correlativas**: la malla del plan completo (una fila por cuatrimestre, sin flechas en reposo) y, al seleccionar una materia, un **modo rama** que reacomoda y encuadra su cadena completa — ascendente ("necesitás") y descendente ("habilita") por niveles — desenfocando el resto; salir con un clic afuera o `Escape`. | Alta |
 | RF-11 | Un **tablero (dashboard)** debe mostrar: porcentaje de avance, conteos por estado, avance por año y los hitos de título con la cantidad de materias que faltan para cada uno. | Alta |
 | RF-12 | Las materias **optativas** deben poder renombrarse por el usuario (hasta 48 caracteres), ya que la oferta se publica cada año y no forma parte del plan. | Media |
 | RF-13 | El estudiante debe poder configurar un **perfil local** (nombre y foto); sin foto, el avatar muestra sus iniciales. | Baja |
