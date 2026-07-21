@@ -2,11 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/global.css'
 import { App } from './App.tsx'
-import { initAnalytics, trackPwa } from './lib/analytics'
+import { initAnalytics, trackPwa, trackSesion } from './lib/analytics'
 import { initSync } from './state/sync'
 
-initAnalytics()
+initAnalytics() // inyecta el proveedor (registra el flush de la cola en su load)
 trackPwa() // instalación/uso como app instalada (no-op sin analytics)
+trackSesion() // retención: día activo + regreso (la vuelta-a-mirar)
 initSync() // no-op sin backend configurado (dev/CI sin credenciales)
 
 // PWA: registrar el service worker solo en producción (en dev molesta con el cache).

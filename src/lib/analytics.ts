@@ -72,6 +72,7 @@ function inyectarScript(): void {
     // tracker borra TODOS los query params, utm_* incluidos (verificado contra
     // el script de cloud.umami.is), y mataría la atribución de campañas.
     s.setAttribute('data-exclude-hash', 'true')
+    s.addEventListener('load', flushPendientes) // eventos del arranque, ya con umami vivo
     document.head.appendChild(s)
   } else if (provider === 'plausible') {
     const src = env.VITE_PLAUSIBLE_SRC
@@ -81,24 +82,59 @@ function inyectarScript(): void {
     s.defer = true
     s.src = src
     s.setAttribute('data-domain', domain)
+    s.addEventListener('load', flushPendientes)
     document.head.appendChild(s)
+  }
+}
+
+// Umami/Plausible se inyectan de forma ASÍNCRONA. Un evento disparado en el
+// arranque (pwa_abierta, dia_activo, regreso) llegaba ANTES de que existiera
+// `window.umami` → con el `?.` se perdía en silencio (y peor: el flag anti-repetición
+// quedaba seteado, así que nunca reintentaba). Solución: si el proveedor todavía no
+// cargó, se encola y se vacía en el `load` de su script (flushPendientes).
+type Evento = { name: string; data?: Props }
+let pendientes: Evento[] = []
+
+/** Intenta emitir YA. Devuelve false si el proveedor todavía no está disponible. */
+function emitir(e: Evento): boolean {
+  if (provider === 'umami') {
+    if (!window.umami) return false
+    window.umami.track(e.name, e.data)
+    return true
+  }
+  if (provider === 'plausible') {
+    if (!window.plausible) return false
+    window.plausible(e.name, e.data ? { props: e.data } : undefined)
+    return true
+  }
+  return true // sin proveedor: no-op ya "entregado", no hay que encolar
+}
+
+/** Vacía la cola cuando el script del proveedor terminó de cargar. */
+function flushPendientes(): void {
+  const cola = pendientes
+  pendientes = []
+  for (const e of cola) {
+    try {
+      if (!emitir(e)) pendientes.push(e) // por las dudas: si aún no está, re-encola
+    } catch {
+      /* noop */
+    }
   }
 }
 
 /**
  * Registra un evento custom, agnóstico del proveedor.
- * No-op si no hay analytics configurado. Nunca rompe la UI (envuelto en try/catch).
+ * No-op si no hay analytics configurado o si corre en local. Nunca rompe la UI.
  * En dev loguea a la consola para poder verificar la instrumentación sin proveedor.
  */
 export function track(name: string, data?: Props): void {
   if (import.meta.env.DEV) console.debug('[track]', name, data ?? {})
-  if (!inCliente()) return
+  if (!inCliente() || esLocal()) return
+  if (provider !== 'umami' && provider !== 'plausible') return
   try {
-    if (provider === 'umami') {
-      window.umami?.track(name, data)
-    } else if (provider === 'plausible') {
-      window.plausible?.(name, data ? { props: data } : undefined)
-    }
+    const e: Evento = { name, data }
+    if (!emitir(e)) pendientes.push(e)
   } catch {
     // analytics jamás debe tirar abajo la app
   }
@@ -145,6 +181,67 @@ export function trackPwa(): void {
       localStorage.setItem('cmf-ev-pwa', '1')
       track('pwa_abierta')
     }
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * RETENCIÓN de una app "para entrar a mirar": lo valioso es VOLVER, aunque no se
+ * edite nada — mirar "cuánto me falta" o el árbol de correlativas NO cambia el
+ * progreso. Por eso `updated_at`/`last_sign_in` subestiman: solo ven ediciones y
+ * logins nuevos. Medimos la vuelta con dos eventos, por dispositivo (flags en
+ * localStorage, sin backend):
+ *  - `dia_activo`: 1 vez por jornada → volumen de días-con-uso (incluye el solo-mirar).
+ *  - `regreso`: 1 vez en la vida, cuando quien YA armó su plan (marcó ≥1 materia)
+ *    abre en un día POSTERIOR al primero → numerador de retención real.
+ * Norte del gate: `regreso ÷ primera_materia` = de los que se enganchan, cuántos vuelven.
+ */
+export type SesionEstado = {
+  primerDia: string | null // cmf-primer-dia: 1ª visita de este dispositivo
+  ultimoDia: string | null // cmf-dia: última jornada ya contada
+  yaRegreso: boolean // cmf-regreso: el evento 'regreso' ya se disparó
+  activada: boolean // cmf-ev-primera: marcó al menos una materia
+}
+export type SesionDecision = {
+  diaActivo: boolean
+  regreso: boolean
+  nuevoPrimerDia: string | null // valor a persistir (null = no tocar)
+  nuevoUltimoDia: string | null
+  marcarRegreso: boolean
+}
+
+/** Lógica pura. Fechas 'YYYY-MM-DD' → la comparación lexicográfica es cronológica. */
+export function decidirSesion(hoy: string, s: SesionEstado): SesionDecision {
+  const esAlta = s.primerDia === null
+  const primerDia = s.primerDia ?? hoy
+  const nuevoDia = s.ultimoDia !== hoy // primera apertura de la jornada
+  const regreso = nuevoDia && s.activada && !s.yaRegreso && primerDia < hoy
+  return {
+    diaActivo: nuevoDia,
+    regreso,
+    nuevoPrimerDia: esAlta ? hoy : null,
+    nuevoUltimoDia: nuevoDia ? hoy : null,
+    marcarRegreso: regreso,
+  }
+}
+
+/** Aplica `decidirSesion` contra localStorage y dispara los eventos. Llamar al arrancar. */
+export function trackSesion(): void {
+  if (!inCliente()) return
+  try {
+    const hoy = new Date().toISOString().slice(0, 10)
+    const d = decidirSesion(hoy, {
+      primerDia: localStorage.getItem('cmf-primer-dia'),
+      ultimoDia: localStorage.getItem('cmf-dia'),
+      yaRegreso: !!localStorage.getItem('cmf-regreso'),
+      activada: !!localStorage.getItem('cmf-ev-primera'),
+    })
+    if (d.nuevoPrimerDia) localStorage.setItem('cmf-primer-dia', d.nuevoPrimerDia)
+    if (d.nuevoUltimoDia) localStorage.setItem('cmf-dia', d.nuevoUltimoDia)
+    if (d.marcarRegreso) localStorage.setItem('cmf-regreso', '1')
+    if (d.diaActivo) track('dia_activo')
+    if (d.regreso) track('regreso')
   } catch {
     /* noop */
   }

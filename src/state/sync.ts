@@ -163,8 +163,27 @@ function marcarTourVisto(): void {
   }
 }
 
+// Retención POR CUENTA de una app "para entrar a mirar": marca cuándo abrió por
+// última vez, SIN tocar `data`/`updated_at` (no interfiere con el last-write-wins).
+// `update`, no `upsert`: si no hay fila (nunca marcó nada) es no-op — no hay nada que
+// "volver a mirar". Best-effort: si la columna todavía no existe o falla la red, no
+// rompe (retención = `visto_at::date > created_at::date` en el SQL editor).
+async function marcarVisto(uid: string): Promise<void> {
+  if (!supabase) return
+  try {
+    const { error } = await supabase
+      .from('progreso')
+      .update({ visto_at: new Date().toISOString() })
+      .eq('user_id', uid)
+    if (error) console.warn('[sync] visto_at:', error.message)
+  } catch {
+    /* noop */
+  }
+}
+
 function continuarMerge(remoto: RemoteData | null): void {
   if (!userId) return
+  void marcarVisto(userId) // registra la vuelta-a-mirar (no bloquea el merge)
   const local = snapshotLocal()
   // quedaron cambios de ESTE usuario sin subir (editó/borró y refrescó antes del
   // push con debounce): lo local es más nuevo, no se baja nada arriba de eso
