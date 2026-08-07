@@ -14,7 +14,7 @@
 |---|---|---|
 | CU-01 | Ingresar por primera vez | RF-01, RF-16 |
 | CU-02 | Cambiar de carrera | RF-02 |
-| CU-03 | Cambiar el estado de una materia | RF-04, RF-05, RF-06 |
+| CU-03 | Cambiar el estado de una materia | RF-04, RF-05, RF-06, RF-21 |
 | CU-04 | Cargar una nota y consultar el promedio | RF-07, RF-08 |
 | CU-05 | Consultar las correlativas de una materia | RF-09 |
 | CU-06 | Explorar el árbol de correlativas | RF-10 |
@@ -100,6 +100,7 @@
 
 - **4a. Correlativas incumplidas.** Si la materia no es optativa ni especial y el nuevo estado no cumple RN-02/RN-03, la aplicación muestra un aviso flotante con las materias que faltan (por ejemplo, *"Para cursar Programación II te falta: Programación I"*) y un botón **"Ver árbol de correlativas"** que abre el árbol con foco en esa materia. *(«extend» CU-06)* El cambio de estado **se mantiene** (RN-04).
 - **2a.** El estudiante cierra el selector sin elegir: no hay cambios.
+- **1b. Año completo de una vez.** En vez de tocar materia por materia, el estudiante usa el **interruptor del año** (RF-21): la aplicación marca como *Aprobada* todas las materias de ese año salvo las optativas, en una única operación, y ofrece **deshacer** en el aviso; si el año ya estaba entero aprobado, el interruptor las deja sin marca (RN-15). Sigue en el paso 4.
 
 **Postcondiciones**
 

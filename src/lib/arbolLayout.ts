@@ -60,13 +60,24 @@ const elk = new ELK()
 // ── grilla de la malla (reposo) ──
 // El mapa del plan es una GRILLA exacta y compacta (feedback de Luz: ELK
 // esparcía las materias y "quedaba infinito de recorrer"; y las columnas
-// corridas para abrir canales tampoco convencieron). En reposo NO se dibujan
-// flechas (decisión de producto 18-jul: las correlatividades aparecen al
-// seleccionar, en modo rama) → no hay que reservar canales y la grilla puede
-// ser perfecta: columnas en slots, filas apretadas y un respiro entre años.
+// corridas para abrir canales tampoco convencieron): columnas en slots exactos
+// y un respiro entre años.
+//
+// En reposo se dibujan las correlativas CORTAS (ver `DIST_CORTA`). El 18-jul no
+// se dibujaba ninguna, porque dibujarlas TODAS armaba la "trenza" que hizo
+// revertir el rediseño de julio; pero medido sobre los 4 planes, el 83% de las
+// correlativas salta 1 o 2 cuatrimestres y esas se rutean por los pasillos
+// entre filas sin cruzar nada. Las largas (17%) siguen apareciendo solo al
+// tocar la materia (modo rama). Regla dura, verificada en CI: si una arista NO
+// se puede rutear limpia, NO se dibuja — nunca se ensucia la malla.
 export const NODEX = 215 // paso horizontal entre columnas de la grilla
-export const ROWY = 118 // paso vertical entre filas (cuatrimestres) — sin corredores de flechas
+export const ROWY = 134 // paso vertical entre filas: deja un pasillo para los carriles
 const YEAR_GAP = 46 // aire extra entre años: agrupa visualmente (la seña más intuitiva)
+
+/** Salto máximo (en cuatrimestres) para dibujarse en la malla en reposo. */
+export const DIST_CORTA = 2
+const LANE0 = 16 // 1er carril horizontal, medido desde el pie de la tarjeta
+const LANE = 10 // separación entre carriles del mismo pasillo
 
 interface Grilla {
   filas: { cuatri: number; cods: string[] }[] // en orden temporal
@@ -126,12 +137,152 @@ function grillaMalla(grafo: GrafoPlan): Grilla {
   }
 }
 
-/** La MALLA en reposo: la grilla pura, sin flechas (aparecen en el modo rama).
- *  Columnas en slots exactos, filas apretadas y respiro extra entre años. */
+/**
+ * Ruteo de las correlativas CORTAS sobre la grilla de la malla.
+ *
+ * No hay búsqueda de caminos ni heurísticas: la grilla es discreta, así que
+ * cada arista corta tiene una ruta obvia por los pasillos que quedan ENTRE las
+ * filas (ahí no hay ninguna tarjeta, por construcción):
+ *  - salto de 1 cuatrimestre → baja al pasillo, corre en su carril, baja al destino;
+ *  - salto de 2 → además tiene que cruzar la fila del medio, y lo hace por un
+ *    SLOT LIBRE de esa fila (200px de aire), el más cercano al punto medio.
+ *
+ * Si una arista no encuentra por dónde pasar limpia, devuelve `null` y no se
+ * dibuja: preferimos mostrar menos esqueleto antes que volver a la trenza.
+ * `invariantes()` verifica en CI que el resultado no cruce ninguna tarjeta.
+ */
+function rutearCortas(
+  grafo: GrafoPlan,
+  g: Grilla,
+  pos: Record<string, Punto>,
+  filaY: number[],
+): Record<string, Punto[]> {
+  const idxFila = new Map<number, number>()
+  g.filas.forEach((f, i) => idxFila.set(f.cuatri, i))
+  const ocupados = g.filas.map((f) => new Set(f.cods.map((c) => g.slot.get(c)!)))
+  const cuatriDe = new Map(grafo.materias.map((m) => [m.cod, cuatriIdx(m)]))
+
+  interface Req {
+    id: string
+    src: string
+    tgt: string
+    fs: number
+    ft: number
+  }
+  const reqs: Req[] = []
+  for (const c of grafo.correlativas) {
+    const qs = cuatriDe.get(c.requiere)
+    const qt = cuatriDe.get(c.cod)
+    if (qs == null || qt == null || qt - qs < 1 || qt - qs > DIST_CORTA) continue
+    const fs = idxFila.get(qs)
+    const ft = idxFila.get(qt)
+    if (fs == null || ft == null || ft - fs < 1 || ft - fs > 2) continue
+    if (!pos[c.requiere] || !pos[c.cod]) continue
+    reqs.push({ id: `${c.requiere}->${c.cod}`, src: c.requiere, tgt: c.cod, fs, ft })
+  }
+  // las de mayor recorrido horizontal toman el carril más alto: quedan anidadas
+  // (como los andenes de una estación) en vez de cruzarse entre sí
+  const span = (r: Req) => Math.abs(pos[r.src].x - pos[r.tgt].x)
+  reqs.sort((a, b) => span(b) - span(a))
+
+  // un pasillo por hueco entre filas; cada arista que dobla toma un carril propio
+  const usadosCarril = new Map<number, number>()
+  const carril = (i: number): number => {
+    const top = filaY[i] + NODEH
+    const alto = filaY[i + 1] - top
+    const max = Math.max(1, Math.floor((alto - 2 * LANE0) / LANE) + 1)
+    const n = usadosCarril.get(i) ?? 0
+    usadosCarril.set(i, n + 1)
+    return top + LANE0 + (n % max) * LANE
+  }
+
+  // Corredores verticales para cruzar una fila intermedia, del más aireado al
+  // más justo: (1) el centro de un slot LIBRE de esa fila —200px de aire—,
+  // (2) ese mismo slot corrido, (3) el pasillo de 15px que queda entre dos
+  // columnas. Nunca dos líneas a menos de 12px: la "trenza" de julio era
+  // justamente muchas aristas compartiendo un canal.
+  const usadosCorr = new Map<number, number[]>()
+  const xDeSlot = (s: number) => PADX + s * NODEX + NODEW / 2
+  const xEntreSlots = (s: number) => PADX + s * NODEX - (NODEX - NODEW) / 2
+  const corredor = (fm: number, xa: number, xb: number): number | null => {
+    const lo = Math.min(xa, xb)
+    const hi = Math.max(xa, xb)
+    const meta = (xa + xb) / 2
+    // Salirse del tramo que une las dos materias es lo que se ve MAL (la flecha
+    // se va al margen y vuelve), así que pesa mucho más que pasar apretado.
+    const afuera = (x: number) => (x < lo ? lo - x : x > hi ? x - hi : 0)
+    const puntaje = (x: number, pena: number) => afuera(x) * 3 + Math.abs(x - meta) * 0.2 + pena
+    const cands: { x: number; p: number }[] = []
+    for (let s = 0; s < g.maxLen; s++) {
+      if (ocupados[fm].has(s)) continue
+      const c = xDeSlot(s)
+      cands.push({ x: c, p: puntaje(c, 0) }) // slot libre: 200px de aire
+      for (const d of [14, -14, 28, -28]) cands.push({ x: c + d, p: puntaje(c + d, 40) })
+    }
+    for (let s = 1; s < g.maxLen; s++) {
+      const c = xEntreSlots(s)
+      cands.push({ x: c, p: puntaje(c, 90) }) // pasillo de 15px: justo, pero limpio
+    }
+    cands.sort((a, b) => a.p - b.p)
+    const usados = usadosCorr.get(fm) ?? []
+    for (const c of cands) {
+      if (usados.some((u) => Math.abs(u - c.x) < 12)) continue
+      usados.push(c.x)
+      usadosCorr.set(fm, usados)
+      return c.x
+    }
+    return null
+  }
+
+  const aristas: Record<string, Punto[]> = {}
+  for (const r of reqs) {
+    const a = pos[r.src]
+    const b = pos[r.tgt]
+    const xa = a.x + NODEW / 2
+    const xb = b.x + NODEW / 2
+    const yArriba = a.y + NODEH
+    const yAbajo = b.y
+
+    if (r.ft - r.fs === 1) {
+      if (Math.abs(xa - xb) < 0.5) {
+        aristas[r.id] = [
+          { x: xa, y: yArriba },
+          { x: xa, y: yAbajo },
+        ]
+        continue
+      }
+      const yl = carril(r.fs)
+      aristas[r.id] = [
+        { x: xa, y: yArriba },
+        { x: xa, y: yl },
+        { x: xb, y: yl },
+        { x: xb, y: yAbajo },
+      ]
+      continue
+    }
+
+    // salto de 2: hay que atravesar la fila del medio por un slot libre
+    const fm = r.fs + 1
+    const cx = corredor(fm, xa, xb)
+    if (cx == null) continue // sin paso limpio: esta se ve en modo rama
+    const y1 = carril(r.fs)
+    const y2 = carril(fm)
+    const pts: Punto[] = [{ x: xa, y: yArriba }]
+    if (Math.abs(xa - cx) >= 0.5) pts.push({ x: xa, y: y1 }, { x: cx, y: y1 })
+    if (Math.abs(cx - xb) >= 0.5) pts.push({ x: cx, y: y2 }, { x: xb, y: y2 })
+    pts.push({ x: xb, y: yAbajo })
+    aristas[r.id] = pts
+  }
+  return aristas
+}
+
+/** La MALLA en reposo: grilla exacta + las correlativas cortas ruteadas por los
+ *  pasillos. Columnas en slots, respiro entre años, y las largas en modo rama. */
 export async function layoutMalla(grafo: GrafoPlan): Promise<ArbolLayout> {
   const g = grillaMalla(grafo)
   const pos: ArbolLayout['pos'] = {}
   const filas: Fila[] = []
+  const filaY: number[] = []
   let y = PADY
   let anioPrevio: number | null = null
   for (const f of g.filas) {
@@ -140,11 +291,12 @@ export async function layoutMalla(grafo: GrafoPlan): Promise<ArbolLayout> {
     anioPrevio = anio
     for (const cod of f.cods) pos[cod] = { x: PADX + g.slot.get(cod)! * NODEX, y }
     filas.push({ cuatri: f.cuatri, top: y, bottom: y + NODEH })
+    filaY.push(y)
     y += ROWY
   }
   return {
     pos,
-    aristas: {}, // sin flechas en reposo — el modo rama dibuja las suyas
+    aristas: rutearCortas(grafo, g, pos, filaY),
     width: PADX * 2 + (g.maxLen - 1) * NODEX + NODEW,
     height: y - ROWY + NODEH + 28,
     filas,

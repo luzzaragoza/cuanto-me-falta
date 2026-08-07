@@ -92,6 +92,12 @@ export class Plan {
     )
   }
 
+  /** Materias de un año que toca el interruptor de año: todas menos las
+   *  optativas (no sabemos cuál eligió el alumno, se marcan a mano). */
+  codsDelAnio(year: number): string[] {
+    return this.def.materias.filter((m) => m.anio === year && !m.opt).map((m) => m.cod)
+  }
+
   /** Nombre base de una materia por código (sin nombres custom de optativas). */
   nombre(cod: string): string {
     return this.porCod.get(cod)?.nom ?? cod

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   avance,
+  decidirAnio,
   promedio,
   previasParaEstado,
   previasFaltantes,
@@ -147,6 +148,34 @@ describe('hitos', () => {
     for (const m of plan.materias()) states[m.cod] = 'aprobada'
     const h = hitos(db(states))
     expect(h.every((x) => x.ok && x.falta === 0)).toBe(true)
+  })
+})
+
+describe('decidirAnio · el interruptor de año', () => {
+  const primero = plan.codsDelAnio(1)
+
+  it('con el año a medio marcar, el interruptor aprueba', () => {
+    expect(decidirAnio(db(), primero)).toBe('aprobada')
+    expect(decidirAnio(db({ [primero[0]]: 'aprobada' }), primero)).toBe('aprobada')
+    // 'cursando' NO alcanza: el año no está completo
+    const casi: Record<string, Estado> = {}
+    for (const c of primero) casi[c] = 'aprobada'
+    casi[primero[0]] = 'cursando'
+    expect(decidirAnio(db(casi), primero)).toBe('aprobada')
+  })
+
+  it('con el año entero aprobado, el interruptor lo deja en blanco', () => {
+    const todas: Record<string, Estado> = {}
+    for (const c of primero) todas[c] = 'aprobada'
+    expect(decidirAnio(db(todas), primero)).toBe('pendiente')
+  })
+
+  it('no toca las optativas: quedan fuera de los códigos del año', () => {
+    const opts = plan
+      .materias()
+      .filter((m) => m.year === 1 && plan.isOpt(m.cod))
+      .map((m) => m.cod)
+    for (const o of opts) expect(primero).not.toContain(o)
   })
 })
 

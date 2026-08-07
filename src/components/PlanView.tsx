@@ -1,7 +1,10 @@
 import { Fragment, useState } from 'react'
 import type { DB } from '../types'
 import { plan } from '../domain/Plan'
-import { disponible, nombreDe } from '../domain/selectors'
+import { avance, decidirAnio, disponible, nombreDe } from '../domain/selectors'
+import { store } from '../state/store'
+import { toast } from '../lib/toast'
+import { track, trackActivacion } from '../lib/analytics'
 import { MateriaRow } from './MateriaRow'
 import { CorrPanel } from './CorrPanel'
 
@@ -44,6 +47,27 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
       return next
     })
 
+  /** Interruptor de año: aprueba el año entero, o lo deja en blanco si ya lo
+   *  estaba. Un solo commit (una escritura, un push) y siempre con "Deshacer",
+   *  porque pisa lo que hubiera marcado. */
+  const toggleAnio = (year: number) => {
+    const cods = plan.codsDelAnio(year)
+    const destino = decidirAnio(db, cods)
+    const inverso = store.setEstados(Object.fromEntries(cods.map((c) => [c, destino])))
+    const av = avance(store.getSnapshot())
+    trackActivacion(av.aprobadas + av.final + av.cursando) // suele ser LA activación
+    track('anio_marcado')
+    const opts = plan.materias().filter((m) => m.year === year).length - cods.length
+    const cola = opts > 0 ? ' Las optativas quedan como estaban.' : ''
+    toast.show(
+      destino === 'aprobada'
+        ? `${year}° año: ${cods.length} materias aprobadas.${cola}`
+        : `${year}° año: ${cods.length} materias sin marcar.`,
+      'info',
+      { label: 'Deshacer', run: () => store.setEstados(inverso) },
+    )
+  }
+
   // navegar a una materia desde un chip: scroll + flash dorado
   const goTo = (cod: string) => {
     document.getElementById(rowId(cod))?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -53,11 +77,21 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
 
   return (
     <div id="plan">
-      {plan.anios.map((anio) => (
+      {plan.anios.map((anio) => {
+        const completo = decidirAnio(db, plan.codsDelAnio(anio.year)) === 'pendiente'
+        return (
         <section className="year" key={anio.year}>
           <div className="yhead">
             <span className="n">{anio.year}°</span>
             <span className="l">Año</span>
+            <button
+              className={'ybtn' + (completo ? ' on' : '')}
+              type="button"
+              onClick={() => toggleAnio(anio.year)}
+              aria-label={`${completo ? 'Desmarcar' : 'Aprobar'} todas las materias de ${anio.year}° año`}
+            >
+              {completo ? 'Desmarcar el año' : 'Aprobar todo el año'}
+            </button>
           </div>
           <div className="cuatris">
             {anio.cuatris.map((q) => (
@@ -88,7 +122,8 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
           </div>
           {anio.titulo && <TituloHito nombre={anio.titulo} />}
         </section>
-      ))}
+        )
+      })}
     </div>
   )
 }

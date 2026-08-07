@@ -15,6 +15,7 @@ import { plan } from '../../domain/Plan'
 import { nombreDe } from '../../domain/selectors'
 import { useDB } from '../../state/store'
 import { useExitAnimation } from '../../hooks/useExitAnimation'
+import { track } from '../../lib/analytics'
 import {
   layoutGrafo,
   layoutMalla,
@@ -259,9 +260,10 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
         }))
       : []
 
-    // Flechas SOLO en modo rama (decisión de producto: en reposo la malla es la
-    // grilla limpia; las correlatividades aparecen al seleccionar). Toda flecha
-    // es sólida: cada una ES una correlativa directa entre sus dos extremos.
+    // Toda flecha es sólida: cada una ES una correlativa directa entre sus dos
+    // extremos. En reposo se ven las CORTAS (el esqueleto: de dónde sale cada
+    // materia), tenues; al entrar en modo rama se apagan con el resto del fondo
+    // y mandan las de la rama, con color y jerarquía.
     const flecha = (color: string, px: number) => ({
       type: MarkerType.ArrowClosed,
       color,
@@ -269,6 +271,23 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
       height: px,
     })
     const edgeList: Edge[] = []
+    for (const [id, pts] of Object.entries(malla.aristas)) {
+      const [source, target] = id.split('->')
+      edgeList.push({
+        id: `malla-${id}`,
+        source,
+        target,
+        sourceHandle: 'sb',
+        targetHandle: 'tt',
+        type: 'tree',
+        className: enRama ? 'e-malla fondo-e' : 'e-malla',
+        data: { pts } satisfies TreeEdgeData,
+        interactionWidth: 0, // las flechas no comen clics (el clic pasa al fondo)
+        style: { stroke: '#b0a690', strokeWidth: 1.6 },
+        markerEnd: flecha('#b0a690', 12),
+        zIndex: 0,
+      })
+    }
     if (enRama) {
       for (const [id, pts] of Object.entries(rama.aristas)) {
         const [source, target] = id.split('->')
@@ -352,7 +371,11 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
                 setSel(null)
                 return
               }
-              setSel((prev) => (prev === n.id ? null : n.id))
+              const next = sel === n.id ? null : n.id
+              // ¿descubren solos el modo rama? (el foco que llega por URL/panel no
+              // cuenta: ahí la rama se la dimos nosotros)
+              if (next && subgrafoRama(grafo, next).materias.length > 1) track('arbol_rama')
+              setSel(next)
             }}
             onPaneClick={() => setSel(null)}
             onInit={(inst: ReactFlowInstance) => {

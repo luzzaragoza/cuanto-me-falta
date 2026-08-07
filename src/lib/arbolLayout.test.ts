@@ -6,6 +6,7 @@ import {
   layoutGrafo,
   layoutMalla,
   subgrafoRama,
+  DIST_CORTA,
   NODEX,
   PADX,
   type GrafoPlan,
@@ -25,10 +26,9 @@ const grafoDe = (p: (typeof PLANES)[number]): GrafoPlan => ({
 
 for (const plan of PLANES) {
   describe(`arbolLayout · ${plan.carrera}`, () => {
-    it('la malla es una grilla exacta y sin flechas (aparecen en el modo rama)', async () => {
+    it('la malla es una grilla exacta y limpia (invariantes en cero)', async () => {
       const lay = await layoutMalla(grafoDe(plan))
       expect(Object.keys(lay.pos)).toHaveLength(plan.materias.length)
-      expect(Object.keys(lay.aristas)).toHaveLength(0) // reposo limpio
       // columnas perfectamente alineadas (slots enteros) y sin dos materias en el mismo lugar
       const lugares = new Set<string>()
       for (const p of Object.values(lay.pos)) {
@@ -37,8 +37,32 @@ for (const plan of PLANES) {
         expect(lugares.has(lugar)).toBe(false)
         lugares.add(lugar)
       }
-      // filas en orden temporal
+      // ninguna flecha cruza una tarjeta ajena, ninguna va para arriba, filas en orden
       expect(invariantes(lay)).toEqual(CERO)
+    })
+
+    it('en reposo dibuja las correlativas cortas, y SOLO esas', async () => {
+      const lay = await layoutMalla(grafoDe(plan))
+      const q = new Map(plan.materias.map((m) => [m.cod, (m.anio - 1) * 2 + (m.cuatri - 1)]))
+      const salto = (id: string) => {
+        const [src, tgt] = id.split('->')
+        return q.get(tgt)! - q.get(src)!
+      }
+      const dibujadas = Object.keys(lay.aristas)
+      // toda flecha de la malla salta 1 o 2 cuatrimestres: las largas son las que
+      // armaban la trenza y se ven solo en modo rama
+      for (const id of dibujadas) {
+        expect(salto(id), id).toBeGreaterThanOrEqual(1)
+        expect(salto(id), id).toBeLessThanOrEqual(DIST_CORTA)
+      }
+      // y no se pierde ninguna que sí sea corta (el ruteo encuentra paso para todas)
+      const cortas = plan.correlativas.filter((c) => {
+        const d = q.get(c.cod)! - q.get(c.requiere)!
+        return d >= 1 && d <= DIST_CORTA
+      })
+      expect(dibujadas).toHaveLength(cortas.length)
+      // el esqueleto que se ve de entrada es la mayoría del grafo
+      expect(cortas.length / plan.correlativas.length).toBeGreaterThan(0.5)
     })
 
     it('la rama de CADA materia con cadena cumple los invariantes (modo rama)', async () => {

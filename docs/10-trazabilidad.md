@@ -23,7 +23,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-07 | Carga de notas | HU-07 | CU-04 | RN-08 | Unit `Store` · E2E 7 |
 | RF-08 | Cálculo de promedio | HU-07 | CU-04 | RN-07 | Unit `selectors` · E2E 6 y 7 |
 | RF-09 | Panel de correlativas | HU-09 | CU-05 | — | Manual (base de datos del grafo: Unit `Plan`) |
-| RF-10 | Árbol de correlativas (malla + modo rama) | HU-10 | CU-06 | — | Unit `Plan` + `arbolLayout` (invariantes por plan y por rama) · E2E 4 y 5 |
+| RF-10 | Árbol de correlativas (malla + modo rama) | HU-10 | CU-06 | RN-14 | Unit `Plan` + `arbolLayout` (invariantes por plan, por malla y por rama) · E2E 4 y 5 |
 | RF-11 | Tablero de avance e hitos | HU-06 | (transversal) | RN-07, RN-09 | Unit `selectors` · E2E 1 y 2 |
 | RF-12 | Renombrado de optativas | HU-08 | CU-07 | RN-10 | Unit `Store` |
 | RF-13 | Perfil local | HU-15 | CU-08 | — | Unit `selectors` (iniciales) · Manual (foto) |
@@ -34,6 +34,7 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-18 | Instalación como PWA | HU-17 | CU-14 | — | Manual |
 | RF-19 | Login con Google + consentimiento | HU-18 | CU-15, CU-16 | RN-12 | Unit `sync` (consentimiento) · Manual (OAuth real) |
 | RF-20 | Sincronización multi-dispositivo | HU-18, HU-19 | CU-15 | RN-12 | Unit `sync` (merge/conteos/ida-y-vuelta) · Manual (2 dispositivos + RLS con 2 cuentas) |
+| RF-21 | Interruptor de año (aprobar / desmarcar todo el año) | HU-04 | CU-03 | RN-15 | Unit `selectors` (decidirAnio) + `Store` (setEstados e inverso) · E2E 13 |
 
 ## D.3 Reglas de negocio: definición → implementación → verificación
 
@@ -51,6 +52,8 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-10 | Optativa renombrable, hasta 48 caracteres | `Store.setOptName` | Unit `Store` |
 | RN-11 | Progreso independiente por plan | Claves de storage por plan (`src/state`) | Unit `Store` (persistencia) · Manual |
 | RN-12 | Server solo con cuenta + consentimiento; dispositivo sincronizado no re-pregunta (base de última sincronización); conflicto real lo decide el usuario; cambios sin subir prevalecen | `lib/sync` (decidirMerge, base/huella, consentimiento, marca dirty) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
+| RN-14 | En reposo el árbol dibuja solo las correlativas cortas (1-2 cuatrimestres) y solo si se rutean sin cruzar tarjetas | `lib/arbolLayout` (DIST_CORTA, rutearCortas, invariantes) · `components/Tree/TreeView` (aristas de malla) | Unit `arbolLayout`: invariantes en cero + “las cortas y solo esas”, por cada plan |
+| RN-15 | El interruptor de año pisa estados, excluye optativas, no toca notas y siempre se puede deshacer | `domain/selectors` (decidirAnio) · `domain/Plan` (codsDelAnio) · `domain/Store` (setEstados → inverso) · `components/PlanView` | Unit `selectors` + `Store` · E2E 13 (marcar → deshacer) |
 | RN-13 | Materias compartidas entre carreras (misma universidad): vista derivada, la marca propia prevalece, optativas afuera | `lib/espejo` (espejoDe) · `domain/Store` (vista con espejo) · `state/store` (espejo del plan activo) | Unit `espejo` + `Store` · E2E compartida |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación
@@ -72,11 +75,11 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 
 **Cobertura de los 20 RF:**
 
-- **12 con verificación automatizada** (unitaria y/o end-to-end): RF-01, RF-03 a RF-08, RF-10, RF-11, RF-12, RF-15 y RF-16.
+- **13 con verificación automatizada** (unitaria y/o end-to-end): RF-01, RF-03 a RF-08, RF-10, RF-11, RF-12, RF-15, RF-16 y RF-21.
 - **4 con cobertura parcial:** RF-02 (el e2e cubre la elección de carrera en la bienvenida, no el cambio posterior), RF-13 (las iniciales del avatar tienen test; la carga de foto es manual), y RF-19/RF-20 (la lógica de merge y consentimiento tiene tests unitarios; el flujo OAuth real y el sync entre dispositivos se verifican manualmente — el e2e no puede loguearse en Google).
 - **4 con verificación manual:** RF-09, RF-14, RF-17 y RF-18.
 
-**Cobertura de las 13 RN:** 12 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
+**Cobertura de las 15 RN:** 14 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
 
 **Brechas conocidas y próximos tests candidatos** (mejoras honestas, no defectos):
 

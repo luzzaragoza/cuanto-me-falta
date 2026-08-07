@@ -21,12 +21,14 @@ Tocá el estado de cualquier materia y elegí cómo venís:
 
 Con cada cambio se actualizan solos el porcentaje de avance, el avance por año y cuánto te falta para cada título.
 
+**¿Ya tenés años enteros aprobados?** No los marques de a una: al costado de cada año hay un botón **“Aprobar todo el año”** que marca todas sus materias de una sola vez. Si te arrepentís, el aviso que aparece abajo trae **Deshacer** y deja todo exactamente como estaba. Cuando el año ya está entero aprobado, el mismo botón pasa a decir **“Desmarcar el año”** y las deja en blanco. Dos detalles: las **optativas no se tocan** (esas las elegís vos, la app no sabe cuál cursaste) y las **notas nunca se borran**.
+
 **¿Y si marco algo que no cumple las correlativas?** La app no te frena — te avisa. Te dice exactamente qué materias te faltan y te ofrece un botón para verlo en el árbol. Vos decidís (capaz tenés una equivalencia que la app no conoce).
 
 ## Correlativas
 
 - **Consulta rápida:** abrí el panel de una materia y vas a ver qué **necesitás** antes (violeta) y qué **habilita** después (teal). Podés dejar varios paneles abiertos para comparar.
-- **El árbol completo:** desde el tablero abrís el **mapa de toda la carrera** — la malla con cada año como un bloque y cada cuatrimestre como una fila. Tocá una materia y su línea de correlatividades **se junta como un árbol**: la vista se encuadra en esa cadena (violeta lo que necesita, teal lo que destraba, con el año·cuatrimestre de cada escalón al costado) y el resto queda desenfocado detrás. Un clic en cualquier otro lado (o `Escape`) te devuelve a la malla; tocar otra materia de la rama salta a su cadena. Se cierra con la ✕ o con `Escape`.
+- **El árbol completo:** desde el tablero abrís el **mapa de toda la carrera** — la malla con cada año como un bloque y cada cuatrimestre como una fila, con las flechas de las correlativas cercanas dibujadas en gris para que se vea de dónde sale cada materia. Tocá una materia y su línea de correlatividades **se junta como un árbol**: la vista se encuadra en esa cadena (violeta lo que necesita, teal lo que destraba, con el año·cuatrimestre de cada escalón al costado) y el resto queda desenfocado detrás. Un clic en cualquier otro lado (o `Escape`) te devuelve a la malla; tocar otra materia de la rama salta a su cadena. Se cierra con la ✕ o con `Escape`.
 
 ## Notas y promedio
 

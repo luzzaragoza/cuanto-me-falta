@@ -59,6 +59,27 @@ export class Store {
     this.commit()
   }
 
+  /**
+   * Marca varias materias de una (un solo commit → una sola escritura y un solo
+   * push al sync). Es lo que usa el interruptor de año. `undefined` BORRA la
+   * marca, que es lo que hace falta para deshacer con exactitud: una materia
+   * que no estaba marcada tiene que volver a no estarlo.
+   */
+  setEstados(cambios: Record<string, Estado | undefined>): Record<string, Estado | undefined> {
+    const entradas = Object.entries(cambios)
+    if (entradas.length === 0) return {}
+    const states = { ...this.db.states }
+    const inverso: Record<string, Estado | undefined> = {}
+    for (const [cod, estado] of entradas) {
+      inverso[cod] = states[cod] // sin marca → undefined → deshacer la borra
+      if (estado === undefined) delete states[cod]
+      else states[cod] = estado
+    }
+    this.db = { ...this.db, states }
+    this.commit()
+    return inverso
+  }
+
   setNota(cod: string, valor: number | null): void {
     const notas = { ...this.db.notas }
     if (valor == null || Number.isNaN(valor)) delete notas[cod]

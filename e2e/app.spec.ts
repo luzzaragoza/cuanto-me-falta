@@ -216,3 +216,22 @@ test('el tutorial (coach marks) corre en la primera visita y no vuelve', async (
   // quedó marcado como visto → no vuelve
   expect(await page.evaluate(() => localStorage.getItem('cmf-tour-visto'))).toBe('1')
 })
+
+test('el interruptor de año aprueba el año entero y se puede deshacer', async ({ page }) => {
+  const btn = page.locator('.year').first().locator('.ybtn')
+  await expect(btn).toHaveText('Aprobar todo el año')
+
+  await btn.click()
+
+  // el año quedó aprobado: el avance subió y el botón cambió de sentido
+  await expect(page.locator('.counts')).not.toContainText('0 aprobadas')
+  await expect(btn).toHaveText('Desmarcar el año')
+
+  // el aviso ofrece deshacer, y deshacer devuelve TODO a como estaba
+  const toast = page.locator('.toast')
+  await expect(toast).toContainText('1° año')
+  await toast.locator('.toast-act').click()
+
+  await expect(page.locator('.counts')).toContainText('0 aprobadas')
+  await expect(btn).toHaveText('Aprobar todo el año')
+})

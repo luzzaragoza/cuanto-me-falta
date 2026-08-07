@@ -128,6 +128,17 @@ export function avancePorAnio(db: DB): AvanceAnio[] {
   })
 }
 
+/**
+ * Interruptor de año (pedido por un usuario en el feedback, 4-ago): un solo
+ * botón que aprueba el año entero, y si ya está entero aprobado lo deja en
+ * blanco. Pisa lo que hubiera (decisión de producto: el que lo toca sabe que
+ * cursó ese año). Las notas NO se tocan: viven aparte de los estados.
+ */
+export function decidirAnio(db: DB, cods: string[]): Estado {
+  const completo = cods.length > 0 && cods.every((c) => estadoDe(db, c) === 'aprobada')
+  return completo ? 'pendiente' : 'aprobada'
+}
+
 /** Materias en un estado dado (para las listas del resumen). */
 export function materiasEnEstado(db: DB, estado: Estado): MateriaUbicada[] {
   return plan.materias().filter((m) => estadoDe(db, m.cod) === estado)

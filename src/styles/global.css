@@ -240,6 +240,45 @@ body {
   font-weight: 700;
   color: var(--ink);
 }
+/* interruptor de año: aprobar el año entero de una (pedido de un usuario) */
+.ybtn {
+  margin-left: auto;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--soft);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.ybtn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: #fdf8ea;
+}
+.ybtn.on {
+  border-color: var(--ap);
+  color: var(--ap-tx);
+  background: var(--ap-bg);
+}
+.ybtn.on:hover {
+  border-color: var(--ap);
+  color: var(--ap-tx);
+  background: #d6e8de;
+}
+@media (max-width: 480px) {
+  .ybtn {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+}
 /* banda de hito: el título que se obtiene al completar las materias de arriba */
 .titulo-hito {
   margin-top: 14px;
@@ -1024,6 +1063,15 @@ body {
 .react-flow__edge.e-rama {
   animation: arista-in 0.3s ease 0.42s both;
 }
+/* esqueleto en reposo: las correlativas cortas, tenues (que se lea de dónde
+   sale cada materia sin que la malla se convierta en un ovillo) */
+.react-flow__edge.e-malla {
+  transition: opacity 0.35s ease;
+  opacity: 0.75;
+}
+.react-flow__edge.e-malla.fondo-e {
+  opacity: 0.1; /* en modo rama se apagan con el resto del fondo */
+}
 /* spinner: mientras baja el chunk del árbol (Suspense) o corre el layout */
 .tv-cargando {
   position: fixed;
@@ -1053,6 +1101,9 @@ body {
   }
   .react-flow__edge.e-rama {
     animation: none;
+  }
+  .react-flow__edge.e-malla {
+    transition: none;
   }
 }
 

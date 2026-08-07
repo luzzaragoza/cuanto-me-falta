@@ -6,23 +6,23 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
-| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`), de materias compartidas (`espejo`), el layout del árbol (`arbolLayout`) y la medición de retención (`analytics`) | 110 tests |
+| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`), de materias compartidas (`espejo`), el layout del árbol (`arbolLayout`) y la medición de retención (`analytics`) | 120 tests |
 | Integridad de datos | Vitest | El grafo académico de **cada plan** cargado | 38 tests |
-| End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 12 escenarios |
+| End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 13 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **160 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **171 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
-## 6.2 Tests unitarios (110)
+## 6.2 Tests unitarios (120)
 
 Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se testean sin navegador y en milisegundos:
 
 - **`Plan` (15):** construcción del plan por año/cuatrimestre, correlativas directas (`antes`/`después`), cadenas recursivas completas (`chainUp`/`chainDown`), niveles BFS para el árbol, y títulos con corte por cuatrimestre (`hastaCuatri`: dónde cuelga el hito y qué materias exige vía `materiasHasta`).
-- **`Store` (15):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado), suscripciones, y el **espejo de otras carreras** (RN-13: la materia compartida se ve con el avance heredado, la marca propia gana, y el espejo no se persiste ni se exporta).
-- **`selectors` (25):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, hitos de título e iniciales del avatar.
+- **`Store` (18):** mutaciones inmutables, persistencia y recuperación, valores por defecto, límites de nota (1–10, redondeo), nombres de optativas (recorte a 48 caracteres, vaciado), suscripciones, el **marcado en bloque** con su inverso exacto (RN-15: deshacer el interruptor de año devuelve cada materia a como estaba — las que no tenían marca quedan sin marca — y las notas no se tocan), y el **espejo de otras carreras** (RN-13: la materia compartida se ve con el avance heredado, la marca propia gana, y el espejo no se persiste ni se exporta).
+- **`selectors` (28):** avance y porcentaje, promedio (solo aprobadas con nota; sin notas no rompe), previas faltantes por estado destino (la regla cursar vs. aprobar), disponibilidad, el **interruptor de año** (RN-15: aprueba mientras falte algo, deja en blanco cuando el año está completo, y las optativas nunca entran), hitos de título e iniciales del avatar.
 - **`sync` (32):** conteos de progreso (las materias custom también cuentan), la decisión de merge al iniciar sesión (subir / bajar / nada / conflicto — el perfil no cuenta como diferencia), la **base de última sincronización** (RN-12: un dispositivo ya sincronizado baja o sube solo según quién avanzó; la huella es canónica — el orden de inserción no inventa diferencias), la **fusión de a tres** cuando avanzaron los dos lados (`merge3`: cambios en materias distintas se combinan sin perder nada; un borrado no resucita; la pregunta queda solo para la misma materia tocada distinto en ambos lados), la marca de **cambios sin subir** (si el usuario edita o borra y refresca antes del push, lo local es más nuevo y no se pisa con un pull), snapshot y escritura local de todas las carreras (ida y vuelta sin pérdida) y el registro de consentimiento que viaja con los datos.
 - **`espejo` (6):** materias compartidas entre carreras (RN-13): qué se hereda y qué no (optativas y otras universidades quedan afuera), entre varias carreras gana el estado más avanzado, y la nota acompaña al estado ganador.
-- **`arbolLayout` (12):** el motor de layout del árbol (ADR-10) corre el layout REAL y verifica los **invariantes geométricos** por plan: la malla es una grilla exacta sin flechas (columnas en slots, filas en orden temporal, sin superposiciones) y la rama de **cada materia con cadena** (~150 subgrafos ELK) sale sin aristas que crucen tarjetas, sin verticales de distinto origen pegadas y con todo fluyendo hacia abajo. "El árbol quedó mal" es un build rojo, también para planes futuros.
+- **`arbolLayout` (16):** el motor de layout del árbol (ADR-10) corre el layout REAL y verifica los **invariantes geométricos** por plan: la malla es una grilla exacta y sus correlativas **cortas** salen ruteadas sin cruzar ninguna tarjeta (RN-14: columnas en slots, filas en orden temporal, y se dibujan todas las de uno o dos cuatrimestres — ni una más ni una menos) y la rama de **cada materia con cadena** (~150 subgrafos ELK) sale sin aristas que crucen tarjetas, sin verticales de distinto origen pegadas y con todo fluyendo hacia abajo. "El árbol quedó mal" es un build rojo, también para planes futuros.
 - **`analytics` (5):** la decisión de la medición de retención (`decidirSesion`) para una app "de mirar", donde el valor es volver aunque no se edite nada: el día activo se cuenta una vez por jornada, y el `regreso` (volver otro día habiendo armado el plan) una sola vez en la vida — quien nunca marcó una materia no cuenta como regreso.
 
 ## 6.3 Tests de integridad de datos académicos (38)
@@ -68,8 +68,8 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 148"]
-    U --> E["end-to-end · Playwright · 12"]
+    L --> U["unit + integridad · vitest · 158"]
+    U --> E["end-to-end · Playwright · 13"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]
     L -. falla .-> X["❌ no se publica"]

@@ -34,6 +34,32 @@ describe('Store · estados y notas', () => {
     expect(s.estado('X')).toBe('cursando')
   })
 
+  it('setEstados marca varias de una sola vez', () => {
+    const s = new Store('k')
+    s.setEstados({ A: 'aprobada', B: 'aprobada' })
+    expect(s.estado('A')).toBe('aprobada')
+    expect(s.estado('B')).toBe('aprobada')
+  })
+
+  it('setEstados devuelve el inverso exacto: deshacer restituye el estado previo', () => {
+    const s = new Store('k')
+    s.setEstado('A', 'cursando') // A ya venía marcada
+    const inverso = s.setEstados({ A: 'aprobada', B: 'aprobada' })
+    expect(s.estado('A')).toBe('aprobada')
+
+    s.setEstados(inverso) // deshacer
+    expect(s.estado('A')).toBe('cursando') // vuelve a lo que era
+    expect(s.estado('B')).toBe('pendiente') // B no estaba: queda SIN marca
+    expect(JSON.parse(localStorage.getItem('k')!).states).not.toHaveProperty('B')
+  })
+
+  it('setEstados no toca las notas', () => {
+    const s = new Store('k')
+    s.setNota('A', 8)
+    s.setEstados({ A: 'pendiente' })
+    expect(s.nota('A')).toBe(8)
+  })
+
   it('setNota acota la nota al rango 1–10 y redondea', () => {
     const s = new Store('k')
     s.setNota('X', 7.6)
