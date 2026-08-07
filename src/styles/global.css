@@ -240,43 +240,57 @@ body {
   font-weight: 700;
   color: var(--ink);
 }
-/* interruptor de año: aprobar el año entero de una (pedido de un usuario) */
+/* Interruptor de año: aprobar el año entero de una. No es un botón "de UI" —
+   habla la misma tipografía que el encabezado (versalitas espaciadas, como
+   "1° AÑO"), así se lee como parte del título y no como un chip pegado.
+   El color es el de la ACCIÓN: verde para aprobar, dorado para deshacer. */
 .ybtn {
   margin-left: auto;
-  padding: 5px 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 8px;
   background: transparent;
-  color: var(--soft);
+  color: var(--ap);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
   transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
+    background 0.16s ease,
+    color 0.16s ease;
+}
+.ybtn svg {
+  flex: none;
+  opacity: 0.8;
 }
 .ybtn:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: #fdf8ea;
-}
-.ybtn.on {
-  border-color: var(--ap);
-  color: var(--ap-tx);
   background: var(--ap-bg);
-}
-.ybtn.on:hover {
-  border-color: var(--ap);
   color: var(--ap-tx);
-  background: #d6e8de;
+}
+.ybtn.undo {
+  color: var(--gold);
+}
+.ybtn.undo:hover {
+  background: #fdf8ea;
+  color: #9a7300;
+}
+.ybtn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 @media (max-width: 480px) {
   .ybtn {
-    font-size: 11px;
-    padding: 4px 9px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    gap: 5px;
+    padding: 5px 7px;
   }
 }
 /* banda de hito: el título que se obtiene al completar las materias de arriba */

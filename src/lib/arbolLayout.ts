@@ -71,13 +71,15 @@ const elk = new ELK()
 // tocar la materia (modo rama). Regla dura, verificada en CI: si una arista NO
 // se puede rutear limpia, NO se dibuja — nunca se ensucia la malla.
 export const NODEX = 215 // paso horizontal entre columnas de la grilla
-export const ROWY = 134 // paso vertical entre filas: deja un pasillo para los carriles
 const YEAR_GAP = 46 // aire extra entre años: agrupa visualmente (la seña más intuitiva)
 
 /** Salto máximo (en cuatrimestres) para dibujarse en la malla en reposo. */
 export const DIST_CORTA = 2
-const LANE0 = 16 // 1er carril horizontal, medido desde el pie de la tarjeta
-const LANE = 10 // separación entre carriles del mismo pasillo
+const PASILLO_MIN = 46 // hueco entre filas cuando no pasa ninguna flecha
+const LANE0 = 17 // del pie de la tarjeta al primer carril
+const LANE = 14 // separación entre carriles: tienen que LEERSE separados
+const LANE_FIN = 17 // del último carril a la fila de abajo
+const LANE_SEP_X = 18 // aire mínimo entre dos horizontales que comparten carril
 
 interface Grilla {
   filas: { cuatri: number; cods: string[] }[] // en orden temporal
@@ -137,26 +139,48 @@ function grillaMalla(grafo: GrafoPlan): Grilla {
   }
 }
 
+/** Un tramo horizontal que ocupa un carril del pasillo `gap`, de `x1` a `x2`. */
+interface Tramo {
+  gap: number
+  x1: number
+  x2: number
+  carril: number
+}
+interface Ruta {
+  id: string
+  src: string
+  tgt: string
+  fs: number
+  ft: number
+  cx: number | null // corredor vertical para cruzar la fila del medio (salto de 2)
+  h1: Tramo | null // tramo horizontal en el pasillo de arriba
+  h2: Tramo | null // tramo horizontal en el pasillo de abajo (salto de 2)
+}
+
 /**
- * Ruteo de las correlativas CORTAS sobre la grilla de la malla.
+ * PLAN de ruteo de las correlativas CORTAS. Se decide con las X (que salen de
+ * la grilla) pero SIN las Y, porque el alto de cada pasillo depende justamente
+ * de cuántos carriles necesite — primero se planifica, después se acomodan las
+ * filas. No hay búsqueda de caminos: la grilla es discreta y cada arista corta
+ * tiene una ruta obvia por los pasillos que quedan ENTRE las filas (ahí no hay
+ * ninguna tarjeta, por construcción):
+ *  - salto de 1 cuatrimestre → baja al pasillo, corre por su carril, baja al destino;
+ *  - salto de 2 → además cruza la fila del medio por un SLOT LIBRE de esa fila
+ *    (200px de aire) o, si no hay, por el pasillo entre columnas.
  *
- * No hay búsqueda de caminos ni heurísticas: la grilla es discreta, así que
- * cada arista corta tiene una ruta obvia por los pasillos que quedan ENTRE las
- * filas (ahí no hay ninguna tarjeta, por construcción):
- *  - salto de 1 cuatrimestre → baja al pasillo, corre en su carril, baja al destino;
- *  - salto de 2 → además tiene que cruzar la fila del medio, y lo hace por un
- *    SLOT LIBRE de esa fila (200px de aire), el más cercano al punto medio.
+ * Los carriles se reparten con **coloreo de intervalos** (greedy por extremo
+ * izquierdo): dos horizontales que se solapan JAMÁS caen en el mismo carril, y
+ * las que no se solapan lo comparten sin gastar alto. Es lo que evita que las
+ * flechas se toquen entre sí — `invariantes()` lo verifica en CI.
  *
- * Si una arista no encuentra por dónde pasar limpia, devuelve `null` y no se
- * dibuja: preferimos mostrar menos esqueleto antes que volver a la trenza.
- * `invariantes()` verifica en CI que el resultado no cruce ninguna tarjeta.
+ * Si una arista no encuentra paso limpio se descarta: preferimos mostrar menos
+ * esqueleto antes que volver a la trenza.
  */
-function rutearCortas(
+function planearCortas(
   grafo: GrafoPlan,
   g: Grilla,
-  pos: Record<string, Punto>,
-  filaY: number[],
-): Record<string, Punto[]> {
+  xc: (cod: string) => number,
+): { rutas: Ruta[]; carriles: number[] } {
   const idxFila = new Map<number, number>()
   g.filas.forEach((f, i) => idxFila.set(f.cuatri, i))
   const ocupados = g.filas.map((f) => new Set(f.cods.map((c) => g.slot.get(c)!)))
@@ -177,30 +201,19 @@ function rutearCortas(
     const fs = idxFila.get(qs)
     const ft = idxFila.get(qt)
     if (fs == null || ft == null || ft - fs < 1 || ft - fs > 2) continue
-    if (!pos[c.requiere] || !pos[c.cod]) continue
+    if (g.slot.get(c.requiere) == null || g.slot.get(c.cod) == null) continue
     reqs.push({ id: `${c.requiere}->${c.cod}`, src: c.requiere, tgt: c.cod, fs, ft })
   }
-  // las de mayor recorrido horizontal toman el carril más alto: quedan anidadas
-  // (como los andenes de una estación) en vez de cruzarse entre sí
-  const span = (r: Req) => Math.abs(pos[r.src].x - pos[r.tgt].x)
-  reqs.sort((a, b) => span(b) - span(a))
-
-  // un pasillo por hueco entre filas; cada arista que dobla toma un carril propio
-  const usadosCarril = new Map<number, number>()
-  const carril = (i: number): number => {
-    const top = filaY[i] + NODEH
-    const alto = filaY[i + 1] - top
-    const max = Math.max(1, Math.floor((alto - 2 * LANE0) / LANE) + 1)
-    const n = usadosCarril.get(i) ?? 0
-    usadosCarril.set(i, n + 1)
-    return top + LANE0 + (n % max) * LANE
-  }
+  // las de tramo más corto eligen corredor primero: son las que menos opciones
+  // tienen (la ventana entre las dos materias es angosta)
+  const span = (r: Req) => Math.abs(xc(r.src) - xc(r.tgt))
+  reqs.sort((a, b) => span(a) - span(b))
 
   // Corredores verticales para cruzar una fila intermedia, del más aireado al
   // más justo: (1) el centro de un slot LIBRE de esa fila —200px de aire—,
-  // (2) ese mismo slot corrido, (3) el pasillo de 15px que queda entre dos
-  // columnas. Nunca dos líneas a menos de 12px: la "trenza" de julio era
-  // justamente muchas aristas compartiendo un canal.
+  // (2) ese mismo slot corrido, (3) el pasillo de 15px entre dos columnas.
+  // Nunca dos a menos de 12px: la "trenza" de julio era exactamente muchas
+  // aristas compartiendo un canal.
   const usadosCorr = new Map<number, number[]>()
   const xDeSlot = (s: number) => PADX + s * NODEX + NODEW / 2
   const xEntreSlots = (s: number) => PADX + s * NODEX - (NODEX - NODEW) / 2
@@ -216,12 +229,12 @@ function rutearCortas(
     for (let s = 0; s < g.maxLen; s++) {
       if (ocupados[fm].has(s)) continue
       const c = xDeSlot(s)
-      cands.push({ x: c, p: puntaje(c, 0) }) // slot libre: 200px de aire
+      cands.push({ x: c, p: puntaje(c, 0) })
       for (const d of [14, -14, 28, -28]) cands.push({ x: c + d, p: puntaje(c + d, 40) })
     }
     for (let s = 1; s < g.maxLen; s++) {
       const c = xEntreSlots(s)
-      cands.push({ x: c, p: puntaje(c, 90) }) // pasillo de 15px: justo, pero limpio
+      cands.push({ x: c, p: puntaje(c, 90) })
     }
     cands.sort((a, b) => a.p - b.p)
     const usados = usadosCorr.get(fm) ?? []
@@ -234,71 +247,96 @@ function rutearCortas(
     return null
   }
 
-  const aristas: Record<string, Punto[]> = {}
+  const tramo = (gap: number, a: number, b: number): Tramo => ({
+    gap,
+    x1: Math.min(a, b),
+    x2: Math.max(a, b),
+    carril: 0,
+  })
+  const rutas: Ruta[] = []
   for (const r of reqs) {
-    const a = pos[r.src]
-    const b = pos[r.tgt]
-    const xa = a.x + NODEW / 2
-    const xb = b.x + NODEW / 2
-    const yArriba = a.y + NODEH
-    const yAbajo = b.y
-
+    const xa = xc(r.src)
+    const xb = xc(r.tgt)
     if (r.ft - r.fs === 1) {
-      if (Math.abs(xa - xb) < 0.5) {
-        aristas[r.id] = [
-          { x: xa, y: yArriba },
-          { x: xa, y: yAbajo },
-        ]
-        continue
-      }
-      const yl = carril(r.fs)
-      aristas[r.id] = [
-        { x: xa, y: yArriba },
-        { x: xa, y: yl },
-        { x: xb, y: yl },
-        { x: xb, y: yAbajo },
-      ]
+      const recta = Math.abs(xa - xb) < 0.5
+      rutas.push({ ...r, cx: null, h1: recta ? null : tramo(r.fs, xa, xb), h2: null })
       continue
     }
-
-    // salto de 2: hay que atravesar la fila del medio por un slot libre
     const fm = r.fs + 1
     const cx = corredor(fm, xa, xb)
-    if (cx == null) continue // sin paso limpio: esta se ve en modo rama
-    const y1 = carril(r.fs)
-    const y2 = carril(fm)
-    const pts: Punto[] = [{ x: xa, y: yArriba }]
-    if (Math.abs(xa - cx) >= 0.5) pts.push({ x: xa, y: y1 }, { x: cx, y: y1 })
-    if (Math.abs(cx - xb) >= 0.5) pts.push({ x: cx, y: y2 }, { x: xb, y: y2 })
-    pts.push({ x: xb, y: yAbajo })
-    aristas[r.id] = pts
+    if (cx == null) continue // sin paso limpio: esta se ve solo en modo rama
+    rutas.push({
+      ...r,
+      cx,
+      h1: Math.abs(xa - cx) < 0.5 ? null : tramo(r.fs, xa, cx),
+      h2: Math.abs(cx - xb) < 0.5 ? null : tramo(fm, cx, xb),
+    })
   }
-  return aristas
+
+  // coloreo de intervalos por pasillo: el carril más bajo que quede libre
+  const carriles = g.filas.map(() => 0)
+  const porGap = new Map<number, Tramo[]>()
+  for (const r of rutas)
+    for (const t of [r.h1, r.h2])
+      if (t) (porGap.get(t.gap) ?? porGap.set(t.gap, []).get(t.gap)!).push(t)
+  for (const [gap, tramos] of porGap) {
+    tramos.sort((a, b) => a.x1 - b.x1 || b.x2 - a.x2)
+    const finDe: number[] = [] // hasta dónde llega lo último puesto en cada carril
+    for (const t of tramos) {
+      let c = 0
+      while (c < finDe.length && finDe[c] + LANE_SEP_X > t.x1) c++
+      t.carril = c
+      finDe[c] = t.x2
+    }
+    carriles[gap] = finDe.length
+  }
+  return { rutas, carriles }
 }
 
 /** La MALLA en reposo: grilla exacta + las correlativas cortas ruteadas por los
- *  pasillos. Columnas en slots, respiro entre años, y las largas en modo rama. */
+ *  pasillos, que crecen solo lo necesario para los carriles que pasan. */
 export async function layoutMalla(grafo: GrafoPlan): Promise<ArbolLayout> {
   const g = grillaMalla(grafo)
+  const xDe = new Map<string, number>()
+  for (const f of g.filas)
+    for (const cod of f.cods) xDe.set(cod, PADX + g.slot.get(cod)! * NODEX + NODEW / 2)
+  const { rutas, carriles } = planearCortas(grafo, g, (cod) => xDe.get(cod)!)
+
   const pos: ArbolLayout['pos'] = {}
   const filas: Fila[] = []
   const filaY: number[] = []
   let y = PADY
   let anioPrevio: number | null = null
-  for (const f of g.filas) {
+  g.filas.forEach((f, i) => {
     const anio = Math.floor(f.cuatri / 2)
     if (anioPrevio !== null && anio !== anioPrevio) y += YEAR_GAP
     anioPrevio = anio
-    for (const cod of f.cods) pos[cod] = { x: PADX + g.slot.get(cod)! * NODEX, y }
+    for (const cod of f.cods) pos[cod] = { x: xDe.get(cod)! - NODEW / 2, y }
     filas.push({ cuatri: f.cuatri, top: y, bottom: y + NODEH })
     filaY.push(y)
-    y += ROWY
+    const n = carriles[i]
+    y += NODEH + Math.max(PASILLO_MIN, n ? LANE0 + (n - 1) * LANE + LANE_FIN : 0)
+  })
+  const ultima = filas[filas.length - 1]
+
+  const yCarril = (t: Tramo) => filaY[t.gap] + NODEH + LANE0 + t.carril * LANE
+  const aristas: ArbolLayout['aristas'] = {}
+  for (const r of rutas) {
+    const xa = xDe.get(r.src)!
+    const xb = xDe.get(r.tgt)!
+    const pts: Punto[] = [{ x: xa, y: pos[r.src].y + NODEH }]
+    if (r.h1) pts.push({ x: xa, y: yCarril(r.h1) }, { x: r.cx ?? xb, y: yCarril(r.h1) })
+    if (r.h2 && r.cx != null)
+      pts.push({ x: r.cx, y: yCarril(r.h2) }, { x: xb, y: yCarril(r.h2) })
+    pts.push({ x: xb, y: pos[r.tgt].y })
+    aristas[r.id] = pts
   }
+
   return {
     pos,
-    aristas: rutearCortas(grafo, g, pos, filaY),
+    aristas,
     width: PADX * 2 + (g.maxLen - 1) * NODEX + NODEW,
-    height: y - ROWY + NODEH + 28,
+    height: ultima.bottom + 28,
     filas,
   }
 }
@@ -420,7 +458,9 @@ export function subgrafoRama(grafo: GrafoPlan, foco: string): GrafoPlan {
 export interface Invariantes {
   /** Segmentos de arista que atraviesan una tarjeta ajena. */
   cruces: number
-  /** Verticales de aristas de DISTINTO origen a menos de 8px (tronco compartido no cuenta). */
+  /** Segmentos PARALELOS de aristas de distinto origen que corren a menos de 8px
+   *  solapándose (verticales y horizontales). Es "las flechas se tocan entre sí":
+   *  el tronco compartido —mismo origen— no cuenta, ese es a propósito. */
   pegados: number
   /** Aristas que no fluyen hacia abajo. */
   haciaArriba: number
@@ -458,21 +498,40 @@ export function invariantes(lay: ArbolLayout): Invariantes {
     }
   }
 
-  const vert = segs.filter((s) => Math.abs(s.x1 - s.x2) < 0.5 && Math.abs(s.y1 - s.y2) > 4)
-  let pegados = 0
-  for (let i = 0; i < vert.length; i++)
-    for (let j = i + 1; j < vert.length; j++) {
-      const a = vert[i]
-      const b = vert[j]
-      if (a.src === b.src) continue // mismo origen pegado = tronco compartido a propósito
-      const dx = Math.abs(a.x1 - b.x1)
-      const aTop = Math.min(a.y1, a.y2)
-      const aBot = Math.max(a.y1, a.y2)
-      const bTop = Math.min(b.y1, b.y2)
-      const bBot = Math.max(b.y1, b.y2)
-      const solapan = Math.max(aTop, bTop) < Math.min(aBot, bBot)
-      if (dx > 0.5 && dx < 8 && solapan) pegados++
-    }
+  // paralelas pegadas, en los dos sentidos: `fijo` es la coordenada constante del
+  // segmento (la x de una vertical, la y de una horizontal) y `de`/`a` su extensión
+  const paralelas = (
+    filtro: (s: Seg) => boolean,
+    fijo: (s: Seg) => number,
+    de: (s: Seg) => number,
+    a: (s: Seg) => number,
+  ): number => {
+    const ss = segs.filter(filtro)
+    let n = 0
+    for (let i = 0; i < ss.length; i++)
+      for (let j = i + 1; j < ss.length; j++) {
+        if (ss[i].src === ss[j].src) continue // tronco compartido: a propósito
+        const d = Math.abs(fijo(ss[i]) - fijo(ss[j]))
+        if (d <= 0.5 || d >= 8) continue
+        const desde = Math.max(Math.min(de(ss[i]), a(ss[i])), Math.min(de(ss[j]), a(ss[j])))
+        const hasta = Math.min(Math.max(de(ss[i]), a(ss[i])), Math.max(de(ss[j]), a(ss[j])))
+        if (desde < hasta) n++
+      }
+    return n
+  }
+  const pegados =
+    paralelas(
+      (s) => Math.abs(s.x1 - s.x2) < 0.5 && Math.abs(s.y1 - s.y2) > 4,
+      (s) => s.x1,
+      (s) => s.y1,
+      (s) => s.y2,
+    ) +
+    paralelas(
+      (s) => Math.abs(s.y1 - s.y2) < 0.5 && Math.abs(s.x1 - s.x2) > 4,
+      (s) => s.y1,
+      (s) => s.x1,
+      (s) => s.x2,
+    )
 
   let haciaArriba = 0
   for (const pts of Object.values(lay.aristas)) {

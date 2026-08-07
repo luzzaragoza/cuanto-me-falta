@@ -17,6 +17,18 @@ interface Props {
 
 const rowId = (cod: string) => `mat-${cod}`
 
+const IcoCheck = () => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+)
+const IcoDeshacer = () => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 9h10a5 5 0 0 1 0 10H9" />
+    <path d="M7.5 5 3.5 9l4 4" />
+  </svg>
+)
+
 /** Banda de hito: el título que se obtiene al completar las materias que tiene arriba.
  *  Va al pie del año (o del cuatrimestre, si el hito cae a mitad de año), no en el
  *  encabezado: pedido de los usuarios del soft-launch. */
@@ -85,12 +97,13 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
             <span className="n">{anio.year}°</span>
             <span className="l">Año</span>
             <button
-              className={'ybtn' + (completo ? ' on' : '')}
+              className={'ybtn' + (completo ? ' undo' : '')}
               type="button"
               onClick={() => toggleAnio(anio.year)}
               aria-label={`${completo ? 'Desmarcar' : 'Aprobar'} todas las materias de ${anio.year}° año`}
             >
-              {completo ? 'Desmarcar el año' : 'Aprobar todo el año'}
+              {completo ? <IcoDeshacer /> : <IcoCheck />}
+              <span>{completo ? 'Desmarcar el año' : 'Aprobar todo el año'}</span>
             </button>
           </div>
           <div className="cuatris">
