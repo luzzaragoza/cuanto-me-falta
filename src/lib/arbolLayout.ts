@@ -194,7 +194,9 @@ function planearCortas(
     ft: number
   }
   const reqs: Req[] = []
-  for (const c of grafo.correlativas) {
+  // sin las que se deducen de otras: en la malla son justo las que necesitan
+  // atravesar una fila (la del medio es la que las vuelve redundantes)
+  for (const c of reduccionTransitiva(grafo.correlativas)) {
     const qs = cuatriDe.get(c.requiere)
     const qt = cuatriDe.get(c.cod)
     if (qs == null || qt == null || qt - qs < 1 || qt - qs > DIST_CORTA) continue
@@ -443,13 +445,51 @@ export function cadenaDe(correlativas: Correlativa[], foco: string): { up: Set<s
   return { up, down }
 }
 
-/** Subgrafo del "modo rama": la materia + su cadena, con solo las correlativas internas. */
+/**
+ * Reducción transitiva: saca las correlativas que ya se DEDUCEN de otras.
+ *
+ * Los planes las tienen a montones — p.ej. Machine Learning I pide Estadística
+ * General *y* Inferencia, que a su vez pide Estadística: la primera no agrega
+ * información, porque no podés tener Inferencia sin Estadística. Dibujarlas es
+ * peor que no hacerlo: la flecha tiene que RODEAR la materia del medio (se ve
+ * como un lazo), y si además sale del mismo nodo que otra, ELK las fusiona en
+ * un tronco compartido que nosotros pintamos de dos colores distintos.
+ *
+ * Sacarlas no pierde nada: la dependencia sigue estando, leída por el camino.
+ * Y garantiza algo lindo: después de reducir, ninguna arista puede ir de la
+ * parte "necesitás" a la parte "habilita" (ese salto siempre pasa por el foco),
+ * así que ningún tronco puede quedar bicolor. Los tests lo verifican.
+ */
+export function reduccionTransitiva(correlativas: Correlativa[]): Correlativa[] {
+  const sig = new Map<string, string[]>()
+  for (const c of correlativas)
+    (sig.get(c.requiere) ?? sig.set(c.requiere, []).get(c.requiere)!).push(c.cod)
+  // ¿se llega de `u` a `v` dando MÁS de un paso? (el salto directo no cuenta)
+  const porOtroCamino = (u: string, v: string): boolean => {
+    const vistos = new Set<string>()
+    const pila = (sig.get(u) ?? []).filter((w) => w !== v)
+    while (pila.length) {
+      const w = pila.pop()!
+      if (w === v) return true
+      if (vistos.has(w)) continue
+      vistos.add(w)
+      for (const x of sig.get(w) ?? []) pila.push(x)
+    }
+    return false
+  }
+  return correlativas.filter((c) => !porOtroCamino(c.requiere, c.cod))
+}
+
+/** Subgrafo del "modo rama": la materia + su cadena, con solo las correlativas
+ *  internas y sin las que se deducen de otras (ver `reduccionTransitiva`). */
 export function subgrafoRama(grafo: GrafoPlan, foco: string): GrafoPlan {
   const { up, down } = cadenaDe(grafo.correlativas, foco)
   const cods = new Set([foco, ...up, ...down])
   return {
     materias: grafo.materias.filter((m) => cods.has(m.cod)),
-    correlativas: grafo.correlativas.filter((c) => cods.has(c.cod) && cods.has(c.requiere)),
+    correlativas: reduccionTransitiva(
+      grafo.correlativas.filter((c) => cods.has(c.cod) && cods.has(c.requiere)),
+    ),
   }
 }
 

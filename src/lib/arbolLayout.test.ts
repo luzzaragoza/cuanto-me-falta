@@ -6,6 +6,7 @@ import {
   layoutGrafo,
   layoutMalla,
   subgrafoRama,
+  reduccionTransitiva,
   DIST_CORTA,
   NODEX,
   PADX,
@@ -41,7 +42,7 @@ for (const plan of PLANES) {
       expect(invariantes(lay)).toEqual(CERO)
     })
 
-    it('en reposo dibuja las correlativas cortas, y SOLO esas', async () => {
+    it('en reposo dibuja las correlativas cortas no redundantes, y SOLO esas', async () => {
       const lay = await layoutMalla(grafoDe(plan))
       const q = new Map(plan.materias.map((m) => [m.cod, (m.anio - 1) * 2 + (m.cuatri - 1)]))
       const salto = (id: string) => {
@@ -55,14 +56,52 @@ for (const plan of PLANES) {
         expect(salto(id), id).toBeGreaterThanOrEqual(1)
         expect(salto(id), id).toBeLessThanOrEqual(DIST_CORTA)
       }
-      // y no se pierde ninguna que sí sea corta (el ruteo encuentra paso para todas)
-      const cortas = plan.correlativas.filter((c) => {
+      // y no se pierde ninguna que sí corresponda (el ruteo encuentra paso para todas)
+      const esperadas = reduccionTransitiva(plan.correlativas).filter((c) => {
         const d = q.get(c.cod)! - q.get(c.requiere)!
         return d >= 1 && d <= DIST_CORTA
       })
-      expect(dibujadas).toHaveLength(cortas.length)
+      expect(new Set(dibujadas)).toEqual(new Set(esperadas.map((c) => `${c.requiere}->${c.cod}`)))
       // el esqueleto que se ve de entrada es la mayoría del grafo
-      expect(cortas.length / plan.correlativas.length).toBeGreaterThan(0.5)
+      expect(esperadas.length / plan.correlativas.length).toBeGreaterThan(0.5)
+    })
+
+    it('la reducción transitiva no cambia lo que se alcanza desde cada materia', () => {
+      const reducidas = reduccionTransitiva(plan.correlativas)
+      const alcanzables = (cs: typeof plan.correlativas, desde: string) => {
+        const sig = new Map<string, string[]>()
+        for (const c of cs) (sig.get(c.requiere) ?? sig.set(c.requiere, []).get(c.requiere)!).push(c.cod)
+        const vistos = new Set<string>()
+        const pila = [...(sig.get(desde) ?? [])]
+        while (pila.length) {
+          const w = pila.pop()!
+          if (vistos.has(w)) continue
+          vistos.add(w)
+          for (const x of sig.get(w) ?? []) pila.push(x)
+        }
+        return vistos
+      }
+      // sacamos flechas deducibles, no información: la cadena completa es la misma
+      for (const m of plan.materias)
+        expect(alcanzables(reducidas, m.cod), m.cod).toEqual(alcanzables(plan.correlativas, m.cod))
+      expect(reducidas.length).toBeLessThanOrEqual(plan.correlativas.length)
+    })
+
+    it('ninguna rama tiene una flecha que salte del "necesitás" al "habilita"', () => {
+      // Es lo que hacía que un tronco compartido (ELK fusiona las flechas que
+      // salen de la misma materia) quedara pintado de dos colores distintos.
+      // Después de la reducción transitiva es imposible: ese salto siempre pasa
+      // por el foco. Se verifica para CADA materia con cadena.
+      const grafo = grafoDe(plan)
+      for (const m of plan.materias) {
+        const { up, down } = cadenaDe(plan.correlativas, m.cod)
+        if (up.size === 0 || down.size === 0) continue
+        for (const c of subgrafoRama(grafo, m.cod).correlativas)
+          expect(
+            up.has(c.requiere) && down.has(c.cod),
+            `${c.requiere}->${c.cod} en la rama de ${m.cod}`,
+          ).toBe(false)
+      }
     })
 
     it('la rama de CADA materia con cadena cumple los invariantes (modo rama)', async () => {
