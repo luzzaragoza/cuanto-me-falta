@@ -129,6 +129,13 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
           <button role="menuitem" className="danger" onClick={reset}>
             Reiniciar todo
           </button>
+
+          {/* Versión: para saber si el dispositivo tiene la última (la PWA instalada
+              puede quedar con una vieja en caché) y para que un reporte de feedback
+              venga con el dato. No es un botón: es una firma al pie. */}
+          <div className="menu-ver" title="Versión instalada en este dispositivo">
+            v{__APP_VERSION__}
+          </div>
         </div>
       )}
 

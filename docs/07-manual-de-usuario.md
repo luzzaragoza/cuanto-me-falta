@@ -93,4 +93,6 @@ Opciones → **Reiniciar** (el botón rojo). Te pide confirmación porque borra 
 
 **¿Los datos del plan son oficiales?** No — es un proyecto independiente, sin afiliación con UADE. Las materias y correlativas se cargaron a mano y pueden tener errores: ante cualquier decisión importante, verificá con la información oficial de la facultad.
 
-**Encontré un error o tengo una idea.** ¡Genial! Opciones → **Enviar feedback**.
+**Encontré un error o tengo una idea.** ¡Genial! Opciones → **Enviar feedback**. Si podés, contá también la **versión** que dice al pie del menú de Opciones (algo como `v2026.08.08·85803d8`): con eso sé exactamente qué estás viendo.
+
+**¿Tengo la última versión?** Al pie de **Opciones** aparece la versión instalada en ese dispositivo: la fecha del último cambio y un código corto. Si la instalaste como app y sospechás que quedó vieja, cerrala del todo y volvé a abrirla.

@@ -46,6 +46,21 @@ body {
      toca). No afecta al árbol: su lienzo maneja los gestos por su cuenta. */
   touch-action: pan-y pinch-zoom;
 }
+/* Los overlays a pantalla completa se ESCAPAN del lock de arriba: son
+   `position: fixed`, así que el `overflow-x: hidden` del documento no los recorta, y
+   cuando tienen scroll propio (la bienvenida: con `overflow-y: auto` el eje X pasa a
+   `auto` también) el gesto lo maneja ESE contenedor → su rebote lateral es
+   independiente del de la página. Reporte de Luz (8-ago): en el onboarding del iPhone
+   la pantalla se corre a los costados aunque el resto de la app ya no lo haga.
+   Medido a 390/375px: no hay ni un elemento que desborde, así que esto es rubber band,
+   no contenido ancho. Cada overlay repite el lock.
+   El árbol queda AFUERA a propósito: su lienzo necesita paneo en los dos ejes. */
+.welcome,
+.tour {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
+}
 
 .wrap {
   max-width: 980px;
@@ -1177,6 +1192,13 @@ body {
   background: var(--paper);
   z-index: 95;
   display: grid;
+  /* minmax(0, 1fr) y no el `auto` implícito: el <input> del nombre aporta su ancho
+     intrínseco (~226px, el de un campo de 20 caracteres) al min-content de la tarjeta,
+     y `min-width: 0` no lo baja mientras el contenedor no tenga un ancho definido. Con
+     el track `auto`, ese min-content ganaba y la columna crecía a 343px → en pantallas
+     de menos de 379px la tarjeta desbordaba unos píxeles a la derecha. Así el track
+     mide lo que mide la pantalla y el campo se encoge, que es lo que corresponde. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 28px 18px;
   overflow-y: auto;
@@ -1915,6 +1937,18 @@ body {
   height: 1px;
   background: var(--line);
   margin: 6px 4px;
+}
+/* Firma al pie del menú: discreta, tipografía de datos, sin caja ni color propio.
+   Se lee cuando la buscás y desaparece cuando no. */
+.menu-ver {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--soft);
+  opacity: 0.62;
+  text-align: center;
+  padding: 7px 4px 2px;
+  user-select: text;
 }
 .menu button.danger {
   color: #a23b2c;

@@ -27,6 +27,10 @@ test('la app carga y muestra el dashboard de avance', async ({ page }) => {
   await expect(page.locator('.hero')).toBeVisible()
   await expect(page.locator('.bignum .num')).toContainText('0')
   await expect(page.locator('.counts')).toContainText('52 en total')
+
+  // la versión vive al pie del menú de Opciones (fecha del commit + hash corto)
+  await page.locator('.tool-btn').click()
+  await expect(page.locator('.menu-ver')).toHaveText(/^v\d{4}\.\d{2}\.\d{2}(·[0-9a-f]{7})?$/)
 })
 
 test('marcar una materia como aprobada actualiza el avance', async ({ page }) => {
@@ -106,6 +110,17 @@ test('la bienvenida de primera visita pide el nombre y entra a la app', async ({
   const welcome = page.locator('.welcome')
   await expect(welcome).toBeVisible()
   await expect(welcome.getByRole('heading')).toContainText('Cuánto me falta')
+
+  // El overlay tiene su PROPIO lock horizontal: es `position: fixed` con scroll propio,
+  // así que el del documento no lo alcanza y en iPhone se arrastraba a los costados.
+  // Si alguien saca estas tres líneas del CSS, esto se pone rojo.
+  const lock = await welcome.evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return { x: cs.overflowX, over: cs.overscrollBehaviorX, touch: cs.touchAction }
+  })
+  expect(lock).toEqual({ x: 'hidden', over: 'none', touch: 'pan-y pinch-zoom' })
+  // y sin desborde real: el eje X no tiene a dónde ir
+  expect(await welcome.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0)
 
   // paso 1 (intro) → paso 2: el botón .w-next es "Continuar" (sin backend) o
   // "Seguir sin cuenta" (con backend configurado en .env.local)
