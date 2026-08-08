@@ -1939,15 +1939,17 @@ body {
   margin: 6px 4px;
 }
 /* Firma al pie del menú: discreta, tipografía de datos, sin caja ni color propio.
-   Se lee cuando la buscás y desaparece cuando no. */
+   Se lee cuando la buscás y desaparece cuando no. Alineada a la izquierda con el
+   MISMO sangrado que los ítems (10px, el padding lateral de `.menu button`): un
+   texto centrado en una lista alineada se lee como un elemento suelto. */
 .menu-ver {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.04em;
   color: var(--soft);
   opacity: 0.62;
-  text-align: center;
-  padding: 7px 4px 2px;
+  text-align: left;
+  padding: 8px 10px 3px;
   user-select: text;
 }
 .menu button.danger {
@@ -3021,4 +3023,226 @@ body {
   font-size: 11.5px;
   color: var(--soft);
   margin: 14px 0 0;
+}
+
+/* ----- administración de planes (#admin) ----- */
+/* Pantalla aparte, no un modal: es otro trabajo. Usa los mismos tokens que la app
+   para que se sienta el mismo producto, pero con una fila de datos por plan en vez
+   de tarjetas: acá se escanea una lista, no se explora un plan. */
+.adm {
+  min-height: 100vh;
+  background: var(--paper);
+}
+.adm-cargando {
+  min-height: 100vh;
+  background: var(--paper);
+}
+.adm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+.adm-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: 17px;
+}
+.adm-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--gold);
+  color: #fff;
+  font-size: 17px;
+  line-height: 1;
+  padding-bottom: 2px;
+}
+.adm-sub {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--soft);
+}
+.adm-acc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.adm-mail {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--soft);
+}
+.adm-rol {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fi-tx);
+  background: var(--fi-bg);
+  border-radius: 99px;
+  padding: 3px 8px;
+}
+.adm-rol.super {
+  color: var(--lk-tx);
+  background: var(--lk-bg);
+}
+.adm-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 26px 20px 70px;
+}
+.adm-error {
+  background: var(--cu-bg);
+  color: var(--cu-tx);
+  border: 1px solid var(--cu);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  margin-bottom: 18px;
+}
+.adm-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 26px;
+}
+.adm-vacio {
+  text-align: center;
+  color: var(--soft);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.adm-vacio h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--ink);
+  margin: 0;
+}
+.adm-vacio p {
+  margin: 0;
+  max-width: 46ch;
+  line-height: 1.55;
+}
+.adm-uni + .adm-uni {
+  margin-top: 28px;
+}
+.adm-uni-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.adm-uni-head h2 {
+  font-family: var(--serif);
+  font-size: 19px;
+  margin: 0;
+}
+.adm-cupo {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--soft);
+}
+.adm-planes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.adm-plan {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+}
+.adm-plan + .adm-plan {
+  border-top: 1px solid var(--line);
+}
+.adm-plan-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.adm-carrera {
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.adm-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--soft);
+}
+.adm-plan-estado {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.adm-pill {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  border-radius: 99px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.adm-pill.ok {
+  color: var(--ap-tx);
+  background: var(--ap-bg);
+}
+.adm-pill.no {
+  color: var(--soft);
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.adm-pill.pend {
+  color: var(--cu-tx);
+  background: var(--cu-bg);
+}
+.adm-plan-act .btn {
+  font-size: 13px;
+  padding: 7px 14px;
+}
+.adm-plan-act .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.adm-nota {
+  margin: 22px 0 0;
+  font-size: 13px;
+  color: var(--soft);
+  line-height: 1.55;
+  border-left: 3px solid var(--gold);
+  padding-left: 12px;
+}
+@media (max-width: 620px) {
+  .adm-plan {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .adm-plan-estado,
+  .adm-plan-act {
+    justify-content: flex-start;
+  }
 }

@@ -251,6 +251,29 @@ test('el interruptor de año aprueba el año entero y se puede deshacer', async 
   await expect(btn).toHaveText('Aprobar todo el año')
 })
 
+test('la administración vive en #admin, en su propio chunk, y no deja entrar sin permiso', async ({
+  page,
+}) => {
+  await page.goto('/#admin')
+
+  // se montó la pantalla de administración, no la del alumno
+  await expect(page.locator('.adm-head')).toContainText('Administración')
+  await expect(page.locator('.hero')).toHaveCount(0)
+  await expect(page.locator('.adm-planes')).toHaveCount(0) // sin sesión no hay lista
+
+  // Sin sesión no se entra. Cuál de los dos carteles aparece depende de si el entorno
+  // tiene credenciales de Supabase (local sí, CI no), así que se acepta cualquiera:
+  // lo que importa es que NO se vea la lista de planes.
+  await expect(page.locator('.adm-vacio h2')).toHaveText(
+    /Entrá con tu cuenta de administración|Sin backend configurado/,
+  )
+
+  // y se vuelve a la app del alumno
+  await page.getByRole('button', { name: /Volver a la app/ }).click()
+  await expect(page.locator('.hero')).toBeVisible()
+  await expect(page.locator('.adm-head')).toHaveCount(0)
+})
+
 test('un plan bajado del backend (caché) reemplaza al del bundle', async ({ page }) => {
   // ADR-11: la app arranca con lo que haya en el caché de planes, y solo cae al bundle
   // si no hay o si está roto. Acá se siembra un caché con UN plan inventado (que no

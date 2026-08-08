@@ -21,7 +21,10 @@ const emit = () => listeners.forEach((l) => l())
 function limpiarUrlAuth(): void {
   const resto = location.search + location.hash
   if (!/[?&#](code|access_token|error|error_description)=/.test(resto)) return
-  history.replaceState(history.state, '', location.pathname)
+  // El hash se CONSERVA si no es basura de OAuth: es la ruta de la app
+  // (`#admin`), así que volver de Google tiene que dejarte donde estabas.
+  const hash = /(access_token|error)=/.test(location.hash) ? '' : location.hash
+  history.replaceState(history.state, '', location.pathname + hash)
 }
 
 if (supabase) {
@@ -54,12 +57,15 @@ export function useSession(): Session | null {
   return useSyncExternalStore(subscribe, getSnapshot, () => null)
 }
 
-/** Dispara el flujo OAuth de Google. Vuelve a la misma URL de origen. */
+/**
+ * Dispara el flujo OAuth de Google. Vuelve a la misma URL de origen, conservando la
+ * ruta de la app (el hash): si entrás desde `#admin`, volvés a `#admin`.
+ */
 export async function entrarConGoogle(): Promise<void> {
   if (!supabase) return
   await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin },
+    options: { redirectTo: window.location.origin + window.location.hash },
   })
 }
 

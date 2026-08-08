@@ -6,14 +6,14 @@ La aplicación maneja el dato más sensible de un estudiante — su avance real 
 
 | Nivel | Herramienta | Qué protege | Cantidad |
 |---|---|---|---|
-| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`), de materias compartidas (`espejo`), el layout del árbol (`arbolLayout`), la medición de retención (`analytics`), la **validación de planes** (`validarPlan`) y el **registro de datos académicos** (`registro`) | 168 tests |
+| Unitario | Vitest | Las reglas de dominio (`Plan`, `Store`, `selectors`) y la lógica de sincronización (`sync`), de materias compartidas (`espejo`), el layout del árbol (`arbolLayout`), la medición de retención (`analytics`), la **validación de planes** (`validarPlan`) el **registro de datos académicos** (`registro`) y las **reglas de acceso a la administración** (`admin`) | 190 tests |
 | Integridad de datos | Vitest | Que los planes **reales** del repo pasen el validador sin errores | 10 tests |
-| End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 14 escenarios |
+| End-to-end | Playwright (Chromium) | Los flujos reales del usuario en el navegador | 15 escenarios |
 | Estático | TypeScript estricto + oxlint | Tipos y errores de código antes de ejecutar | — |
 
-En total, **192 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
+En total, **215 tests automatizados** que corren en cada push. Ninguna versión se publica si alguno falla.
 
-## 6.2 Tests unitarios (168)
+## 6.2 Tests unitarios (190)
 
 Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se testean sin navegador y en milisegundos:
 
@@ -25,6 +25,7 @@ Gracias a que el dominio y la lógica de sync son TypeScript puro (ADR-03), se t
 - **`arbolLayout` (24):** el motor de layout del árbol (ADR-10) corre el layout REAL y verifica los **invariantes geométricos** por plan: la malla es una grilla exacta y sus correlativas **cortas** salen ruteadas sin cruzar ninguna tarjeta (RN-14: columnas en slots, filas en orden temporal, y se dibujan todas las de uno o dos cuatrimestres — ni una más ni una menos) y la rama de **cada materia con cadena** (~150 subgrafos ELK) sale sin aristas que crucen tarjetas, sin verticales de distinto origen pegadas y con todo fluyendo hacia abajo. Verifican además la **reducción transitiva**: que sacar las correlativas deducibles no cambie lo que se alcanza desde ninguna materia, y que después de sacarlas ninguna rama tenga una flecha que salte del "necesitás" al "habilita" — el caso que dejaba un tronco compartido pintado de dos colores. "El árbol quedó mal" es un build rojo, también para planes futuros.
 - **`validarPlan` (21):** el validador de planes de estudio (ADR-11), probado con planes **roto a propósito**: cada regla se ve fallar (cabecera incompleta, materia sin nombre o con cuatrimestre inválido, código repetido, correlativa a una materia inexistente, materia correlativa de sí misma, correlativa repetida, correlativa que no está en un cuatrimestre anterior, círculo de correlativas, optativa metida en el grafo, título hasta un año o cuatrimestre que el plan no tiene) y cada aviso se ve **no** bloquear la publicación (plan sin títulos, nombres repetidos, año salteado). Es la mitad que faltaba: hasta ahora los invariantes solo se ejercitaban contra datos que los cumplían, así que no había forma de saber si el chequeo medía algo.
 - **`registro` (19):** de dónde salen los planes al arrancar (ADR-11): sin caché manda el bundle; con caché válido manda el caché (y puede traer más planes que el bundle); un plan cacheado que no valida se descarta y, si no queda ninguno, se vuelve al bundle; un caché de versión vieja o ilegible se ignora; sin `localStorage` nada explota. Más la conversión del dato de red (`filaAPlan`: no inventa claves — `opt`/`especial` viajan solo cuando son `true` — y rechaza filas con tipos raros) y la comparación estable, que ignora el orden de las **claves** (el bundle TS y el JSON del backend las traen distinto) pero respeta el de los **arrays** (en un plan, el orden de las materias es dato: es cómo se dibuja).
+- **`admin` (22):** las reglas de acceso a la administración de planes (ADR-12): quién entra a `#admin` (un `admin_uni` **sin** habilitaciones no entra: el rol solo no alcanza), los permisos por universidad (editar y eliminar son independientes; el superadmin puede en todas), y el **cupo de planes** con su leyenda para la UI (cuántos quedan, el límite alcanzado, y que no quede en negativo si el superadmin baja el límite por debajo de lo ya cargado). Son las reglas que decide la **interfaz**: la que manda de verdad es la base, con sus políticas de RLS, y si las dos discrepan gana la base.
 - **`analytics` (5):** la decisión de la medición de retención (`decidirSesion`) para una app "de mirar", donde el valor es volver aunque no se edite nada: el día activo se cuenta una vez por jornada, y el `regreso` (volver otro día habiendo armado el plan) una sola vez en la vida — quien nunca marcó una materia no cuenta como regreso.
 
 ## 6.3 Tests de integridad de datos académicos (10)
@@ -38,7 +39,7 @@ Dos verificaciones cubren el registro completo (los ids de plan son únicos; el 
 
 Agregar una carrera nueva es agregar datos — y estos tests la validan automáticamente sin escribir un test más: el archivo recorre el registro completo de planes.
 
-## 6.4 Tests end-to-end (14)
+## 6.4 Tests end-to-end (15)
 
 Playwright ejercita la aplicación real en Chromium, como un usuario:
 
@@ -55,9 +56,10 @@ Playwright ejercita la aplicación real en Chromium, como un usuario:
 11. El resumen en PDF usa la carrera del plan activo (no una fija).
 12. El tutorial corre en la primera visita y no vuelve a aparecer.
 13. El interruptor de año aprueba el año entero y se puede deshacer (RN-15).
-14. **Un plan bajado del backend reemplaza al del bundle** (ADR-11): con un plan en el caché, la app entera se dibuja con ese plan; y si ese mismo caché queda roto (una correlativa a una materia que no existe), se descarta y vuelve el plan del bundle.
+14. **La administración vive en `#admin`**, en su propio chunk, y no deja entrar sin permiso: se monta su pantalla (no la del alumno), no se ve la lista de planes, y el botón vuelve a la app.
+15. **Un plan bajado del backend reemplaza al del bundle** (ADR-11): con un plan en el caché, la app entera se dibuja con ese plan; y si ese mismo caché queda roto (una correlativa a una materia que no existe), se descarta y vuelve el plan del bundle.
 
-Cubren de punta a punta los flujos principales: primer ingreso y elección de carrera (CU-01), estados y aviso de correlativas (CU-03), notas y promedio (CU-04), árbol de correlativas (CU-06), materias compartidas entre carreras (RN-13), resumen en PDF (CU-11), tutorial (CU-12), marcado por año (RN-15) y el origen de los datos académicos (ADR-11).
+Cubren de punta a punta los flujos principales: primer ingreso y elección de carrera (CU-01), estados y aviso de correlativas (CU-03), notas y promedio (CU-04), árbol de correlativas (CU-06), materias compartidas entre carreras (RN-13), resumen en PDF (CU-11), tutorial (CU-12), marcado por año (RN-15), el origen de los datos académicos (ADR-11) y el acceso a la administración (ADR-12).
 
 ## 6.5 Pipeline de CI/CD
 
@@ -67,8 +69,8 @@ Cada push a `main` dispara el pipeline en GitHub Actions. El **gate de calidad**
 %% svg:pipeline
 flowchart LR
     P["push a main"] --> L["lint · oxlint"]
-    L --> U["unit + integridad · vitest · 178"]
-    U --> E["end-to-end · Playwright · 14"]
+    L --> U["unit + integridad · vitest · 200"]
+    U --> E["end-to-end · Playwright · 15"]
     E --> B["build · tsc + Vite"]
     B --> D["deploy · GitHub Pages"]
     L -. falla .-> X["❌ no se publica"]
