@@ -11,9 +11,10 @@ import {
   type Viewport,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { plan } from '../../domain/Plan'
+import { Plan, plan as planAlumno } from '../../domain/Plan'
 import { nombreDe } from '../../domain/selectors'
 import { useDB } from '../../state/store'
+import type { Estado } from '../../types'
 import { useExitAnimation } from '../../hooks/useExitAnimation'
 import { track } from '../../lib/analytics'
 import {
@@ -78,16 +79,66 @@ function centrarRama(lay: ArbolLayout, malla: ArbolLayout): { dx: number; dy: nu
   return { dx, dy }
 }
 
-export function TreeView({ onClose, focus }: { onClose: () => void; focus: string | null }) {
-  const db = useDB()
+/**
+ * Modo edición: el árbol pasa a ser la superficie para CARGAR correlativas (lo usa el
+ * editor de planes). El objetivo es la materia elegida; `elegibles` son las que se pueden
+ * conectar en la dirección activa y se muestran clickeables; el resto queda apagado.
+ * Los colores no cambian: violeta sigue siendo "necesitás" y teal "habilitás", que es lo
+ * que ya aprendió cualquiera que abrió el árbol como alumno.
+ */
+export interface ModoEdicion {
+  objetivo: string
+  direccion: 'anterior' | 'posterior'
+  elegibles: Set<string>
+  yaConectadas: Set<string>
+  onAlternar: (cod: string) => void
+}
+
+export function TreeView({
+  onClose,
+  focus,
+  planExterno,
+  estadosExternos,
+  edicion,
+}: {
+  onClose: () => void
+  focus: string | null
+  /** Plan a dibujar. Sin esto usa el del alumno (el singleton del dominio). */
+  planExterno?: Plan
+  /** Estados de las materias (colores). Sin esto usa el avance del alumno. */
+  estadosExternos?: Record<string, Estado>
+  edicion?: ModoEdicion
+}) {
+  const dbAlumno = useDB()
+  const plan = planExterno ?? planAlumno
+  // memoizado: sin esto `db` sería un objeto nuevo en cada render y el useMemo de los
+  // nodos se recalcularía siempre (y las advertencias de exhaustive-deps tendrían razón)
+  const db = useMemo(
+    () => (estadosExternos ? { ...dbAlumno, states: estadosExternos } : dbAlumno),
+    [dbAlumno, estadosExternos],
+  )
   const [sel, setSel] = useState<string | null>(focus)
   const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
+  // En el editor, el foco lo maneja la pantalla de afuera (cambia al elegir otra
+  // materia). En la app del alumno `focus` solo importa al abrir, y esto no corre.
+  const enEdicion = edicion !== undefined
+  useEffect(() => {
+    if (enEdicion) setSel(focus)
+  }, [focus, enEdicion])
   const flowRef = useRef<ReactFlowInstance | null>(null)
   const [flowListo, setFlowListo] = useState(false)
 
+  // Nombres del plan QUE SE DIBUJA. En el editor no se puede usar `nombreDe`: ese busca
+  // en el plan del alumno y termina mostrando el nombre de otra materia con el mismo
+  // código (o solo el código, si allá no existe).
+  const nombres = useMemo(
+    () => new Map(plan.def.materias.map((m) => [m.cod, m.nom])),
+    [plan],
+  )
+
   const grafo: GrafoPlan = useMemo(
     () => ({ materias: plan.def.materias, correlativas: plan.def.correlativas }),
-    [],
+    [plan],
   )
 
   // ── layout de la MALLA (una vez; ELK es async pero tarda ms) ──
@@ -139,7 +190,9 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
     }
   }, [sel, malla, grafo])
 
-  const enRama = rama !== null && rama.foco === sel
+  // En modo edición NUNCA se entra en rama: la rama compacta la cadena y esconde el
+  // resto del plan, que es justo lo que hay que poder clickear para conectar.
+  const enRama = rama !== null && rama.foco === sel && !edicion
 
   // ── cámara: entrar a la rama la encuadra; salir vuelve a donde estabas ──
   const viewportPrevio = useRef<Viewport | null>(null)
@@ -233,10 +286,23 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
         position: viaja ? rama.pos[m.cod] : malla.pos[m.cod],
         data: {
           cod: m.cod,
-          nom: nombreDe(db, m.cod),
+          // Con un plan externo (el editor) el nombre es el del PLAN QUE SE DIBUJA: si
+          // no, `nombreDe` lo busca en el plan del alumno y muestra el nombre de otra
+          // materia con el mismo código, o solo el código si no existe allá.
+          nom: planExterno ? (nombres.get(m.cod) ?? m.cod) : nombreDe(db, m.cod),
           estado: db.states[m.cod] ?? 'pendiente',
           role: role(m.cod),
           tint: tint(m.cod),
+          edit: !edicion
+            ? undefined
+            : m.cod === edicion.objetivo
+              ? 'objetivo'
+              : edicion.yaConectadas.has(m.cod)
+                ? 'conectada'
+                : edicion.elegibles.has(m.cod)
+                  ? 'elegible'
+                  : 'apagada',
+          editDir: edicion?.direccion,
         },
         className: enRama && !viaja ? 'fondo' : undefined,
         draggable: false,
@@ -314,7 +380,7 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
     }
 
     return { nodes: [...bandNodes, ...matNodes, ...rotuloNodes], edges: edgeList }
-  }, [db, sel, malla, rama, enRama, grafo, bandas])
+  }, [db, sel, malla, rama, enRama, grafo, bandas, plan, planExterno, nombres, edicion])
 
   const hint = sel
     ? `${nombreDe(db, sel)} · necesitás ${up.size} · habilita ${down.size}${enRama ? ' · clic afuera para volver' : ''}`
@@ -359,6 +425,15 @@ export function TreeView({ onClose, focus }: { onClose: () => void; focus: strin
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodeClick={(_, n) => {
+              // ── modo edición: clickear conecta o desconecta, y el foco no se mueve ──
+              if (edicion) {
+                if (n.type !== 'materia') return
+                if (n.id === edicion.objetivo) return
+                if (edicion.elegibles.has(n.id) || edicion.yaConectadas.has(n.id)) {
+                  edicion.onAlternar(n.id)
+                }
+                return
+              }
               // En modo rama, TODO lo que no sea una tarjeta de la rama es "afuera"
               // (bandas, rótulos, materias borrosas del fondo): un clic ahí vuelve a
               // la malla. No confiamos en pointer-events: React Flow pisa el CSS con

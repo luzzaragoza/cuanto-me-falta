@@ -24,6 +24,7 @@ import {
   tieneCambiosSinPublicar,
   type PerfilAdmin,
 } from '../lib/admin'
+import { EditorPlan } from './EditorPlan'
 
 const volverALaApp = (): void => {
   location.hash = ''
@@ -44,6 +45,8 @@ export function AdminApp() {
   const [error, setError] = useState<string | null>(null)
 
   const [intento, setIntento] = useState(0)
+  /** Plan abierto en el editor, o `null` si estamos en la lista. */
+  const [editando, setEditando] = useState<{ planId: string; uni: string } | null>(null)
 
   // el perfil se recarga con la sesión: entrar y salir cambian todo lo que se ve
   useEffect(() => {
@@ -163,7 +166,18 @@ export function AdminApp() {
           </div>
         )}
 
-        {acceso === 'ok' && perfil && (
+        {acceso === 'ok' && perfil && editando && (
+          <EditorPlan
+            planId={editando.planId}
+            puedeEditar={puedeEditar(perfil, editando.uni)}
+            onVolver={() => {
+              setEditando(null)
+              setIntento((n) => n + 1) // la lista se recarga: pudo cambiar la versión publicada
+            }}
+          />
+        )}
+
+        {acceso === 'ok' && perfil && !editando && (
           <>
             {planes.length === 0 && (
               <div className="adm-card adm-vacio">
@@ -213,7 +227,10 @@ export function AdminApp() {
                             <span className="adm-meta">editado {fecha(p.actualizado_at)}</span>
                           </div>
                           <div className="adm-plan-act">
-                            <button className="btn ghost" disabled title="Llega en la próxima entrega">
+                            <button
+                              className="adm-volver"
+                              onClick={() => setEditando({ planId: p.id, uni })}
+                            >
                               {puedeEditar(perfil, uni) ? 'Editar' : 'Ver'}
                             </button>
                           </div>

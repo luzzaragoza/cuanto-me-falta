@@ -4,12 +4,17 @@ import type { Estado } from '../../types'
 
 export type NodeRole = 'normal' | 'sel' | 'need' | 'unlock' | 'dim'
 
+/** En el editor de planes: qué papel juega esta materia en la conexión que se está armando. */
+export type EditRole = 'objetivo' | 'elegible' | 'conectada' | 'apagada'
+
 export interface MateriaNodeData {
   cod: string
   nom: string
   estado: Estado
   role: NodeRole
   tint?: CSSProperties // tinte por profundidad (need/unlock); undefined para el resto
+  edit?: EditRole // solo en el editor; en la app del alumno viene undefined
+  editDir?: 'anterior' | 'posterior' // el color de "ya conectada" sigue el sentido activo
   [key: string]: unknown
 }
 
@@ -17,7 +22,12 @@ export interface MateriaNodeData {
 export function MateriaNode({ data }: NodeProps) {
   const d = data as MateriaNodeData
   return (
-    <div className={`tnode ${d.estado} role-${d.role}`} style={d.tint}>
+    <div
+      className={`tnode ${d.estado} role-${d.role}${d.edit ? ` edit-${d.edit}` : ''}${
+        d.editDir ? ` dir-${d.editDir}` : ''
+      }`}
+      style={d.tint}
+    >
       {/* El flujo es siempre descendente: entra por arriba, sale por abajo. Centrados,
           así una correlativa entre columnas alineadas es una vertical perfecta. */}
       <Handle id="tt" type="target" position={Position.Top} isConnectable={false} />

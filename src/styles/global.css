@@ -3343,3 +3343,614 @@ body {
   gap: 14px;
   flex-wrap: wrap;
 }
+
+/* ----- editor de un plan (#admin → Editar) ----- */
+/* Una fila por materia y todo editable en el lugar: cargar 40 materias tiene que ser
+   escribir y tabular, no abrir y cerrar formularios. */
+.ed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ed-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.ed-quees {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.ed-quees strong {
+  font-family: var(--serif);
+  font-size: 17px;
+}
+.ed-estado {
+  min-width: 150px;
+  text-align: right;
+}
+.ed-sav {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--soft);
+}
+.ed-sav.ok {
+  color: var(--ap-tx);
+}
+.ed-sav.mal {
+  color: var(--bad, var(--cu-tx));
+}
+.ed-solo-lectura {
+  background: var(--fi-bg);
+  color: var(--fi-tx);
+  border-radius: 10px;
+  padding: 10px 13px;
+  font-size: 13px;
+}
+.ed-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ed-tab {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.ed-tab.activa {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.ed-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ed-anio h3 {
+  font-family: var(--serif);
+  font-size: 17px;
+  margin: 0 0 6px;
+}
+.ed-cuatri {
+  margin-bottom: 10px;
+}
+.ed-cuatri-tit {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--soft);
+  margin: 8px 0 5px;
+}
+.ed-fila {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  flex-wrap: wrap;
+}
+.ed-fila.dup .ed-cod {
+  border-color: var(--cu);
+  background: var(--cu-bg);
+}
+.ed-dup {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--cu-tx);
+}
+.ed-cod,
+.ed-nom,
+.ed-mover {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+}
+.ed-cod {
+  font-family: var(--mono);
+  font-size: 12px;
+  width: 104px;
+  flex-shrink: 0;
+}
+.ed-nom {
+  flex: 1;
+  min-width: 160px;
+}
+.ed-mover {
+  width: 96px;
+  flex-shrink: 0;
+}
+/* El select de títulos lleva texto largo ("hasta 3° año completo"): con el ancho fijo
+   de `.ed-mover` quedaba cortado a la mitad de la palabra. */
+.ed-hasta {
+  width: auto;
+  min-width: 200px;
+  flex-shrink: 0;
+}
+.ed-cod:focus,
+.ed-nom:focus,
+.ed-mover:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+.ed-cod:disabled,
+.ed-nom:disabled,
+.ed-mover:disabled {
+  opacity: 0.6;
+}
+.ed-chip {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 7px;
+  cursor: pointer;
+}
+.ed-chip.on {
+  color: var(--lk-tx);
+  background: var(--lk-bg);
+  border-color: var(--lk);
+}
+.ed-chip.mini {
+  padding: 2px 5px;
+  cursor: default;
+}
+.ed-borrar {
+  font-size: 13px;
+  color: var(--soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.ed-borrar:hover:not(:disabled) {
+  color: var(--cu-tx);
+  border-color: var(--cu);
+}
+.ed-add,
+.ed-add-anio {
+  align-self: flex-start;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--soft);
+  background: none;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.ed-add:hover,
+.ed-add-anio:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+/* ── correlativas: lista · tildes · cadena ── */
+.ed-corr {
+  display: grid;
+  /* dos columnas arriba (materias | qué requiere) y la cadena a lo ancho abajo: con
+     tres columnas los nombres de materia quedaban truncados justo en el panel que
+     existe para verificar que la cadena está bien */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+  gap: 16px;
+  align-items: start;
+}
+.ed-cadena {
+  grid-column: 1 / -1;
+}
+.ed-corr-lista {
+  max-height: 62vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  background: var(--card);
+}
+.ed-corr-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.ed-corr-item:hover {
+  background: var(--paper);
+}
+.ed-corr-item.sel {
+  background: var(--gold);
+  color: #fff;
+}
+.ed-corr-item.sel .adm-meta {
+  color: rgba(255, 255, 255, 0.85);
+}
+.ed-corr-nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ed-corr-n {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--ap-bg);
+  color: var(--ap-tx);
+  border-radius: 99px;
+  padding: 1px 6px;
+}
+.ed-corr-panel,
+.ed-cadena {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--card);
+}
+.ed-corr-vacio {
+  grid-column: 2 / -1;
+  padding: 20px;
+}
+.ed-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 5px 2px;
+  cursor: pointer;
+}
+.ed-check input {
+  accent-color: var(--gold);
+  width: 15px;
+  height: 15px;
+}
+.ed-cad-cols {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ed-cad-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.ed-cad-rot {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--soft);
+}
+.ed-cad-caja {
+  font-size: 12.5px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.ed-cad-caja.previa {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+  border-color: var(--lk);
+}
+.ed-cad-caja.foco {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  font-weight: 600;
+}
+.ed-cad-caja.habilita {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
+  border-color: var(--hb);
+}
+.ed-cad-nada {
+  font-size: 12px;
+  color: var(--soft);
+}
+.ed-cad-flecha {
+  color: var(--soft);
+  flex-shrink: 0;
+}
+/* ── publicar ── */
+.ed-publicar {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+.ed-publicar h3 {
+  font-family: var(--serif);
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.ed-verde {
+  color: var(--ap-tx);
+  font-size: 13.5px;
+  margin: 0 0 10px;
+}
+.ed-rojo {
+  color: var(--cu-tx);
+  font-size: 13.5px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.ed-hallazgos {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ed-hallazgos li {
+  font-size: 12.5px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  border-left: 3px solid var(--line);
+}
+.ed-hallazgos li.err {
+  background: var(--cu-bg);
+  color: var(--cu-tx);
+  border-left-color: var(--cu);
+}
+.ed-hallazgos li.avi {
+  background: var(--paper);
+  color: var(--soft);
+}
+.ed-pub-fila {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ed-versiones {
+  margin-top: 16px;
+}
+.ed-ver {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.ed-ver-nota {
+  flex: 1;
+  min-width: 0;
+  color: var(--soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 860px) {
+  .ed-corr {
+    grid-template-columns: 1fr;
+  }
+  .ed-corr-lista {
+    max-height: 34vh;
+  }
+  .ed-corr-vacio {
+    grid-column: 1;
+  }
+  .ed-cad-cols {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ed-cad-flecha {
+    transform: rotate(90deg);
+    align-self: center;
+  }
+}
+
+/* ----- el árbol como editor de correlativas (#admin) ----- */
+/* Los colores NO cambian: violeta sigue siendo "necesitás" y teal "habilitás", que es lo
+   que ya aprendió cualquiera que abrió el árbol como alumno. Lo único que se agrega es la
+   affordance de "esta se puede clickear ahora". */
+.tnode.edit-elegible {
+  cursor: pointer;
+  outline: 2px dashed var(--gold);
+  outline-offset: 2px;
+}
+.tnode.edit-elegible:hover {
+  outline-style: solid;
+  transform: translateY(-1px);
+}
+.tnode.edit-conectada {
+  cursor: pointer;
+  outline: 2px solid var(--lk);
+  outline-offset: 2px;
+}
+.tnode.edit-apagada {
+  opacity: 0.32;
+  cursor: default;
+}
+.tnode.edit-objetivo {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ----- barra del árbol-editor ----- */
+/* Abajo y no arriba: los controles del lienzo (zoom, encuadre) viven arriba, y una barra
+   ahí taparía justo lo que hay que ver. */
+.ed-arbol-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 82;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: calc(100vw - 24px);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.16);
+  padding: 9px 9px 9px 18px;
+  font-size: 13px;
+}
+.ed-ab-obj {
+  font-weight: 700;
+  max-width: 26ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ed-ab-dir {
+  display: flex;
+  gap: 4px;
+  background: var(--paper);
+  border-radius: 99px;
+  padding: 3px;
+}
+.ed-ab-dir button {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--soft);
+  background: none;
+  border: 0;
+  border-radius: 99px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+/* el color de cada dirección es el MISMO que el de las materias en el árbol */
+.ed-ab-dir button:first-child.on {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+}
+.ed-ab-dir button:last-child.on {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
+}
+.ed-ab-guia {
+  color: var(--soft);
+  font-size: 12.5px;
+}
+.ed-ab-listo {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--ink);
+  border: 0;
+  border-radius: 99px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+/* invitación a abrir el árbol + resumen de carga */
+.ed-invita {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.ed-invita h3 {
+  font-family: var(--serif);
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.ed-invita p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--soft);
+  max-width: 62ch;
+  line-height: 1.55;
+}
+.ed-leyenda {
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+.ed-leyenda.previa {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+}
+.ed-leyenda.habilita {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
+}
+.ed-resumen-corr {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 6px;
+}
+.ed-rc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.ed-rc:hover {
+  border-color: var(--gold);
+}
+.ed-rc.con {
+  border-left-color: var(--ap);
+}
+.ed-rc.sin {
+  border-left-color: var(--cu);
+}
+.ed-rc.na {
+  border-left-color: var(--line);
+  opacity: 0.7;
+}
+.ed-rc-n {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--soft);
+  white-space: nowrap;
+}
+.ed-rc.sin .ed-rc-n {
+  color: var(--cu-tx);
+}
+/* "Ya conectada" se pinta del color de la dirección activa: en este editor el color ES
+   el significado (violeta lo que necesita, teal lo que habilita). */
+.tnode.edit-conectada.dir-posterior {
+  outline-color: var(--hb);
+}
