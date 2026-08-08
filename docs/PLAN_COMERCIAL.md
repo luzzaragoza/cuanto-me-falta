@@ -1,7 +1,10 @@
 # Plan comercial y workflow de producto — ¿Cuánto me falta?
 
-> Documento de trabajo (jul-2026). Análisis del estado del proyecto + hoja de ruta por fases
-> para pasar de "app de estudiante" a producto comercializable.
+> Documento de trabajo. **Rev. 8-ago-2026 — giro a B2B.** Reemplaza a la versión de jul-2026,
+> que planificaba un freemium B2C antes del B2B.
+>
+> Versión viva (con bitácora, métricas y diseño técnico):
+> https://claude.ai/code/artifact/40183c26-91a0-47ed-ac23-5d9ee92cfc26
 >
 > **Aclaración:** esto es análisis de producto/estrategia, **no asesoría financiera ni legal**.
 > Antes de facturar o firmar algo con una institución, consultar contador y abogado reales.
@@ -10,269 +13,242 @@
 
 ## 0. La tesis en una línea
 
-**Hoy no tenés un negocio: tenés un excelente prototipo con un solo plan de estudios y cero
-usuarios medidos.** El camino a ganar plata no arranca cobrando: arranca **midiendo tracción
-gratis en UADE**, después construyendo las dos features que desbloquean valor real (**sync entre
-dispositivos** y **multi-carrera**), y recién ahí monetizando en dos frentes: **freemium B2C**
-(caja chica, inmediata) y **B2B a instituciones** (caja grande, lenta, necesita datos de uso
-como argumento de venta). Vender a UADE sin números de uso es ir a esa reunión con las manos
-vacías.
+**El alumno no paga nunca: el cliente es la universidad.** La app queda gratis y sin límites
+para el estudiante — es el motor de adopción, y la adopción es exactamente lo que se le vende a
+una institución. Sobre eso se construye una **plataforma con perfiles y carga de planes propia**
+(el moat: mantener planes al día en cualquier universidad, sin tocar código), y con eso en la
+mano se busca **un contrato institucional**: la app con la marca de la facultad, sus planes
+mantenidos, y un panel agregado y anónimo de yapa.
+
+**La cuenta que fuerza el giro:** un contrato de USD 6.000/año equivale a 500 estudiantes
+pagando USD 1 por mes, todos los meses. Con 47 cuentas y precios argentinos, un freemium al 3%
+de conversión daría ~USD 17 al año y, encima, le pondría un peaje a lo único que funciona.
 
 ---
 
-## 1. Auditoría del estado actual
+## 1. Dónde está el proyecto (al 8-ago-2026)
 
-### 1.1 Lo que hay (y está bien)
+### 1.1 Lo que hay, en producción
 
 | Área | Estado |
 |---|---|
-| Stack | Vite + React 19 + TS, dominio POO limpio (`Plan`/`Store`/selectors puros) |
-| Deploy | GitHub Actions → GitHub Pages, automático en cada push a `main`. Costo: $0 |
-| Features | Estados, notas + promedio, correlativas (panel + árbol React Flow), avisos, perfil, PDF, backup JSON |
-| Persistencia | localStorage (`plan-uade-v3`), privacidad total por diseño |
-| UX | Pulida, identidad visual propia, español rioplatense, mobile razonable |
+| Stack | Vite + React 19 + TS, dominio POO puro (`Plan`/`Store`/selectors) |
+| Deploy | GitHub Actions → GitHub Pages, dominio propio `cuantomefalta.app`, gate de CI |
+| Calidad | **179 tests** (166 vitest + 13 e2e), integridad de datos por plan, invariantes geométricos del árbol |
+| Datos | **4 carreras** de UADE (152 materias, 89 correlativas), modelo normalizado en `src/data/model.ts` |
+| Cuentas | Login con Google (PKCE) + sync multi-dispositivo con Supabase, RLS, consentimiento Ley 25.326 |
+| Features | Estados, notas y promedio, correlativas (panel + árbol v2 con modo rama), títulos, PDF, backup, PWA instalable, tour de onboarding |
+| Medición | Umami + eventos de embudo (`primera_materia`, `activado`, `dia_activo`, `regreso`, `arbol_rama`, `anio_marcado`) |
 
-**Fortalezas estratégicas:**
-- El **dominio está bien modelado**: `Plan` es un grafo genérico — el 80% del código ya es
-  agnóstico de UADE. Multi-carrera es un problema de *datos*, no de arquitectura.
-- **Costo operativo cero.** Podés validar durante meses sin gastar un peso.
-- La **visualización del árbol de correlativas es el diferencial** — ninguna app oficial de
-  facultad tiene eso. Es el asset "vendedor" para demos y redes.
-- El moat identificado en la visión (mantener **planes y correlativas al día**) es correcto:
-  es trabajo aburrido que nadie quiere hacer, y por eso vale.
+### 1.2 Los números que pasaron el Gate A (6-ago-2026)
 
-### 1.2 Lo que falta (debilidades honestas)
+- **47 cuentas reales** — duplicó desde el 21-jul **sin una sola acción de difusión**.
+- **20 activas en 7 días con solo 4 altas nuevas** → ≥16 son cuentas viejas volviendo:
+  **retorno estacional demostrado** (arrancó el 2° cuatrimestre y volvieron solas).
+- **14 volvieron a editar** otro día (eran 5 el 21-jul).
+- **Activación 38%** crudo / ~44% ajustada, con trayectoria **19 → 30 → 38**.
+- **Carga por cuenta: 29,3 materias** de promedio; 33 de 45 cargaron 15+.
+- **Adquisición: cero.** 23 de 28 "fuentes" son el retorno de OAuth (logins), 3 buscadores.
 
-**Técnicas, en orden de gravedad:**
+**Cómo NO medir esta app:** es de uso raro, atado al calendario académico. Las ventanas de 7
+días no dicen nada; rebote y duración quedaron contaminados por el fix de la cola del 21-jul (no
+comparar a través de esa fecha); la retención se mide **por cohorte y completitud de carga**.
 
-1. **Cero tests automatizados.** `package.json` no tiene ni Vitest ni Playwright; el workflow
-   deploya sin gate. Hoy un typo en `selectors.ts` llega a producción en 2 minutos.
-2. **El plan es código, no datos.** `PLAN` y `CORREL` hardcodeados en TS. Para escalar a otra
-   carrera hay que tocar código. Además: **nadie validó automáticamente** que `CORREL` no tenga
-   códigos inexistentes o ciclos.
-3. **Cero telemetría.** No sabés si la app la usan 3 personas o 300. Sin ese número no se puede
-   tomar ninguna decisión de negocio.
-4. **Single-device.** localStorage = si el usuario cambia de teléfono, pierde todo (salvo backup
-   manual, que nadie hace).
-5. **Correlativas unificadas** (cursada vs final sin separar) — fidelidad al reglamento a medias.
-6. Sin monitoreo de errores, sin SEO/meta tags/OG, no es PWA instalable.
+### 1.3 Lo que falta
 
-**De negocio:**
-
-7. **Un solo plan de una sola carrera de una sola facultad.** TAM actual: los alumnos del
-   Plan 1621 de Ing. Informática UADE (¿unos cientos?).
-8. **Sin canal de feedback** dentro de la app.
-9. **Sin landing/pitch**: el README es técnico, no vende.
-
-**Legales (a resolver antes de cobrar):**
-
-10. Sin Términos y Condiciones ni Política de Privacidad (obligatorios al tener cuentas/servidor).
-11. Las **notas son datos personales** (Ley 25.326 AR): con backend, corresponde consentimiento,
-    y registro de base de datos. Hoy no aplica porque todo queda en el dispositivo — ventaja real.
-12. La marca y los planes de UADE: usar los datos del plan como *hechos* está bien; usar
-    logo/marca o dar a entender oficialidad, no. El disclaimer actual está bien — mantenerlo.
-13. Cuando haya ingresos: monotributo. Si crece: registrar la marca propia (INPI).
+1. **Canilla.** El producto convierte y retiene; nadie nuevo llega. Es el problema #1 y no se
+   arregla con código.
+2. **Los planes son código.** Cargar una carrera requiere un archivo TS y un deploy → el moat
+   depende de que Luz esté disponible. Es lo que resuelve el Sprint 1.
+3. **No hay perfiles.** No existe forma de que un tercero cargue o mantenga datos.
+4. **Legales para B2B:** los borradores de privacidad y términos son propios; el panel agregado
+   necesita una cláusula explícita, y el contrato necesita abogado.
 
 ---
 
-## 2. Qué mejorar en la app (priorizado)
+## 2. Modelos de negocio — decisión del 8-ago
 
-### P0 — Antes de difundir (1-2 semanas de laburo)
+| Modelo | Qué es | Ingresos | Veredicto |
+|---|---|---|---|
+| **Contrato institucional** | Universidad completa: app con su marca + planes mantenidos + panel agregado | USD 5–15k/año | **EL CAMINO** |
+| Gratis + donaciones | Cafecito/MP, sin límites ni promesas | Muy bajos | **Se queda** — es el motor de adopción |
+| Freemium B2C | Cobrarle al alumno por sync/planner/export | ~USD 17/año a escala actual | **DESCARTADO** — ver §0 |
+| Centro de estudiantes | Difusión oficial a cambio de acceso | Cero | **Canal, no cliente** — es la adquisición que falta |
+| Planes al día como datos | Licenciar el moat vía API | Medios, recurrentes | **Plan B guardado** — el Sprint 1 lo habilita gratis |
+| Sponsors / publicidad display | — | Miseria | **No** |
 
-| # | Qué | Por qué |
-|---|---|---|
-| 1 | **Test de integridad de datos** (CORREL → códigos existentes, sin ciclos, sin huérfanos) | Una correlativa mal cargada rompe la confianza de un usuario para siempre |
-| 2 | **Tests unitarios del dominio** (Vitest sobre `selectors`/`Plan`/`Store`) | El dominio es puro → testear es barato y protege lo más crítico (promedio, disponible, previas) |
-| 3 | **CI gate**: job de `lint + test` antes del deploy en el workflow | Que no llegue a producción nada roto |
-| 4 | **Analytics privacy-friendly** (GoatCounter gratis, o Umami/Plausible) | Sin medición no hay negocio. Sin cookies ni datos personales → sin drama legal |
-| 5 | **Botón de feedback** (link a Tally/Google Form) | El feedback de los primeros 20 usuarios vale más que 6 meses de features |
-| 6 | **SEO + meta tags + OG image + título decente** | Que compartir el link en WhatsApp muestre una preview linda |
-| 7 | **PWA instalable** (manifest + service worker básico) | Los estudiantes viven en el teléfono; "agregar a inicio" = retención |
-
-### P1 — Producto (el cuatrimestre siguiente)
-
-| # | Qué | Por qué |
-|---|---|---|
-| 8 | **Correlativa de cursada vs de final** | Fidelidad al reglamento real de UADE (ya identificado en el roadmap) |
-| 9 | **Planner "¿qué cursar el próximo cuatri?"** — sugerencias usando el grafo (`disponible` + qué materias desbloquean más cadena) | Killer feature. Convierte la app de "registro" a "consejera". Nadie más lo tiene |
-| 10 | **Share card**: imagen exportable del avance para stories/estados | Loop de crecimiento orgánico gratis — cada share es publicidad |
-| 11 | **Tabla completa de notas** (P1/P2/recus/promoción, ya planificada en CLAUDE.md §4) | Profundidad para usuarios intensivos |
-| 12 | **Import por copy-paste** desde la pantalla de notas de UADE (parser) | Mata la fricción del onboarding (cargar 30 materias a mano espanta) |
-
-### P2 — Escala (solo si el Gate A pasa, ver §6)
-
-| # | Qué | Por qué |
-|---|---|---|
-| 13 | **Planes como datos**: JSON por carrera + validador + loader | Multi-carrera/multi-facultad sin tocar código |
-| 14 | **Backend Supabase**: auth + sync; localStorage queda como modo offline | Multi-device + la base para todo lo B2B |
-| 15 | **Editor de planes** (interno primero) | El moat: mantener planes al día a costo bajo |
-| 16 | **Panel B2B**: analytics agregada y anónima (materias cuello de botella, avance por cohorte) | El producto que se le vende a instituciones |
-| 17 | **App Store (iOS)** vía Capacitor — requiere Apple Developer (USD 99/año), Sign in with Apple (guideline 4.8, obligatorio al ofrecer Google) y eliminar cuenta in-app (5.1.1v) | Solo con ingresos que paguen el peaje anual. Google Play descartado (decisión jul-2026). Mientras: la PWA cubre iPhone (banner de instalación iOS) |
+**La trampa a evitar:** venderle "analítica" a quien ya tiene los datos. La secretaría académica
+conoce el avance de sus alumnos mejor que nosotros. Lo que no tiene: **una app que sus alumnos
+abren por gusto**, el árbol de correlativas, y los planes al día sin trabajo interno.
 
 ---
 
-## 3. ¿Tengo que testear? Sí — así
+## 3. Arquitectura del Sprint 1 (backend, perfiles, carga de planes)
 
-1. **Unit (Vitest)** — `src/domain/` es funciones puras: `promedio`, `disponible`,
-   `previasParaEstado`, `chainUp/Down`, hitos. Son el corazón del producto y se testean en horas.
-   Agregar: `npm i -D vitest` + `"test": "vitest run"`.
-2. **Integridad de datos** — un test que recorra `CORREL` y `PLAN`: todo código referenciado
-   existe, no hay ciclos en el grafo, no hay materias duplicadas. Corre en CI; es el seguro de
-   calidad del moat (cuando haya 10 planes cargados, esto es lo que te deja dormir).
-3. **E2E (Playwright)** — formalizar los scripts que ya usamos en desarrollo (marcar estados,
-   toast de previas, drawer de notas, árbol). 5-6 flujos críticos, no más.
-4. **CI**: en `deploy.yml`, agregar `npm run lint && npm test` como paso previo al build.
-   Si falla, no se deploya.
-5. **Beta humana**: 10-20 compañeros reales usando la app 2 semanas + form de feedback.
-   Esto también es "testing" y es el más valioso ahora.
+`src/data/model.ts` ya está normalizado y mapea 1:1 a tablas → esto es **migración de datos y
+permisos**, no rediseño de dominio. Se queda en el mismo proyecto de Supabase.
 
----
+### 3.1 Tablas
 
-## 4. ¿Cómo "subo la app al server"?
+```
+datos académicos   universidad · plan (estado borrador|publicado, version) · materia
+                   correlativa · titulo
+perfiles           perfil (rol: superadmin|admin_uni|estudiante)
+                   admin_uni (universidad, crear/editar/eliminar, limite_planes)
+                   auditoria (quién, qué, cuándo)
+progreso           YA EXISTE — 1 fila JSON por usuario, RLS user_id = auth.uid(), no se toca
+```
 
-**Hoy ya estás en producción.** GitHub Pages *es* el server para lo que la app es ahora
-(estática, datos en el dispositivo). No hay que migrar nada para lanzar y difundir.
+### 3.2 Permisos
 
-**Lo único que vale la pena ya:** un **dominio propio** (~USD 10-15/año), p.ej.
-`cuantomefalta.app`. GitHub Pages soporta dominio custom con HTTPS gratis. Un dominio propio
-da seriedad para compartir y desacopla la marca de tu usuario de GitHub.
+| Acción | Estudiante | Admin de universidad | Superadmin |
+|---|---|---|---|
+| Ver planes publicados | ✓ | ✓ | ✓ |
+| Su propio avance | ✓ | — | — |
+| Crear plan | — | ✓ solo su universidad, con permiso y bajo `limite_planes` | ✓ |
+| Editar / eliminar plan | — | ✓ ídem | ✓ |
+| Publicar borrador | — | ✓ si validó | ✓ |
+| Habilitar admins y fijar límites | — | — | ✓ |
+| Panel agregado | — | ✓ solo su universidad | ✓ |
+| **Avance de UN alumno** | **✕** | **✕** | **✕ no existe la consulta** |
 
-**Cuándo sí hace falta backend** (Fase 2, §6): cuando quieras cuentas y sync. Ahí:
+### 3.3 Seis decisiones de diseño
 
-- **Supabase** (recomendado, ya estaba en la visión): Postgres + auth + API sin servidor propio.
-  Free tier alcanza para validar; Pro es USD 25/mes cuando escale.
-- La SPA sigue igual donde está; solo le agregás el cliente de Supabase. El `Store` observable
-  que ya tenés es el lugar perfecto para enchufar sync (localStorage = caché offline).
-- Implica: modelo de datos (users, progreso, notas), **Row Level Security** (cada usuario ve
-  solo lo suyo), flujo de migración "subí tu progreso local a tu cuenta", y ahí sí ToS +
-  política de privacidad + consentimiento (las notas pasan a estar en tu servidor).
+1. **El panel no lee `progreso`** — lee vistas agregadas recalculadas por cron. Si el camino no
+   existe, no se puede equivocar. (Descartado: policy de "solo agregando".)
+2. **Los planes viajan en el bundle Y se refrescan** — snapshot de arranque + refresco en
+   segundo plano con caché en localStorage. (Descartado: fetch bloqueante; rompe el offline.)
+3. **Un solo `validarPlan()`** compartido por CI, editor y base: códigos existentes, sin ciclos,
+   sin duplicados, correlativa a cuatrimestre anterior, optativas fuera del grafo.
+4. **Borrador → validación → publicación**, siempre, con `version` y vuelta atrás. El alumno
+   solo ve `publicado`.
+5. **Permisos en la base, no en el JWT** — funciones `security definer`; revocar es un `UPDATE`
+   (los custom claims quedan cacheados hasta el refresh).
+6. **El límite se hace cumplir en la policy** del `INSERT`, no en el formulario, con test propio.
 
-**Errores en producción:** Sentry free tier cuando haya usuarios de verdad.
+### 3.4 Editor de planes (`/admin`, chunk lazy)
 
----
+Cinco pantallas: mis planes · estructura (la grilla del alumno, editable) · correlativas con el
+**árbol redibujándose en vivo** · títulos · revisar y publicar. Reusa `PlanDef`, `arbolLayout` y
+el validador que ya existen.
 
-## 5. Modelos de negocio — análisis comparado
+**Criterio de terminado (= Gate C):** una carrera nueva de ~40 materias y ~25 correlativas
+cargada **en menos de 2 horas**, sin código y sin deploy, con los invariantes del árbol en verde
+y **cargada por alguien que no sea Luz**, siguiendo el manual. Si no, el moat no existe.
 
-| Modelo | Qué es | Ingresos | Esfuerzo | Riesgo | Veredicto |
-|---|---|---|---|---|---|
-| **Gratis + donaciones** | Cafecito/MP en la app | Muy bajos | Trivial | Ninguno | Hacerlo ya, pero no es un negocio |
-| **Freemium B2C** | Gratis lo core; pago: sync, planner, export pro (~USD 1-2/mes o pago único) | Bajos-medios | Medio (requiere backend) | Estudiantes AR pagan poco; lo core debe seguir gratis | **Sí, en Fase 3** — valida que *alguien* paga |
-| **B2B instituciones** | White-label + panel de analytics a facultades privadas | Altos (miles USD/año por contrato) | Alto | Ciclo de venta larguísimo; sin tracción no te atienden | **El premio final** — solo con datos de uso en mano |
-| **B2B2C centros de estudiantes** | El centro paga/esponsorea el acceso de sus alumnos | Medios | Medio | Depende de política interna | Buen caballo de Troya para entrar a una facu |
-| **Sponsors segmentados** | Institutos de inglés, bootcamps, editoriales — placement discreto | Bajos-medios | Bajo | Enchastra la UX si te pasás | Aceptable como puente, con límites duros |
-| **Publicidad display** | AdSense etc. | Miseria con este volumen | Bajo | Destruye la estética que es tu diferencial | **No** |
+### 3.5 Panel agregado (Fase 4, no ahora)
 
-**Recomendación (secuencia, no elección):**
-1. **Ahora:** gratis, sin límites, + donaciones. Objetivo = usuarios y datos, no plata.
-2. **Con tracción:** freemium — el free sigue siendo mejor que nada en el mercado; lo premium
-   es *conveniencia* (sync, planner, import), nunca el core.
-3. **Con números:** B2B. A la reunión con una facultad se llega diciendo *"el 40% de sus
-   alumnos de informática ya la usa por su cuenta"*. Eso invierte la relación de fuerzas.
-
-**Bonus no monetario que ya estás cobrando:** este proyecto como portfolio vale entrevistas
-y laburo. Eso también es plata; no lo subestimes al decidir cuánto invertirle.
-
----
-
-## 6. Workflow por fases (con gates de revisión)
-
-Cada fase termina en un **GATE**: un checkpoint donde se mide, se revisa y se decide
-**seguir / ajustar / frenar**. Esto es lo que evita gastar 6 meses construyendo algo que
-nadie pidió.
-
-### FASE 0 — Endurecer y medir (2-3 semanas)
-- P0 completo (§2): tests + CI, integridad de datos, analytics, feedback, SEO/OG, PWA.
-- Dominio propio.
-- Landing mínima (puede ser la misma app con mejor meta/onboarding).
-
-### FASE 1 — Validación en UADE (4-8 semanas)
-- Soft launch: 10-20 conocidos → iterar con su feedback → launch amplio.
-- Canales: grupos de WhatsApp de cursada, centro de estudiantes, Instagram/TikTok con un
-  video de 30s del árbol de correlativas (es visualmente vendedor), boca a boca.
-- Publicar 1-2 mejoras visibles por semana durante el push (momentum percibido).
-
-**🚦 GATE A:** ¿≥100 usuarios activos/mes y ≥30% vuelve a las 4 semanas? ¿Piden features?
-- **Sí** → Fase 2. | **Tibio** → iterar producto con el feedback, re-medir en 4 semanas.
-- **No** → problema de producto o de mercado; NO construir backend. Revisar y pivotear
-  (¿otra carrera? ¿otro dolor?).
-
-### FASE 2 — Sync + multi-carrera (1-2 meses de laburo real)
-- Supabase (auth + sync, RLS), migración desde localStorage.
-- Planes como datos + validador; cargar 2-3 carreras más de UADE (mismo edificio, cero
-  marketing extra).
-- ToS + Política de Privacidad + consentimiento.
-- Features P1 que el feedback haya priorizado (planner y share card son mis apuestas).
-
-**🚦 GATE B:** ¿Los usuarios crean cuenta? ¿Usan sync? ¿Llegan usuarios de las carreras
-nuevas solos? ¿Alguien pidió pagar por algo?
-- **Sí** → Fase 3. | **No** → el valor percibido está en otro lado; volver al feedback.
-
-### FASE 3 — Monetización piloto (1 mes)
-- Freemium: 1-2 features premium (sync multi-device, planner avanzado). Precio bajo, pago
-  por MP/tarjeta. Medir conversión, no ingresos.
-- En paralelo: 1 conversación exploratoria con un centro de estudiantes (B2B2C piloto,
-  aunque sea gratis a cambio de difusión oficial).
-- Monotributo antes del primer peso facturado.
-
-**🚦 GATE C:** ¿≥2-3% de usuarios activos convierte a pago, o hay un piloto institucional
-firmado?
-- **Sí** → Fase 4. | **No** → freemium mal calibrado (mover qué es premium) o el mercado
-  B2C no paga → foco 100% B2B.
-
-### FASE 4 — Escala B2B
-- Editor de planes + proceso de actualización por cuatrimestre (el moat operativo).
-- Panel de analytics agregada/anónima (el producto institucional).
-- Pitch a facultades privadas chicas primero (deciden rápido), UADE después con números.
-- Acá sí: abogado para contratos, revisión seria de datos personales, y evaluar si esto
-  es un emprendimiento de verdad o un side-project rentable — ambas son victorias.
+Penetración por carrera · materias cuello de botella · avance por cohorte · consulta de
+correlativas. **Ningún corte con menos de 5 alumnos.** Sin nombres, sin notas individuales, sin
+listados exportables, sin cruces con el padrón. Paso legal previo a mostrárselo a un tercero:
+decir explícitamente en la política que se publican estadísticas agregadas no identificables.
 
 ---
 
-## 7. Métricas que importan (mirar semanalmente desde Fase 1)
+## 4. Workflow por fases (con gates)
 
-- **Usuarios activos** (semana/mes) — la métrica madre.
-- **Activación:** % de visitantes que carga ≥5 materias (si no llegan ahí, el onboarding falla
-  → prioriza el import por copy-paste).
-- **Retención a 4 semanas** — la app es de uso cuatrimestral; retención = producto vivo.
-- **Shares** (PDF exportados, share cards) — proxy del loop viral.
-- **Feedback cualitativo:** qué piden, de qué se quejan, qué carrera preguntan.
+### FASE 0 — Endurecer y medir ✅ (6–7 jul)
+Tests + CI, integridad de datos, analytics, feedback, SEO/OG, PWA, dominio propio.
+
+### FASE 1 — Validación ✅ (6-jul → 6-ago) · **queda viva la campaña de agosto**
+Soft launch, onboarding con tour, árbol v2. **Lo urgente: LinkedIn con UTM en agosto** (ventana
+de inscripción; en septiembre vale la mitad).
+
+**🚦 GATE A — ¿Hay tracción? → PASA (6-ago).** Ver §1.2. Decide: campaña de agosto + giro a B2B.
+
+### FASE 2 — Sync + multi-carrera ✅ (12–14 jul, en 3 días)
+Supabase, RLS, merge de a tres, consentimiento, 4 carreras, materias compartidas.
+
+**🚦 GATE B — ¿El valor nuevo se usa? → SÍ.** 47 cuentas sin pedirlas, 45 con progreso, los que
+vuelven vuelven a *editar*. **Nadie pidió pagar por nada** — media prueba del giro.
+
+### FASE 3 — Plataforma: backend, perfiles y carga de planes ⟵ ARRANCA AHORA
+*(reemplaza a la vieja "Fase 3 — Monetización piloto", descartada el 8-ago)*
+Agosto 2026, 6–8 sesiones, costo fijo $0. Cuatro pasos, en este orden:
+
+1. **Tablas, migración y loader** (2 sesiones) — las 5 tablas académicas, migración de los 4
+   planes, `validarPlan()` extraído, loader con snapshot + refresco.
+   *Criterio: los 179 tests verdes leyendo desde la base; la app abre sin red.*
+2. **Perfiles, RLS y tests de seguridad** (1–2 sesiones) — con 3 sesiones reales intentando lo
+   que no les corresponde, incluido pasar el id de otra universidad a mano.
+3. **Editor de planes** (2–3 sesiones) — las 5 pantallas + E2E del camino completo + manual.
+4. **Habilitar admins con límite** (1 sesión) — pantalla de superadmin, tests del límite, docs.
+
+**Fuera del sprint a propósito:** panel agregado, white-label, importador de planes, SSO.
+
+**🚦 GATE C — ¿El moat se sostiene sin vos?** La prueba cronometrada de §3.4, con una
+universidad **ajena a UADE**. Si no pasa, **no se sale a vender**: prometer "sus planes al día"
+sin poder cumplirlo quema la única reunión que se va a conseguir.
+
+### FASE 4 — La venta institucional (oct-2026 →)
+Panel agregado · números por carrera con el snapshot de diciembre (finales = el test real de
+retención) · pitch de una página + demo con el editor en vivo · entrar por un contacto tibio
+(profesor, coordinador, centro de estudiantes) antes que por secretaría académica · abogado,
+monotributo y marca en INPI **antes de firmar** · white-label contra firma.
+
+**🚦 GATE D — ¿Hay contrato?** Después de 3 conversaciones institucionales reales: ¿contrato,
+carta de intención o piloto pago?
+- **Sí** → es una empresa. | **Tibio** ("volvé el año que viene") → es un calendario, no un no.
+- **No** → licenciar el moat como datos, o dejarlo como producto gratis que se mantiene solo.
+  Lo que NO corresponde es volver a intentar cobrarle al alumno.
+
+**Poner fecha límite y escribirla:** si al 30-jun-2027 no hay carta de intención, plan B.
 
 ---
 
-## 8. Costos estimados
+## 5. Métricas
 
-| Concepto | Hoy | Fase 2+ |
-|---|---|---|
-| Hosting (Pages) | $0 | $0 |
-| Dominio | — | ~USD 10-15/año |
-| Analytics | $0 (GoatCounter) | $0-9/mes |
-| Supabase | — | $0 (free) → USD 25/mes |
-| Sentry | — | $0 (free tier) |
-| Contador/monotributo | — | Solo al facturar |
-| **Total para validar** | **~USD 15/año** | |
+**Del producto:** cuentas con progreso (la métrica madre, de Supabase — no visitantes) ·
+activación (≥5 materias; palanca actual = el tour, 78% del embudo) · **retorno estacional**
+(activas en una ventana académica menos las altas nuevas) · completitud de carga (predice
+retorno: con 15+ materias vuelve el 36%, con 1–4 volvió nadie) · adquisición por `utm_source`
+descontando el retorno de OAuth (hoy: cero).
 
-El riesgo financiero es prácticamente nulo. El costo real es tu tiempo — por eso los gates:
-para no regalar cuatrimestres a algo que los datos no acompañan.
+**Para el panel institucional:** penetración por carrera (÷ matrícula estimada — el número que
+abre la reunión) · cuello de botella por materia · avance por cohorte · consulta de correlativas.
 
 ---
 
-## 9. Qué NO hacer (por ahora)
+## 6. Costos
 
-- ❌ Construir backend antes del Gate A (es el error clásico).
-- ❌ Ir a golpear la puerta de UADE sin números de uso.
-- ❌ Cobrar por lo que hoy es gratis (mata la tracción; premium = cosas *nuevas*).
-- ❌ Publicidad display.
-- ❌ Sumar carreras a mano antes de tener planes-como-datos (deuda que después se paga cara).
-- ❌ Prometer "datos oficiales" — el disclaimer de no-afiliación se queda.
+| Concepto | Hoy | Antes de firmar | Con contrato |
+|---|---|---|---|
+| Pages + dominio | ~USD 15/año | ídem | ídem |
+| Umami | $0 | $0 | $0–9/mes |
+| Supabase | $0 free tier | $0 (las tablas de planes son diminutas) | USD 25/mes (vistas, backups, SLA) |
+| Sentry | — | $0 free tier — conviene antes del editor | free o plan chico |
+| Abogado | — | revisión de privacidad del panel | contrato + cláusula de datos |
+| Contador / monotributo | — | — | antes del primer peso facturado |
+| Marca INPI | — | antes de la 1ª reunión seria | — |
+
+**La consecuencia dura del giro:** sin freemium no hay ningún ingreso hasta que una institución
+firme. El riesgo financiero sigue siendo casi nulo (~USD 15/año); el riesgo de **tiempo** subió.
+Por eso el Sprint 1 se eligió así: es la única parte que vale la pena aunque nadie firme nunca.
 
 ---
 
-## 10. Próximos 5 pasos concretos (esta semana)
+## 7. Qué NO hacer
 
-1. Vitest + tests de `domain/` + test de integridad de `CORREL`/`PLAN`.
-2. Gate de `lint + test` en `deploy.yml`.
-3. Analytics (GoatCounter) + botón de feedback (Tally).
-4. Meta tags + OG image + manifest PWA.
-5. Comprar dominio y apuntarlo a Pages.
+- ❌ **Cobrarle al estudiante. Nunca.** Evaluado con números y descartado; sin fecha de revisión.
+- ❌ **Prometerle datos nominales de alumnos a una universidad.** Es lo que van a pedir y lo que
+  hay que saber negar: sin alumnos no hay producto.
+- ❌ **Construir el panel B2B antes de tener con quién hablar.**
+- ❌ **Aceptar integración con el sistema de la uni (SIU/Guaraní) o SSO sin contrato** y alcance
+  escrito. Es un proyecto, no una feature.
+- ❌ **White-label para la demo** (va contra firma) ni **editar planes en vivo** (borrador →
+  validación → publicación, siempre).
+- ❌ **Cargar carreras nuevas en código** una vez que exista el editor.
+- ❌ **Golpear la puerta sin números por carrera** ni con el editor sin andar.
+- ❌ **Publicidad display** ni **prometer "datos oficiales"** (el disclaimer de no-afiliación se
+  queda).
 
-Con eso, la app queda lista para el soft launch de Fase 1.
+---
+
+## 8. Esta semana (8–15 ago)
+
+1. **Push** de los commits del árbol y deploy en verde.
+2. **🔥 LinkedIn con UTM — hoy** (`?utm_source=linkedin&utm_campaign=ago26`). Es lo único urgente.
+3. **Sprint 1, paso 1** con Claude: tablas + migración + `validarPlan()`.
+4. **~15-ago:** leer `arbol_rama` y `anio_marcado`.
+5. Cambiar el flag `cmf-ev-pwa` → `cmf-ev-pwa2` para volver a medir instalaciones.
+6. Elegir la universidad ajena a UADE para la prueba del Gate C.
