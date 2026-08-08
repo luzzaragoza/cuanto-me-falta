@@ -43,6 +43,8 @@ export function AdminApp() {
   const [unis, setUnis] = useState<Universidad[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  const [intento, setIntento] = useState(0)
+
   // el perfil se recarga con la sesión: entrar y salir cambian todo lo que se ve
   useEffect(() => {
     if (!session) {
@@ -52,7 +54,7 @@ export function AdminApp() {
     }
     let vivo = true
     setError(null)
-    cargarPerfilAdmin()
+    cargarPerfilAdmin(session.user.id)
       .then(async (p) => {
         if (!vivo) return
         setPerfil(p)
@@ -67,33 +69,42 @@ export function AdminApp() {
     return () => {
       vivo = false
     }
-  }, [session])
+  }, [session, intento])
 
   const acceso = decidirAcceso(authHabilitado, session !== null, perfil)
   const nombreUni = (id: string): string => unis.find((u) => u.id === id)?.nombre ?? id
 
   return (
     <div className="adm">
+      {/* Tres niveles y un solo botón: la marca ubica, la identidad se lee si la
+          buscás, y "volver a la app" es la única acción con peso. El rol viaja como
+          etiqueta con un punto de color — el color dice el privilegio sin gritar. */}
       <header className="adm-head">
         <div className="adm-brand">
           <span className="adm-mark">¿</span>
-          <span>
-            Administración <span className="adm-sub">de planes de estudio</span>
+          <span className="adm-titulo">
+            Administración
+            <span className="adm-kicker">planes de estudio</span>
           </span>
         </div>
+
         <div className="adm-acc">
-          {session?.user.email && <span className="adm-mail">{session.user.email}</span>}
-          {perfil && (
-            <span className={`adm-rol ${esSuper(perfil) ? 'super' : ''}`}>
-              {esSuper(perfil) ? 'superadmin' : 'admin'}
-            </span>
-          )}
           {session && (
-            <button className="lnk" onClick={() => void salir()}>
-              Salir
-            </button>
+            <div className="adm-quien">
+              <span className="adm-mail">{session.user.email}</span>
+              <span className="adm-linea2">
+                {perfil && (
+                  <span className={`adm-rol ${esSuper(perfil) ? 'super' : ''}`}>
+                    {esSuper(perfil) ? 'superadmin' : 'admin'}
+                  </span>
+                )}
+                <button className="adm-salir" onClick={() => void salir()}>
+                  Salir
+                </button>
+              </span>
+            </div>
           )}
-          <button className="lnk" onClick={volverALaApp}>
+          <button className="adm-volver" onClick={volverALaApp}>
             ← Volver a la app
           </button>
         </div>
@@ -102,7 +113,12 @@ export function AdminApp() {
       <main className="adm-main">
         {error && (
           <div className="adm-error">
-            <strong>No pude leer los datos.</strong> {error}
+            <div>
+              <strong>No pude leer los datos.</strong> {error}
+            </div>
+            <button className="lnk" onClick={() => setIntento((n) => n + 1)}>
+              Reintentar
+            </button>
           </div>
         )}
 
@@ -129,7 +145,9 @@ export function AdminApp() {
           </div>
         )}
 
-        {acceso === 'cargando' && <div className="adm-card adm-vacio">Cargando…</div>}
+        {/* si algo falló, el cartel de error manda: dejar "Cargando…" para siempre
+            es la peor pantalla posible (parece que la app se colgó) */}
+        {acceso === 'cargando' && !error && <div className="adm-card adm-vacio">Cargando…</div>}
 
         {acceso === 'sin-permiso' && (
           <div className="adm-card adm-vacio">

@@ -3041,63 +3041,153 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
   flex-wrap: wrap;
-  padding: 14px 20px;
+  padding: 12px 22px;
   border-bottom: 1px solid var(--line);
   background: var(--card);
 }
+/* ── marca: mismo patrón que el encabezado del alumno (nombre en serif + kicker
+      en versalitas espaciadas), para que se sienta el mismo producto ── */
 .adm-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--serif);
-  font-weight: 800;
-  font-size: 17px;
+  gap: 11px;
+  min-width: 0;
 }
 .adm-mark {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
   background: var(--gold);
   color: #fff;
-  font-size: 17px;
+  font-family: var(--serif);
+  font-size: 20px;
   line-height: 1;
-  padding-bottom: 2px;
+  padding-bottom: 3px;
 }
-.adm-sub {
-  font-family: var(--sans);
-  font-weight: 500;
-  font-size: 13px;
+.adm-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.1;
+}
+.adm-kicker {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 9.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   color: var(--soft);
+  opacity: 0.75;
 }
+/* ── identidad: se lee cuando la buscás, no compite con la acción ── */
 .adm-acc {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 22px;
   flex-wrap: wrap;
-  font-size: 13px;
+}
+.adm-quien {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  line-height: 1.25;
 }
 .adm-mail {
-  font-family: var(--mono);
-  font-size: 11.5px;
+  font-family: var(--sans);
+  font-size: 12.5px;
   color: var(--soft);
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.adm-linea2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* el rol es una etiqueta con un punto de color: el privilegio se ve, sin fondo
+   saturado peleándole la atención al único botón de la barra */
 .adm-rol {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 9.5px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--fi-tx);
-  background: var(--fi-bg);
-  border-radius: 99px;
-  padding: 3px 8px;
+}
+.adm-rol::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fi);
 }
 .adm-rol.super {
   color: var(--lk-tx);
-  background: var(--lk-bg);
+}
+.adm-rol.super::before {
+  background: var(--lk);
+}
+.adm-salir {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  color: var(--soft);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 2px;
+}
+.adm-salir:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+/* la única acción con peso de la barra */
+.adm-volver {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.adm-volver:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.adm-volver:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+@media (max-width: 560px) {
+  .adm-head {
+    padding: 11px 16px;
+  }
+  .adm-quien {
+    align-items: flex-start;
+  }
+  .adm-mail {
+    max-width: 60vw;
+  }
 }
 .adm-main {
   max-width: 880px;
@@ -3245,4 +3335,11 @@ body {
   .adm-plan-act {
     justify-content: flex-start;
   }
+}
+.adm-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
 }
