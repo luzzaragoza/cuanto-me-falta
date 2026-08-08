@@ -12,6 +12,7 @@ automáticas: son pocas, se corren de a una y conviene ver el resultado de cada 
 | 2 | `seed-planes.sql` | Carga los 4 planes del repo (152 materias, 89 correlativas) | cada vez que cambien los planes del repo |
 | 3 | `002-perfiles-y-permisos.sql` | Crea `perfil`, `admin_uni` y `auditoria`, las funciones que deciden permisos y las políticas de **escritura** (con límite de planes por universidad) | una vez |
 | 4 | `003-verificar-permisos.sql` | **Prueba** las 17 reglas de permisos simulando tres usuarios. Termina en `ROLLBACK`: no deja nada | después de 002, y cada vez que se toque una política |
+| 5 | `004-versiones-de-plan.sql` | `plan_version` (las fotos), `publicar_plan()`, `revertir_plan()`, y la vista pasa a leer la foto publicada. Publica la versión 1 de los 4 planes ya cargados | una vez |
 
 Todos son **re-ejecutables**: correrlos dos veces deja la base igual.
 
@@ -79,15 +80,36 @@ Si alguno falla, el script termina con `EXCEPTION` y lista cuáles. Necesita **a
 cuentas** en `auth.users` (hay 47, así que alcanza) porque se hace pasar por tres usuarios
 distintos en vez de abrir tres sesiones de Google.
 
+## Cómo se publica un plan (004)
+
+Las filas de `materia` / `correlativa` / `titulo` son el **borrador**: el admin las edita
+y los alumnos no ven nada. Al publicar se guarda una **foto** (el plan entero en JSON) en
+`plan_version`, y `plan.version_publicada` apunta a ella — eso es lo único que ve el alumno.
+
+```sql
+select public.publicar_plan('uade-ing-informatica', 'Arreglo de correlativas de 3° año');
+-- devuelve el número de versión nueva
+
+select public.revertir_plan('uade-ing-informatica', 2);   -- volver a la foto 2
+```
+
+`publicar_plan` se niega a publicar un plan estructuralmente roto: sin materias, con
+materias sin nombre, con una correlativa que no apunte a un cuatrimestre anterior (lo cual
+además hace **imposible** un ciclo), con optativas metidas en las correlativas, o con
+títulos que apunten a un año que el plan no tiene. El resto de las reglas las hace cumplir
+el editor con `validarPlan()`, y el arranque de la app descarta igual cualquier plan roto.
+
+Ver el historial de un plan:
+
+```sql
+select version, publicado_at, nota, jsonb_array_length(data->'materias') as materias
+  from public.plan_version where plan_id = 'uade-ing-informatica' order by version desc;
+```
+
 ## Lo que NO está acá
 
 - **La tabla `progreso`** (el avance del alumno: 1 fila JSON por usuario, RLS
   `user_id = auth.uid()`). Se creó a mano en jul-2026 y **no se toca**: ningún rol nuevo
   la alcanza, y el panel agregado del futuro no va a leerla — va a leer vistas agregadas.
-- **El flujo borrador → publicación con versiones.** La columna `estado` existe y el
-  alumno solo ve `publicado`, pero el modelo de versionado (cómo se guarda la copia que
-  se está editando sin que el alumno pierda el plan mientras tanto) se define junto con
-  el editor, en el paso 3. Hoy un admin edita su plan publicado directamente.
-- **La validación al publicar.** Las reglas son las de `validarPlan()` (TypeScript): las
-  hace cumplir el editor, y el arranque de la app descarta cualquier plan roto que llegue
-  igual. La base sostiene aparte lo estructural (claves compuestas y FKs).
+- **El editor** (`/admin`) y el **aviso de "hay una versión nueva"** en la app del alumno.
+  La base ya está lista para los dos: falta la interfaz (resto del paso 3).
