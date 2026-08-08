@@ -67,10 +67,12 @@ function inyectarScript(): void {
     s.defer = true
     s.src = src
     s.setAttribute('data-website-id', id)
-    // El hash nunca aporta a las métricas (no hay hash-routing) y era por donde
-    // se colaba el token de OAuth. OJO: NO agregar `data-exclude-search` — el
-    // tracker borra TODOS los query params, utm_* incluidos (verificado contra
-    // el script de cloud.umami.is), y mataría la atribución de campañas.
+    // El hash se excluye de las métricas: era por donde se colaba el token de OAuth,
+    // y además `#admin` (la administración de planes) no es una página que interese
+    // medir — así queda sumada a `/` en vez de inventar una URL aparte.
+    // OJO: NO agregar `data-exclude-search` — el tracker borra TODOS los query params,
+    // utm_* incluidos (verificado contra el script de cloud.umami.is), y mataría la
+    // atribución de campañas.
     s.setAttribute('data-exclude-hash', 'true')
     s.addEventListener('load', flushPendientes) // eventos del arranque, ya con umami vivo
     document.head.appendChild(s)
@@ -177,8 +179,13 @@ export function trackPwa(): void {
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as { standalone?: boolean }).standalone === true
-    if (standalone && !localStorage.getItem('cmf-ev-pwa')) {
-      localStorage.setItem('cmf-ev-pwa', '1')
+    // La clave va con sufijo: `cmf-ev-pwa` (sin el 2) quedó QUEMADA en los
+    // dispositivos que ya tenían la app instalada — un bug viejo la escribía antes de
+    // que cargara Umami, así que el evento se perdía y el flag quedaba puesto. Por eso
+    // `pwa_abierta` medía 1 en agosto. Cambiarla hace que esos dispositivos vuelvan a
+    // contar una vez. Si hay que re-medir de nuevo, subir el número.
+    if (standalone && !localStorage.getItem('cmf-ev-pwa2')) {
+      localStorage.setItem('cmf-ev-pwa2', '1')
       track('pwa_abierta')
     }
   } catch {
