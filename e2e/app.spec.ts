@@ -235,3 +235,51 @@ test('el interruptor de año aprueba el año entero y se puede deshacer', async 
   await expect(page.locator('.counts')).toContainText('0 aprobadas')
   await expect(btn).toHaveText('Aprobar todo el año')
 })
+
+test('un plan bajado del backend (caché) reemplaza al del bundle', async ({ page }) => {
+  // ADR-11: la app arranca con lo que haya en el caché de planes, y solo cae al bundle
+  // si no hay o si está roto. Acá se siembra un caché con UN plan inventado (que no
+  // existe en el repo) y se verifica que la app entera se dibuja con ESE plan.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'cmf-planes-cache',
+      JSON.stringify({
+        v: 1,
+        at: new Date().toISOString(),
+        universidades: [{ id: 'uade', nombre: 'UADE' }],
+        planes: [
+          {
+            id: 'uade-ing-informatica', // mismo id: es el plan activo sembrado en beforeEach
+            universidad: 'uade',
+            codigo: '9999',
+            anio: 2026,
+            carrera: 'Carrera Del Backend',
+            materias: [
+              { cod: 'Z.1', nom: 'Materia Del Backend', anio: 1, cuatri: 1 },
+              { cod: 'Z.2', nom: 'Otra Del Backend', anio: 1, cuatri: 2 },
+            ],
+            correlativas: [{ cod: 'Z.2', requiere: 'Z.1' }],
+            titulos: [{ nombre: 'Título Del Backend', hastaAnio: 1 }],
+          },
+        ],
+      }),
+    )
+  })
+  await page.reload()
+
+  await expect(page.locator('.head .sub')).toContainText('Carrera Del Backend')
+  await expect(page.locator('.counts')).toContainText('2 en total') // no las 52 del bundle
+  await expect(page.locator('#plan')).toContainText('Materia Del Backend')
+
+  // y un caché ROTO (correlativa a una materia que no existe) se descarta: vuelve el bundle
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('cmf-planes-cache')!
+    const c = JSON.parse(raw)
+    c.planes[0].correlativas = [{ cod: 'Z.2', requiere: 'NO_EXISTE' }]
+    localStorage.setItem('cmf-planes-cache', JSON.stringify(c))
+  })
+  await page.reload()
+
+  await expect(page.locator('.counts')).toContainText('52 en total')
+  await expect(page.locator('#plan')).toContainText('Fundamentos de Informática')
+})

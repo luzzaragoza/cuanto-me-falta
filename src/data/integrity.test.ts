@@ -1,9 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { PLANES, PLAN_POR_DEFECTO, existePlan } from './planes'
+import { validarPlan, erroresDe } from '../lib/validarPlan'
 
-// Red de seguridad de los DATOS. Valida CADA plan cargado (no solo el default):
-// sin materias duplicadas, correlativas que apunten a códigos existentes, sin ciclos.
-// Cuando el admin cargue más planes, esto atrapa un dato mal tipeado.
+// Red de seguridad de los DATOS: valida CADA plan cargado (no solo el default).
+//
+// Las reglas viven en `src/lib/validarPlan.ts` — compartidas con el editor de planes
+// y con el arranque (un plan que llega del backend roto se descarta). Acá se afirma
+// una sola cosa por plan: que los planes REALES del repo pasan sin errores.
+//
+// Que cada regla salte cuando corresponde se prueba aparte, en
+// `src/lib/validarPlan.test.ts`, con planes roto a propósito. Antes esos invariantes
+// solo se ejercitaban contra datos que los cumplían: nunca sabíamos si el chequeo
+// servía o si estaba pasando de casualidad.
 
 describe('integridad · registro de planes', () => {
   it('los ids de plan son únicos', () => {
@@ -18,91 +26,19 @@ describe('integridad · registro de planes', () => {
 
 for (const plan of PLANES) {
   describe(`integridad · ${plan.carrera} (${plan.codigo})`, () => {
-    const codigos = new Set(plan.materias.map((m) => m.cod))
-
-    it('no tiene códigos de materia duplicados', () => {
-      const conteo = new Map<string, number>()
-      for (const m of plan.materias) conteo.set(m.cod, (conteo.get(m.cod) ?? 0) + 1)
-      const duplicados = [...conteo.entries()].filter(([, n]) => n > 1).map(([c]) => c)
-      expect(duplicados).toEqual([])
+    it('no tiene errores de validación', () => {
+      // el mensaje es lo que se lee cuando falla, así que se afirma sobre los textos
+      expect(erroresDe(plan).map((e) => `[${e.regla}] ${e.mensaje}`)).toEqual([])
     })
 
-    it('ninguna materia tiene código o nombre vacío', () => {
-      const vacias = plan.materias.filter((m) => !m.cod.trim() || !m.nom.trim())
-      expect(vacias).toEqual([])
-    })
-
-    it('cada correlativa apunta a materias que existen en el plan', () => {
-      const rotas = plan.correlativas.filter(
-        (c) => !codigos.has(c.cod) || !codigos.has(c.requiere),
-      )
-      expect(rotas).toEqual([])
-    })
-
-    it('ninguna materia es correlativa de sí misma', () => {
-      const auto = plan.correlativas.filter((c) => c.cod === c.requiere)
-      expect(auto).toEqual([])
-    })
-
-    it('no hay correlativas duplicadas', () => {
-      const vistas = new Set<string>()
-      const duplicadas = plan.correlativas.filter((c) => {
-        const k = `${c.cod}<-${c.requiere}`
-        if (vistas.has(k)) return true
-        vistas.add(k)
-        return false
-      })
-      expect(duplicadas).toEqual([])
-    })
-
-    it('no hay ciclos en el grafo de correlativas', () => {
-      const ady = new Map<string, string[]>()
-      for (const c of plan.correlativas) {
-        const arr = ady.get(c.cod) ?? []
-        arr.push(c.requiere)
-        ady.set(c.cod, arr)
-      }
-      const marca = new Map<string, 'proceso' | 'listo'>()
-      const ciclos: string[] = []
-      const visitar = (cod: string, camino: string[]): void => {
-        marca.set(cod, 'proceso')
-        for (const previa of ady.get(cod) ?? []) {
-          if (marca.get(previa) === 'proceso') ciclos.push([...camino, cod, previa].join(' → '))
-          else if (!marca.has(previa)) visitar(previa, [...camino, cod])
-        }
-        marca.set(cod, 'listo')
-      }
-      for (const cod of ady.keys()) if (!marca.has(cod)) visitar(cod, [])
-      expect(ciclos).toEqual([])
-    })
-
-    it('los títulos apuntan a años y cuatrimestres que existen en el plan', () => {
-      const anios = new Set(plan.materias.map((m) => m.anio))
-      const cuatris = new Set(plan.materias.map((m) => `${m.anio}.${m.cuatri}`))
-      const rotos = plan.titulos.filter(
-        (t) =>
-          !anios.has(t.hastaAnio) ||
-          (t.hastaCuatri != null && !cuatris.has(`${t.hastaAnio}.${t.hastaCuatri}`)),
-      )
-      expect(rotos).toEqual([])
-    })
-
-    it('ninguna optativa participa de las correlativas', () => {
-      // Invariante de RN-05: las optativas quedan exentas del chequeo de previas
-      // (se habilitan por la oferta anual, no por correlativas). Si un plan futuro
-      // necesita una optativa con correlativas, esto obliga a decidirlo a conciencia.
-      const opts = new Set(plan.materias.filter((m) => m.opt).map((m) => m.cod))
-      const tocanOpt = plan.correlativas.filter((c) => opts.has(c.cod) || opts.has(c.requiere))
-      expect(tocanOpt).toEqual([])
-    })
-
-    it('toda correlativa apunta a un cuatrimestre anterior', () => {
-      // Invariante del árbol (una fila por cuatrimestre): la previa vive SIEMPRE
-      // más arriba, así toda flecha fluye hacia abajo. Un plan que lo rompa no es
-      // cursable tal como está cargado (pedirían la materia y su previa a la vez).
-      const idx = new Map(plan.materias.map((m) => [m.cod, (m.anio - 1) * 2 + (m.cuatri - 1)]))
-      const alReves = plan.correlativas.filter((c) => idx.get(c.requiere)! >= idx.get(c.cod)!)
-      expect(alReves).toEqual([])
+    it('sus avisos están revisados (ninguno inesperado)', () => {
+      // Los avisos no bloquean, pero uno nuevo merece una mirada: si aparece algo
+      // fuera de esta lista, es un dato que cambió y hay que decidir si está bien.
+      const esperados = new Set(['nombre-duplicado', 'sin-titulos', 'anio-sin-materias'])
+      const raros = validarPlan(plan)
+        .filter((x) => x.severidad === 'aviso' && !esperados.has(x.regla))
+        .map((x) => x.mensaje)
+      expect(raros).toEqual([])
     })
   })
 }
