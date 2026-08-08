@@ -28,15 +28,24 @@ export interface Universidad {
 }
 
 /**
- * Carga el rol y las habilitaciones de la sesión actual. Devuelve `null` si no hay
- * backend o sesión. Un usuario sin fila en `perfil` cuenta como estudiante (es lo
- * mismo que asume la base).
+ * Carga el rol y las habilitaciones de una sesión. Un usuario sin fila en `perfil`
+ * cuenta como estudiante (es lo mismo que asume la base).
+ *
+ * ⚠️ El `user_id` se filtra EXPLÍCITAMENTE, y no es redundante: **el RLS es un límite
+ * de permisos, no un `WHERE`**. La política de `perfil` deja leer la fila propia *o
+ * todas* si sos superadmin — así que sin este filtro, un superadmin recibía el padrón
+ * completo y `maybeSingle()` se rompía con "multiple rows returned" (pasó en
+ * producción el 8-ago). Regla para todo lo que se agregue acá: si esperás una fila,
+ * pedila por su clave; no delegues el recorte a la política.
  */
-export async function cargarPerfilAdmin(): Promise<PerfilAdmin> {
+export async function cargarPerfilAdmin(userId: string): Promise<PerfilAdmin> {
   if (!supabase) return { rol: 'estudiante', habilitaciones: [] }
   const [rp, rh] = await Promise.all([
-    supabase.from('perfil').select('rol').maybeSingle(),
-    supabase.from('admin_uni').select('universidad_id, crear, editar, eliminar, limite_planes'),
+    supabase.from('perfil').select('rol').eq('user_id', userId).maybeSingle(),
+    supabase
+      .from('admin_uni')
+      .select('universidad_id, crear, editar, eliminar, limite_planes')
+      .eq('user_id', userId),
   ])
   if (rp.error) throw new Error(rp.error.message)
   if (rh.error) throw new Error(rh.error.message)
