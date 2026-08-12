@@ -1,0 +1,36 @@
+name: CI (ramas)
+
+# El MISMO gate de calidad que deploy.yml, pero sin publicar nada: corre en cualquier
+# rama que no sea main y en los pull requests.
+#
+# Por qué existe: deploy.yml solo se dispara en `push` a main, así que trabajar en una
+# rama —justo cuando más se rompen cosas— era trabajar sin red. Ahora una rama tiene el
+# mismo lint, los mismos tests y el mismo build; lo único que no hace es deployar.
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run build
