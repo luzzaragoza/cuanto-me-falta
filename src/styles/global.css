@@ -3954,3 +3954,149 @@ body {
 .tnode.edit-conectada.dir-posterior {
   outline-color: var(--hb);
 }
+
+/* ----- cambios sin publicar ----- */
+/* Es lo que se lee antes de apretar Publicar, así que va arriba de todo en ese panel y
+   se escanea por el signo de la izquierda: + agrega, − quita, ✎ modifica. */
+.ed-cambios {
+  margin-bottom: 16px;
+}
+.ed-cambios-lista {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ed-cam {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 11px;
+}
+.ed-cam-signo {
+  font-family: var(--mono);
+  font-weight: 700;
+  width: 11px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--soft);
+}
+.ed-cam-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.ed-cam-det {
+  font-size: 12px;
+  color: var(--soft);
+}
+.ed-cam-des {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.ed-cam.materia-nueva,
+.ed-cam.correlativa-nueva {
+  border-left-color: var(--ap);
+}
+.ed-cam.materia-nueva .ed-cam-signo,
+.ed-cam.correlativa-nueva .ed-cam-signo {
+  color: var(--ap-tx);
+}
+.ed-cam.materia-borrada,
+.ed-cam.correlativa-borrada {
+  border-left-color: var(--cu);
+}
+.ed-cam.materia-borrada .ed-cam-signo,
+.ed-cam.correlativa-borrada .ed-cam-signo {
+  color: var(--cu-tx);
+}
+.ed-cam.materia-editada,
+.ed-cam.cabecera,
+.ed-cam.titulos {
+  border-left-color: var(--fi);
+}
+.ed-cam.materia-editada .ed-cam-signo,
+.ed-cam.cabecera .ed-cam-signo,
+.ed-cam.titulos .ed-cam-signo {
+  color: var(--fi-tx);
+}
+.ed-cam.sin-publicar {
+  border-left-color: var(--gold);
+  background: var(--paper);
+}
+/* Descartar todo es destructivo pero raro: reconocible como acción, sin competirle al
+   botón de publicar. */
+.ed-descartar {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.ed-descartar:hover {
+  color: var(--cu-tx);
+  border-color: var(--cu);
+}
+
+/* el panel de publicar es más ancho que el de notas: lleva la lista de cambios */
+.ed-drawer {
+  width: min(560px, 100vw);
+}
+.ed-drawer-body {
+  padding: 16px 18px 4px;
+}
+.ed-drawer-body .ed-publicar,
+.ed-drawer-body .ed-cambios {
+  border: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+/* botón permanente de la barra: el contador dice cuánto falta publicar sin abrirlo */
+.ed-abrir-pub {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ed-abrir-pub:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.ed-abrir-pub.con-errores {
+  border-color: var(--cu);
+}
+.ed-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 99px;
+  min-width: 17px;
+  padding: 2px 5px;
+  text-align: center;
+}
+.ed-badge.mal {
+  background: var(--cu);
+}

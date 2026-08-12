@@ -9,7 +9,8 @@ import { supabase } from '../lib/supabase'
 import type { Habilitacion, PerfilAdmin, Rol } from '../lib/admin'
 import { esSuper } from '../lib/admin'
 import type { Borrador, MateriaEdit } from '../lib/editorPlan'
-import type { TituloPlan } from '../data/model'
+import type { PlanDef, TituloPlan } from '../data/model'
+import { filaAPlan } from '../data/registro'
 
 /** Un plan tal como lo lista la administración (incluye los no publicados). */
 export interface PlanAdmin {
@@ -275,4 +276,21 @@ export async function cargarVersiones(planId: string): Promise<
     .order('version', { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []) as Array<{ version: number; publicado_at: string; nota: string | null }>
+}
+
+/**
+ * La foto que están viendo los alumnos, o `null` si el plan nunca se publicó. Es contra
+ * esto que se compara el borrador para armar la lista de cambios sin publicar.
+ * Reusa `filaAPlan`, el mismo convertidor que usa el arranque de la app: si la vista
+ * cambiara de forma, se rompe en un solo lugar.
+ */
+export async function cargarPublicado(planId: string): Promise<PlanDef | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('plan_publicado')
+    .select('id,universidad,codigo,anio,carrera,materias,correlativas,titulos')
+    .eq('id', planId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data ? filaAPlan(data) : null
 }

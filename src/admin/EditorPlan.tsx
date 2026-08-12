@@ -34,10 +34,20 @@ import {
   type Borrador,
   type MateriaEdit,
 } from '../lib/editorPlan'
+import { useExitAnimation } from '../hooks/useExitAnimation'
 import { validarPlan } from '../lib/validarPlan'
+import {
+  deshacerCambio,
+  diffPlanes,
+  type Cambio,
+  type Guardado as QueGuardar,
+} from '../lib/cambios'
+import type { PlanDef } from '../data/model'
 import {
   borrarMateria,
   cargarBorrador,
+  cargarPublicado,
+  guardarCabecera,
   cargarVersiones,
   guardarMateria,
   guardarPrevias,
@@ -58,6 +68,18 @@ type Guardado = 'limpio' | 'guardando' | 'guardado' | 'error'
 
 const DEMORA_GUARDADO = 1200
 
+/** Un símbolo por tipo de cambio: se escanea la lista sin leerla entera. */
+const SIGNO: Record<Cambio['tipo'], string> = {
+  'sin-publicar': '!',
+  cabecera: '✎',
+  'materia-nueva': '+',
+  'materia-borrada': '−',
+  'materia-editada': '✎',
+  'correlativa-nueva': '+',
+  'correlativa-borrada': '−',
+  titulos: '✎',
+}
+
 export function EditorPlan({
   planId,
   puedeEditar,
@@ -74,6 +96,10 @@ export function EditorPlan({
   const [objetivo, setObjetivo] = useState<string | null>(null)
   const [direccion, setDireccion] = useState<Direccion>('anterior')
   const [arbol, setArbol] = useState(false)
+  /** El panel de revisar y publicar, abierto o cerrado (drawer, como el de Notas). */
+  const [panel, setPanel] = useState(false)
+  /** La foto que ven los alumnos. `null` = nunca se publicó. */
+  const [publicado, setPublicado] = useState<PlanDef | null>(null)
   const [publicando, setPublicando] = useState(false)
   const [nota, setNota] = useState('')
   const [versiones, setVersiones] = useState<
@@ -87,7 +113,13 @@ export function EditorPlan({
       .then((bo) => {
         if (!vivo) return
         setB(bo)
-        return cargarVersiones(planId).then((vs) => vivo && setVersiones(vs))
+        return Promise.all([cargarVersiones(planId), cargarPublicado(planId)]).then(
+          ([vs, pub]) => {
+            if (!vivo) return
+            setVersiones(vs)
+            setPublicado(pub)
+          },
+        )
       })
       .catch((e: unknown) => vivo && setError(e instanceof Error ? e.message : String(e)))
     return () => {
@@ -148,6 +180,14 @@ export function EditorPlan({
 
   useEffect(() => () => timers.current.forEach((t) => clearTimeout(t)), [])
 
+  // Qué cambió contra lo que ven los alumnos. Se recalcula con cada edición: es una
+  // comparación, no un registro de acciones, así que no puede quedar desincronizada.
+  const cambios = useMemo(
+    () => (b ? diffPlanes(publicado, aPlanDef(b)) : []),
+    [publicado, b],
+  )
+  const reversibles = cambios.filter((c) => c.reversible)
+
   // ── derivados del árbol-editor ──
   // Van ACÁ, antes de los early returns: los hooks no pueden ser condicionales.
   // El plan se rearma en cada cambio a propósito: así el esqueleto del árbol se
@@ -190,6 +230,42 @@ export function EditorPlan({
 
   const cambiar = (nuevo: Borrador): void => setB(nuevo)
 
+  /** Escribe lo que corresponda después de deshacer un cambio. */
+  const persistir = async (bo: Borrador, g: QueGuardar | null): Promise<void> => {
+    if (!g) return
+    if (g.que === 'materia-borrar') return borrarMateria(planId, g.cod)
+    if (g.que === 'previas') return guardarPrevias(planId, g.cod, previasDe(bo, g.cod))
+    if (g.que === 'titulos') return guardarTitulos(planId, bo.titulos)
+    if (g.que === 'cabecera') {
+      return guardarCabecera(planId, { codigo: bo.codigo, anio: bo.anio, carrera: bo.carrera })
+    }
+    const m = bo.materias.find((x) => x.cod === g.cod)
+    if (m) return guardarMateria(planId, m)
+  }
+
+  const deshacer = (c: Cambio): void => {
+    if (!publicado) return
+    const { borrador: r, guardar } = deshacerCambio(b, publicado, c)
+    cambiar(r)
+    void correr(() => persistir(r, guardar))
+  }
+
+  const descartarTodo = (): void => {
+    if (!publicado) return
+    if (!confirm(`¿Descartar los ${reversibles.length} cambios y volver a la versión publicada?`)) {
+      return
+    }
+    void correr(async () => {
+      let actual = b
+      for (const c of reversibles) {
+        const { borrador: r, guardar } = deshacerCambio(actual, publicado, c)
+        actual = r
+        await persistir(actual, guardar)
+      }
+      setB(actual)
+    })
+  }
+
   const opcionesCuatri = (anios.length ? anios : [1]).flatMap((a) =>
     [1, 2].map((c) => ({ valor: `${a}-${c}`, texto: `${a}° · ${c}°C` })),
   )
@@ -213,6 +289,20 @@ export function EditorPlan({
           {guardado === 'guardado' && <span className="ed-sav ok">✓ Borrador guardado</span>}
           {guardado === 'error' && <span className="ed-sav mal">✗ No se guardó</span>}
         </div>
+        {/* Vive en la barra y no debajo de una pestaña: se llega desde cualquier parte
+            del editor, y el contador dice cuánto falta publicar sin tener que abrirlo. */}
+        <button
+          className={`ed-abrir-pub${errores.length ? ' con-errores' : ''}`}
+          onClick={() => setPanel(true)}
+        >
+          Revisar y publicar
+          {reversibles.length > 0 && <span className="ed-badge">{reversibles.length}</span>}
+          {errores.length > 0 && (
+            <span className="ed-badge mal" title={`${errores.length} error(es) que bloquean`}>
+              !
+            </span>
+          )}
+        </button>
       </div>
 
       {error && (
@@ -532,8 +622,54 @@ export function EditorPlan({
       )}
 
       {/* ── REVISAR Y PUBLICAR ── */}
-      <section className="ed-publicar">
-        <h3>Revisar y publicar</h3>
+      {panel && (
+        <Drawer
+          titulo="Revisar y publicar"
+          desc="Esto es lo que va a cambiar para los alumnos cuando publiques."
+          onClose={() => setPanel(false)}
+        >
+
+        {/* Qué van a ver los alumnos que hoy no ven. Es la comparación contra la foto
+            publicada, así que sobrevive a recargar y no puede mentir. */}
+        <div className="ed-cambios">
+          {reversibles.length === 0 && cambios.length === 0 ? (
+            <p className="adm-meta">
+              El borrador es idéntico a la versión que ven los alumnos: no hay nada que
+              publicar.
+            </p>
+          ) : (
+            <>
+              <div className="ed-cuatri-tit">
+                {publicado
+                  ? `Cambios sin publicar · ${reversibles.length}`
+                  : 'Sin publicar todavía'}
+              </div>
+              <ul className="ed-cambios-lista">
+                {cambios.map((c) => (
+                  <li className={`ed-cam ${c.tipo}`} key={c.id}>
+                    <span className="ed-cam-signo" aria-hidden="true">
+                      {SIGNO[c.tipo]}
+                    </span>
+                    <span className="ed-cam-txt">
+                      <span className="ed-cam-tit">{c.titulo}</span>
+                      {c.detalle && <span className="ed-cam-det">{c.detalle}</span>}
+                    </span>
+                    {c.reversible && puedeEditar && (
+                      <button className="lnk ed-cam-des" onClick={() => deshacer(c)}>
+                        deshacer
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {reversibles.length > 1 && puedeEditar && (
+                <button className="ed-descartar" onClick={descartarTodo}>
+                  ↺ Descartar los {reversibles.length} cambios y volver a lo publicado
+                </button>
+              )}
+            </>
+          )}
+        </div>
         {errores.length === 0 ? (
           <p className="ed-verde">✓ El plan no tiene errores: se puede publicar.</p>
         ) : (
@@ -626,7 +762,8 @@ export function EditorPlan({
             ))}
           </div>
         )}
-      </section>
+        </Drawer>
+      )}
 
       {/* ── EL ÁRBOL COMO EDITOR ── */}
       {arbol && (
@@ -699,6 +836,60 @@ export function EditorPlan({
           </Suspense>
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * Cajón lateral, con el mismo comportamiento que los del alumno (Notas): se cierra con
+ * Escape, con la ✕ o clickeando afuera, y con la misma animación de salida. Reusa sus
+ * clases a propósito: es la misma app, no tiene por qué sentirse distinta.
+ */
+function Drawer({
+  titulo,
+  desc,
+  onClose,
+  children,
+}: {
+  titulo: string
+  desc: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') requestClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [requestClose])
+
+  return (
+    <div
+      className={`drawer-wrap${closing ? ' closing' : ''}`}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) requestClose()
+      }}
+    >
+      <aside className="drawer ed-drawer" onAnimationEnd={onExitEnd}>
+        <div className="drawer-head">
+          <div>
+            <h2>{titulo}</h2>
+            <p className="m-desc">{desc}</p>
+          </div>
+          <button className="tv-close" type="button" onClick={requestClose} aria-label="Cerrar">
+            ×
+          </button>
+        </div>
+        <div className="drawer-body ed-drawer-body">{children}</div>
+        <div className="drawer-foot">
+          <button className="btn" type="button" onClick={requestClose}>
+            Listo
+          </button>
+        </div>
+      </aside>
     </div>
   )
 }
