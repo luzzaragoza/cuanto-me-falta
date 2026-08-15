@@ -13,6 +13,17 @@ automáticas: son pocas, se corren de a una y conviene ver el resultado de cada 
 | 3 | `002-perfiles-y-permisos.sql` | Crea `perfil`, `admin_uni` y `auditoria`, las funciones que deciden permisos y las políticas de **escritura** (con límite de planes por universidad) | una vez |
 | 4 | `003-verificar-permisos.sql` | **Prueba** las 17 reglas de permisos simulando tres usuarios. Termina en `ROLLBACK`: no deja nada | después de 002, y cada vez que se toque una política |
 | 5 | `004-versiones-de-plan.sql` | `plan_version` (las fotos), `publicar_plan()`, `revertir_plan()`, y la vista pasa a leer la foto publicada. Publica la versión 1 de los 4 planes ya cargados | una vez |
+| 6 | `005-renombrar-codigos.sql` | `on update cascade` en las FKs de `correlativa`, para poder corregir un código mal tipeado sin perder el grafo | una vez |
+| 7 | `006-correcciones-de-esquema.sql` | Las 5 correcciones de la auditoría del 11-ago: el límite de planes pasa a `universidad`, se va `plan.version`, entra el índice de `correlativa (plan_id, requiere)`, sale el índice redundante de `plan_version`, y `auditar()` deja de duplicar filas | una vez · **se puede correr cuando quieras** |
+| 8 | `007-sacar-limite-de-admin-uni.sql` | Borra `admin_uni.limite_planes` (el paso "contraer") | una vez · **DESPUÉS de deployar el código nuevo** |
+
+### Por qué la 006 y la 007 están separadas
+
+Patrón **expandir → contraer**. La 006 solo agrega: deja conviviendo `universidad.limite_planes`
+(nueva) y `admin_uni.limite_planes` (vieja), así que se puede correr con el código viejo todavía
+en producción sin romper nada. Una vez que el código nuevo está deployado y `#admin` muestra bien
+el cupo, la 007 borra la vieja. Si se hiciera todo junto habría una ventana —entre la migración y
+el deploy— en la que la base y el código no se entienden.
 
 Todos son **re-ejecutables**: correrlos dos veces deja la base igual.
 
