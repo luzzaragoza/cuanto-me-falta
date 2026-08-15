@@ -43,6 +43,53 @@ export class UniversidadAdmin {
   }
 }
 
+/** Un admin habilitado en una universidad, tal como lo lista el superadmin. */
+export class AdminHabilitado {
+  readonly user_id: string
+  readonly email: string
+  readonly crear: boolean
+  readonly editar: boolean
+  readonly eliminar: boolean
+  readonly otorgado_at: string | null
+
+  constructor(campos: {
+    user_id: string
+    email: string
+    crear: boolean
+    editar: boolean
+    eliminar: boolean
+    otorgado_at: string | null
+  }) {
+    this.user_id = campos.user_id
+    this.email = campos.email
+    this.crear = campos.crear
+    this.editar = campos.editar
+    this.eliminar = campos.eliminar
+    this.otorgado_at = campos.otorgado_at
+  }
+
+  static desde(j: unknown): AdminHabilitado | null {
+    if (typeof j !== 'object' || j === null) return null
+    const o = j as Record<string, unknown>
+    if (typeof o.user_id !== 'string' || typeof o.email !== 'string') return null
+    return new AdminHabilitado({
+      user_id: o.user_id,
+      email: o.email,
+      crear: o.crear === true,
+      editar: o.editar === true,
+      eliminar: o.eliminar === true,
+      otorgado_at: typeof o.otorgado_at === 'string' ? o.otorgado_at : null,
+    })
+  }
+
+  /** Qué puede hacer, en una línea. */
+  get resumen(): string {
+    const p = [this.crear && 'crear', this.editar && 'editar', this.eliminar && 'eliminar']
+    const puede = p.filter(Boolean).join(' · ')
+    return puede || 'sin permisos'
+  }
+}
+
 /** Una versión publicada, tal como la lista el historial. */
 export interface VersionPlan {
   version: number
@@ -226,7 +273,61 @@ export class RepositorioPlanes {
     return data ? PlanDef.desde(data) : null
   }
 
+  /**
+   * Los admins habilitados en una universidad, con su mail. Solo el superadmin recibe
+   * filas — para cualquier otro la función devuelve vacío.
+   *
+   * Va por RPC y no por una consulta directa porque el mail vive en `auth.users`, que
+   * PostgREST no expone (ni debería). La función `admins_de` hace la traducción del lado
+   * del servidor y solo para quien ya está habilitado (migración 008): no hay forma de
+   * listar ni de buscar el padrón de cuentas desde el cliente.
+   */
+  async cargarAdmins(uni: string): Promise<AdminHabilitado[]> {
+    if (!this.db) return []
+    const { data, error } = await this.db.rpc('admins_de', { p_uni: uni })
+    if (error) throw new Error(error.message)
+    return ((data ?? []) as unknown[])
+      .map((f) => AdminHabilitado.desde(f))
+      .filter((a): a is AdminHabilitado => a !== null)
+  }
+
   // ── escritura ───────────────────────────────────────────────────────────
+
+  /**
+   * Habilita (o actualiza) a alguien como admin de una universidad, por su mail.
+   * Tira con un mensaje claro si esa cuenta todavía no entró nunca con Google.
+   */
+  async habilitarAdmin(datos: {
+    email: string
+    uni: string
+    crear: boolean
+    editar: boolean
+    eliminar: boolean
+  }): Promise<void> {
+    const db = this.exigir()
+    const { error } = await db.rpc('habilitar_admin', {
+      p_email: datos.email.trim(),
+      p_uni: datos.uni,
+      p_crear: datos.crear,
+      p_editar: datos.editar,
+      p_eliminar: datos.eliminar,
+    })
+    if (error) throw new Error(error.message)
+  }
+
+  /** Revoca la habilitación. Efecto inmediato: los permisos se leen de la tabla. */
+  async revocarAdmin(email: string, uni: string): Promise<void> {
+    const db = this.exigir()
+    const { error } = await db.rpc('revocar_admin', { p_email: email.trim(), p_uni: uni })
+    if (error) throw new Error(error.message)
+  }
+
+  /** Cambia el cupo de planes de una universidad (la cláusula del contrato). */
+  async guardarLimite(uni: string, limite: number): Promise<void> {
+    const db = this.exigir()
+    const { error } = await db.from('universidad').update({ limite_planes: limite }).eq('id', uni)
+    if (error) throw new Error(error.message)
+  }
 
   /**
    * Guarda una materia. Si cambió el código, se hace UPDATE sobre el código viejo: las
@@ -290,6 +391,23 @@ export class RepositorioPlanes {
         orden: i,
       })),
     )
+    if (error) throw new Error(error.message)
+  }
+
+  /**
+   * Crea una universidad. Solo el superadmin: la política `universidad_escritura` de la
+   * migración 002 lo exige, así que un admin que llame esto recibe el error de la base.
+   *
+   * Es lo que habilita el Gate C —cargar una carrera de una universidad ajena a UADE—
+   * sin tocar código ni hacer un deploy.
+   */
+  async crearUniversidad(datos: {
+    id: string
+    nombre: string
+    limite_planes: number
+  }): Promise<void> {
+    const db = this.exigir()
+    const { error } = await db.from('universidad').insert(datos)
     if (error) throw new Error(error.message)
   }
 

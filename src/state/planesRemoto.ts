@@ -9,7 +9,8 @@
 // exactamente la situación de dev, de CI y de cualquiera sin conexión.
 
 import { supabase } from '../lib/supabase'
-import { PLANES_BUNDLE, UNIVERSIDADES_BUNDLE } from '../data/planes'
+import { PLANES, PLANES_BUNDLE, UNIVERSIDADES_BUNDLE } from '../data/planes'
+import { PlanActivo } from './planActivo'
 import { Registro } from '../data/registro'
 import { PlanDef, Universidad } from '../data/model'
 
@@ -74,11 +75,33 @@ async function refrescar(): Promise<ResultadoRefresco> {
     if (import.meta.env.DEV) {
       console.info(`[planes] caché actualizado: ${remoto.planes.length} planes del backend`)
     }
+    // ¿Cambió LA CARRERA QUE ESTÁ MIRANDO, o cambió otra? Solo lo primero merece
+    // interrumpirla: avisarle "hay una versión nueva" porque se corrigió un plan de
+    // otra carrera sería ruido puro.
+    if (cambióSuPlan(remoto)) alHaberVersionNueva?.()
     return 'actualizado'
   } catch (e) {
     return avisar('error', e instanceof Error ? e.message : String(e))
   }
 }
+
+/**
+ * ¿La versión nueva toca el plan que el usuario tiene abierto?
+ *
+ * Los dos lados se comparan por su forma canónica (`aJSON()`), que arma las claves
+ * siempre en el mismo orden: dos planes con los mismos datos dan el mismo string
+ * aunque hayan llegado por caminos distintos (bundle vs. backend).
+ */
+function cambióSuPlan(remoto: Registro): boolean {
+  const id = PlanActivo.id()
+  const nuevo = remoto.plan(id)
+  const actual = PLANES.find((p) => p.id === id)
+  if (!nuevo || !actual) return false
+  return JSON.stringify(nuevo.aJSON()) !== JSON.stringify(actual.aJSON())
+}
+
+/** Se llama cuando el plan que el usuario está mirando cambió en el backend. */
+let alHaberVersionNueva: (() => void) | undefined
 
 /** Programa el refresco para cuando el navegador esté tranquilo. No bloquea nada. */
 function programar(): void {
@@ -111,8 +134,16 @@ export class RefrescoDePlanes {
     return refrescar()
   }
 
-  /** Lo agenda para cuando el navegador esté tranquilo. No bloquea nada. */
-  static programar(): void {
+  /**
+   * Lo agenda para cuando el navegador esté tranquilo. No bloquea nada.
+   *
+   * `onVersionNueva` se llama SOLO si cambió el plan que el usuario tiene abierto. No se
+   * reemplaza nada en caliente: el plan nuevo queda en el caché y entra en la próxima
+   * carga. Decisión de producto (Luz, 8-ago): nada cambia debajo del mouse de nadie —
+   * se avisa y decide la persona.
+   */
+  static programar(onVersionNueva?: () => void): void {
+    alHaberVersionNueva = onVersionNueva
     programar()
   }
 }

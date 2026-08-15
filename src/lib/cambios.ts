@@ -21,6 +21,19 @@ export type TipoCambio =
   | 'correlativa-borrada'
   | 'titulos'
 
+/**
+ * Un campo que cambió, con sus dos valores.
+ *
+ * Va estructurado y no como texto armado ("nombre: X → Y") porque la pantalla los
+ * muestra como un antes/después de verdad, con los dos valores enfrentados. Cuando el
+ * detalle era un string, la UI habría tenido que parsearlo para pintarlo.
+ */
+export interface Parte {
+  campo: string
+  antes: string
+  despues: string
+}
+
 export interface Cambio {
   /** Estable entre renders: sirve de key y de identidad para deshacer. */
   id: string
@@ -29,6 +42,8 @@ export interface Cambio {
   titulo: string
   /** El detalle de qué cambió exactamente (opcional). */
   detalle?: string
+  /** Los campos que cambiaron, con su valor anterior y el nuevo. */
+  partes?: Parte[]
   /** Materias involucradas, para poder resaltarlas. */
   cods: string[]
   /** `false` cuando no hay nada que revertir (p. ej. un plan que nunca se publicó). */
@@ -69,20 +84,24 @@ function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[]
   const cambios: Cambio[] = []
 
   // ── cabecera ──
-  const dif: string[] = []
+  const dif: Parte[] = []
   if (publicado.carrera !== borrador.carrera) {
-    dif.push(`nombre: "${publicado.carrera}" → "${borrador.carrera}"`)
+    dif.push({ campo: 'nombre', antes: publicado.carrera, despues: borrador.carrera })
   }
   if (publicado.codigo !== borrador.codigo) {
-    dif.push(`código de plan: ${publicado.codigo} → ${borrador.codigo}`)
+    dif.push({ campo: 'código de plan', antes: publicado.codigo, despues: borrador.codigo })
   }
-  if (publicado.anio !== borrador.anio) dif.push(`año: ${publicado.anio} → ${borrador.anio}`)
+  if (publicado.anio !== borrador.anio) {
+    dif.push({ campo: 'año', antes: String(publicado.anio), despues: String(borrador.anio) })
+  }
   if (dif.length) {
     cambios.push({
       id: 'cabecera',
       tipo: 'cabecera',
-      titulo: 'Cambiaron los datos de la carrera',
-      detalle: dif.join(' · '),
+      // sin título: el encabezado del grupo dice el TIPO y el título dice CUÁL, y acá
+      // no hay "cuál" — el que cambió es el plan mismo. Lo dicen las partes.
+      titulo: '',
+      partes: dif,
       cods: [],
       reversible: true,
     })
@@ -98,28 +117,34 @@ function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[]
       cambios.push({
         id: `mat-nueva-${m.cod}`,
         tipo: 'materia-nueva',
-        titulo: `Materia nueva: ${m.nom}`,
+        titulo: m.nom,
         detalle: `${m.cod} · ${ubic(m)}`,
         cods: [m.cod],
         reversible: true,
       })
       continue
     }
-    const d: string[] = []
-    if (antes.nom !== m.nom) d.push(`nombre: "${antes.nom}" → "${m.nom}"`)
+    const d: Parte[] = []
+    if (antes.nom !== m.nom) d.push({ campo: 'nombre', antes: antes.nom, despues: m.nom })
     if (antes.anio !== m.anio || antes.cuatri !== m.cuatri) {
-      d.push(`movida de ${ubic(antes)} a ${ubic(m)}`)
+      d.push({ campo: 'ubicación', antes: ubic(antes), despues: ubic(m) })
     }
-    if (!!antes.opt !== !!m.opt) d.push(m.opt ? 'ahora es optativa' : 'ya no es optativa')
+    if (!!antes.opt !== !!m.opt) {
+      d.push({ campo: 'optativa', antes: antes.opt ? 'sí' : 'no', despues: m.opt ? 'sí' : 'no' })
+    }
     if (!!antes.especial !== !!m.especial) {
-      d.push(m.especial ? 'ahora es especial' : 'ya no es especial')
+      d.push({
+        campo: 'especial',
+        antes: antes.especial ? 'sí' : 'no',
+        despues: m.especial ? 'sí' : 'no',
+      })
     }
     if (d.length) {
       cambios.push({
         id: `mat-edit-${m.cod}`,
         tipo: 'materia-editada',
-        titulo: `Cambió ${antes.nom}`,
-        detalle: d.join(' · '),
+        titulo: antes.nom,
+        partes: d,
         cods: [m.cod],
         reversible: true,
       })
@@ -131,7 +156,7 @@ function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[]
       cambios.push({
         id: `mat-borrada-${m.cod}`,
         tipo: 'materia-borrada',
-        titulo: `Materia borrada: ${m.nom}`,
+        titulo: m.nom,
         detalle: `${m.cod} · ${ubic(m)}`,
         cods: [m.cod],
         reversible: true,
@@ -149,7 +174,7 @@ function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[]
       cambios.push({
         id: `corr-nueva-${clave(c)}`,
         tipo: 'correlativa-nueva',
-        titulo: `Correlativa nueva: ${nombreEn(borrador, c.cod)} necesita ${nombreEn(borrador, c.requiere)}`,
+        titulo: `${nombreEn(borrador, c.cod)} necesita ${nombreEn(borrador, c.requiere)}`,
         cods: [c.cod, c.requiere],
         reversible: true,
       })
@@ -160,7 +185,7 @@ function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[]
       cambios.push({
         id: `corr-borrada-${clave(c)}`,
         tipo: 'correlativa-borrada',
-        titulo: `Correlativa quitada: ${nombreEn(publicado, c.cod)} ya no necesita ${nombreEn(publicado, c.requiere)}`,
+        titulo: `${nombreEn(publicado, c.cod)} ya no necesita ${nombreEn(publicado, c.requiere)}`,
         cods: [c.cod, c.requiere],
         reversible: true,
       })
@@ -173,7 +198,7 @@ function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[]
     cambios.push({
       id: 'titulos',
       tipo: 'titulos',
-      titulo: 'Cambiaron los títulos',
+      titulo: '',
       detalle: `${publicado.titulos.length} → ${borrador.titulos.length}: ${
         borrador.titulos.map((t) => t.nombre).join(', ') || 'ninguno'
       }`,
@@ -301,6 +326,29 @@ function revertir(
 }
 
 
+/** El encabezado de cada grupo, con el conteo y el plural bien puesto. */
+function etiquetaDe(tipo: TipoCambio, n: number): string {
+  const uno = n === 1
+  switch (tipo) {
+    case 'sin-publicar':
+      return 'Todavía sin publicar'
+    case 'cabecera':
+      return 'Datos de la carrera'
+    case 'materia-nueva':
+      return uno ? '1 materia nueva' : `${n} materias nuevas`
+    case 'materia-editada':
+      return uno ? '1 materia modificada' : `${n} materias modificadas`
+    case 'materia-borrada':
+      return uno ? '1 materia borrada' : `${n} materias borradas`
+    case 'correlativa-nueva':
+      return uno ? '1 correlativa nueva' : `${n} correlativas nuevas`
+    case 'correlativa-borrada':
+      return uno ? '1 correlativa quitada' : `${n} correlativas quitadas`
+    case 'titulos':
+      return 'Títulos'
+  }
+}
+
 /**
  * La comparación entre lo que ven los alumnos y lo que el admin tiene a medio editar.
  *
@@ -325,6 +373,32 @@ export class Diff {
   get cambios(): Cambio[] {
     this.cache ??= calcularCambios(this.publicado, this.borrador.aPlan())
     return this.cache
+  }
+
+  /**
+   * Los cambios agrupados por tipo, en orden de lectura y con su conteo.
+   *
+   * Una lista plana de 30 líneas no se lee: agrupada, se escanea. "5 materias nuevas"
+   * antes que cinco renglones sueltos que hay que contar con el dedo.
+   */
+  get grupos(): Array<{ tipo: TipoCambio; etiqueta: string; cambios: Cambio[] }> {
+    const orden: TipoCambio[] = [
+      'sin-publicar',
+      'cabecera',
+      'materia-nueva',
+      'materia-editada',
+      'materia-borrada',
+      'correlativa-nueva',
+      'correlativa-borrada',
+      'titulos',
+    ]
+    return orden
+      .map((tipo) => ({
+        tipo,
+        etiqueta: etiquetaDe(tipo, this.cambios.filter((c) => c.tipo === tipo).length),
+        cambios: this.cambios.filter((c) => c.tipo === tipo),
+      }))
+      .filter((g) => g.cambios.length > 0)
   }
 
   /** Solo los que se pueden deshacer de a uno (el aviso "sin publicar" no cuenta). */

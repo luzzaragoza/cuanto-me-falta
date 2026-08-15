@@ -16,6 +16,7 @@ automáticas: son pocas, se corren de a una y conviene ver el resultado de cada 
 | 6 | `005-renombrar-codigos.sql` | `on update cascade` en las FKs de `correlativa`, para poder corregir un código mal tipeado sin perder el grafo | una vez |
 | 7 | `006-correcciones-de-esquema.sql` | Las 5 correcciones de la auditoría del 11-ago: el límite de planes pasa a `universidad`, se va `plan.version`, entra el índice de `correlativa (plan_id, requiere)`, sale el índice redundante de `plan_version`, y `auditar()` deja de duplicar filas | una vez · **se puede correr cuando quieras** |
 | 8 | `007-sacar-limite-de-admin-uni.sql` | Borra `admin_uni.limite_planes` (el paso "contraer") | una vez · **DESPUÉS de deployar el código nuevo** |
+| 9 | `008-habilitar-admins.sql` | `admins_de()`, `habilitar_admin()` y `revocar_admin()`: el superadmin da y saca permisos desde `#admin`, sin tocar el SQL Editor | una vez |
 
 ### Por qué la 006 y la 007 están separadas
 
@@ -75,8 +76,8 @@ Lo genera desde `src/data/planes/*.ts` y **se niega a emitir un plan que no pase
 Los permisos se guardan en la base, **no en el token**: revocar es un `UPDATE` con efecto
 inmediato (un claim en el JWT quedaría cacheado hasta que se refresque la sesión).
 
-Cómo convertirte en superadmin y cómo habilitar a alguien: está comentado al pie de
-`002-perfiles-y-permisos.sql`.
+Cómo convertirte en superadmin: está comentado al pie de `002-perfiles-y-permisos.sql`.
+**Habilitar a alguien ya no necesita SQL**: se hace desde `#admin` → *Permisos* (008).
 
 ## Correr la verificación de permisos (003)
 
@@ -122,5 +123,6 @@ select version, publicado_at, nota, jsonb_array_length(data->'materias') as mate
 - **La tabla `progreso`** (el avance del alumno: 1 fila JSON por usuario, RLS
   `user_id = auth.uid()`). Se creó a mano en jul-2026 y **no se toca**: ningún rol nuevo
   la alcanza, y el panel agregado del futuro no va a leerla — va a leer vistas agregadas.
-- **El editor** (`/admin`) y el **aviso de "hay una versión nueva"** en la app del alumno.
-  La base ya está lista para los dos: falta la interfaz (resto del paso 3).
+- **La lista de cuentas.** `admins_de()` (008) devuelve el mail solo de quien YA está
+  habilitado en esa universidad. No hay forma de listar ni de buscar el padrón de
+  `auth.users` desde el cliente, y así queda.

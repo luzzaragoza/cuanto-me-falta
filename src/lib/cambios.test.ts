@@ -56,33 +56,38 @@ describe('cambios · qué van a ver los alumnos', () => {
     const conDatos = b.editarMateria(orden, { cod: 'D', nom: 'Materia D' })
     const [c] = new Diff(publicado(), conDatos).cambios
     expect(c.tipo).toBe('materia-nueva')
-    expect(c.titulo).toBe('Materia nueva: Materia D')
+    expect(c.titulo).toBe('Materia D')
     expect(c.detalle).toContain('2° año · 2° cuatri')
   })
 
   it('detecta una materia borrada', () => {
     const [c] = new Diff(publicado(), borrador().quitarMateria(2)).cambios
     expect(c.tipo).toBe('materia-borrada')
-    expect(c.titulo).toBe('Materia borrada: Materia C')
+    expect(c.titulo).toBe('Materia C')
   })
 
   it('detecta el renombre y dice el antes y el después', () => {
     const b = borrador().editarMateria(0, { nom: 'Materia A corregida' })
     const [c] = new Diff(publicado(), b).cambios
     expect(c.tipo).toBe('materia-editada')
-    expect(c.detalle).toBe('nombre: "Materia A" → "Materia A corregida"')
+    // el antes/después va ESTRUCTURADO: la pantalla lo enfrenta, no parsea un string
+    expect(c.partes).toEqual([
+      { campo: 'nombre', antes: 'Materia A', despues: 'Materia A corregida' },
+    ])
   })
 
   it('detecta que una materia se movió de cuatrimestre', () => {
     const b = borrador().editarMateria(2, { anio: 3, cuatri: 2 })
     const [c] = new Diff(publicado(), b).cambios
-    expect(c.detalle).toBe('movida de 2° año · 1° cuatri a 3° año · 2° cuatri')
+    expect(c.partes).toEqual([
+      { campo: 'ubicación', antes: '2° año · 1° cuatri', despues: '3° año · 2° cuatri' },
+    ])
   })
 
   it('detecta que pasó a ser optativa', () => {
     const b = borrador().editarMateria(2, { opt: true })
     const [c] = new Diff(publicado(), b).cambios
-    expect(c.detalle).toBe('ahora es optativa')
+    expect(c.partes).toEqual([{ campo: 'optativa', antes: 'no', despues: 'sí' }])
   })
 
   it('detecta una correlativa nueva y una quitada, con nombres', () => {
@@ -91,7 +96,7 @@ describe('cambios · qué van a ver los alumnos', () => {
     const cs = new Diff(publicado(), b).cambios
     expect(cs.map((c) => c.tipo).sort()).toEqual(['correlativa-borrada', 'correlativa-nueva'])
     expect(cs.find((c) => c.tipo === 'correlativa-nueva')!.titulo).toBe(
-      'Correlativa nueva: Materia C necesita Materia A',
+      'Materia C necesita Materia A',
     )
     expect(cs.find((c) => c.tipo === 'correlativa-borrada')!.titulo).toContain(
       'Materia B ya no necesita Materia A',
@@ -102,8 +107,10 @@ describe('cambios · qué van a ver los alumnos', () => {
     const b = borrador().conCabecera({ codigo: '100', carrera: 'Otra Carrera', anio: 2027 })
     const [c] = new Diff(publicado(), b).cambios
     expect(c.tipo).toBe('cabecera')
-    expect(c.detalle).toContain('"Carrera" → "Otra Carrera"')
-    expect(c.detalle).toContain('2026 → 2027')
+    expect(c.partes).toEqual([
+      { campo: 'nombre', antes: 'Carrera', despues: 'Otra Carrera' },
+      { campo: 'año', antes: '2026', despues: '2027' },
+    ])
   })
 
   it('detecta cambios en los títulos', () => {

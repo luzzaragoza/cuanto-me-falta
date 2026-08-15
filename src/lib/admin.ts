@@ -297,6 +297,26 @@ export class PlanNuevo {
     this.anio = campos.anio
   }
 
+  /**
+   * ¿Sirve como identificador permanente? Se usa cuando la persona lo escribe a mano.
+   *
+   * Existe porque el id generado se puede editar, y tiene que poder editarse: es la
+   * ÚNICA oportunidad de elegirlo. `uade-ing-informatica` es un buen id;
+   * `universidad-tecnologica-nacional-ingenieria-en-sistemas-de-informacion` —lo que
+   * sale de concatenar dos nombres largos— es el que nadie quiere tener para siempre.
+   */
+  static problemasDeId(id: string, existentes: string[]): string[] {
+    const limpio = id.trim()
+    if (!limpio) return ['El identificador no puede quedar vacío.']
+    if (limpio !== PlanNuevo.slug(limpio)) {
+      return ['El identificador solo puede tener minúsculas, números y guiones.']
+    }
+    if (existentes.includes(limpio)) {
+      return [`El identificador "${limpio}" ya está en uso.`]
+    }
+    return []
+  }
+
   /** Texto a slug: sin acentos, sin símbolos, separado por guiones. */
   static slug(texto: string): string {
     return texto
@@ -341,5 +361,68 @@ export class PlanNuevo {
 
   listo(anioActual: number): boolean {
     return this.problemas(anioActual).length === 0
+  }
+}
+
+/**
+ * Una universidad que se está por crear. Solo la puede crear el superadmin.
+ *
+ * Es la pieza que habilita el Gate C: cargar una carrera de una universidad ajena a UADE
+ * sin tocar código ni hacer un deploy. Su `id` también es permanente —es lo que referencian
+ * los planes— así que se genera desde el nombre y se muestra antes de confirmar.
+ */
+export class UniversidadNueva {
+  readonly nombre: string
+  /** Cuántos planes va a poder tener. Es la cláusula del contrato (migración 006). */
+  readonly limitePlanes: number
+  /** Id elegido a mano. Si no hay, se sugiere uno corto desde el nombre. */
+  private readonly idElegido?: string
+
+  constructor(nombre: string, limitePlanes = 5, idElegido?: string) {
+    this.nombre = nombre
+    this.limitePlanes = limitePlanes
+    this.idElegido = idElegido
+  }
+
+  /**
+   * El id sugerido: las INICIALES si el nombre tiene tres palabras largas o más
+   * ("Universidad Tecnológica Nacional" → `utn`), o el slug completo si es corto.
+   *
+   * El id de la universidad es el prefijo del id de cada uno de sus planes, así que un
+   * nombre largo se propaga a todo. Las universidades se conocen por su sigla; usarla
+   * es lo que hace que el resultado se parezca a `uade-ing-informatica`.
+   */
+  get idSugerido(): string {
+    const palabras = this.nombre
+      .trim()
+      .split(/\s+/)
+      .filter((p) => p.length > 2) // "de", "la", "y" no aportan sigla
+    const slug = PlanNuevo.slug(this.nombre)
+    if (palabras.length >= 3) {
+      const sigla = palabras.map((p) => PlanNuevo.slug(p)[0] ?? '').join('')
+      if (sigla.length >= 2) return sigla
+    }
+    return slug
+  }
+
+  /** El id que va a quedar: el elegido a mano, o el sugerido. */
+  get id(): string {
+    return this.idElegido?.trim() || this.idSugerido
+  }
+
+  /** Qué falta o qué está mal, en español. Vacío = está lista. */
+  problemas(existentes: string[]): string[] {
+    const p: string[] = []
+    if (!this.nombre.trim()) p.push('Escribí el nombre de la universidad.')
+    else if (!this.id) p.push('El nombre tiene que tener al menos una letra o un número.')
+    else p.push(...PlanNuevo.problemasDeId(this.id, existentes))
+    if (!Number.isInteger(this.limitePlanes) || this.limitePlanes < 1) {
+      p.push('El límite de planes tiene que ser un número entero de 1 o más.')
+    }
+    return p
+  }
+
+  listo(existentes: string[]): boolean {
+    return this.problemas(existentes).length === 0
   }
 }

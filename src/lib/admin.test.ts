@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Habilitacion, PlanAdmin, PlanNuevo, SesionAdmin } from './admin'
+import { Habilitacion, PlanAdmin, PlanNuevo, SesionAdmin, UniversidadNueva } from './admin'
 
 const hab = (over: Partial<{ crear: boolean; editar: boolean; eliminar: boolean }> = {}) =>
   new Habilitacion(
@@ -237,5 +237,60 @@ describe('PlanNuevo · crear un plan', () => {
     expect(nuevo({ anio: 1800 }).problemas(2026)).toHaveLength(1)
     expect(nuevo({ anio: 2100 }).problemas(2026)).toHaveLength(1)
     expect(nuevo({ anio: 2031 }).problemas(2026)).toEqual([]) // +5 entra
+  })
+})
+
+describe('UniversidadNueva · el Gate C empieza acá', () => {
+  // El id de la universidad es el PREFIJO del id de cada uno de sus planes, así que un
+  // nombre largo se propaga a todo. Sin la sigla, el Gate C terminaba con planes
+  // llamados `universidad-tecnologica-nacional-ingenieria-en-sistemas-de-informacion`.
+  it('sugiere la sigla cuando el nombre es largo, y el slug cuando es corto', () => {
+    expect(new UniversidadNueva('Universidad Tecnológica Nacional').id).toBe('utn')
+    expect(new UniversidadNueva('Universidad de Buenos Aires').id).toBe('uba') // "de" no cuenta
+    expect(new UniversidadNueva('UADE').id).toBe('uade')
+    expect(new UniversidadNueva('Instituto Balseiro').id).toBe('instituto-balseiro')
+  })
+
+  it('el id se puede elegir a mano, que es la única oportunidad de hacerlo', () => {
+    expect(new UniversidadNueva('Universidad Tecnológica Nacional', 5, 'utn-frba').id).toBe(
+      'utn-frba',
+    )
+  })
+
+  it('un id escrito a mano tiene que ser un slug válido', () => {
+    const malo = new UniversidadNueva('UTN', 5, 'UTN FRBA!').problemas([])
+    expect(malo[0]).toContain('minúsculas')
+  })
+
+  it('una universidad completa no tiene problemas', () => {
+    expect(new UniversidadNueva('UNLP', 8).problemas([])).toEqual([])
+    expect(new UniversidadNueva('UNLP', 8).listo([])).toBe(true)
+  })
+
+  it('rechaza el nombre vacío', () => {
+    expect(new UniversidadNueva('   ').problemas([])[0]).toContain('nombre')
+  })
+
+  it('rechaza un nombre que no deja ni una letra en el slug', () => {
+    expect(new UniversidadNueva('¿¿¿ !!!').problemas([])[0]).toContain('al menos una letra')
+  })
+
+  it('no deja pisar una universidad que ya existe', () => {
+    const p = new UniversidadNueva('UADE').problemas(['uade'])
+    expect(p).toHaveLength(1)
+    expect(p[0]).toContain('uade')
+  })
+
+  it('valida el id de un plan escrito a mano', () => {
+    expect(PlanNuevo.problemasDeId('uade-ing', [])).toEqual([])
+    expect(PlanNuevo.problemasDeId('  ', [])[0]).toContain('vacío')
+    expect(PlanNuevo.problemasDeId('UADE Ing', [])[0]).toContain('minúsculas')
+    expect(PlanNuevo.problemasDeId('uade-ing', ['uade-ing'])[0]).toContain('ya está en uso')
+  })
+
+  it('el límite tiene que ser un entero de 1 o más', () => {
+    expect(new UniversidadNueva('X', 0).problemas([])).toHaveLength(1)
+    expect(new UniversidadNueva('X', 1.5).problemas([])).toHaveLength(1)
+    expect(new UniversidadNueva('X', 1).problemas([])).toEqual([])
   })
 })

@@ -4100,3 +4100,477 @@ body {
 .ed-badge.mal {
   background: var(--cu);
 }
+
+/* ── Crear un plan (y su universidad) ────────────────────────────────────── */
+/* El botón vive en el encabezado de cada universidad, al lado del cupo: donde
+   se lee "podés crear 2 más" es donde se espera poder hacerlo. */
+.adm-nuevo {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  background: none;
+  border: 1px dashed var(--gold);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.adm-nuevo:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+.adm-nuevo:disabled {
+  color: var(--soft);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+.adm-super {
+  margin: 4px 0 18px;
+}
+
+.cp {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 620px;
+}
+.cp-head h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+.cp-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0; /* sin esto el input impone su ancho intrínseco y desborda */
+}
+.cp-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.cp-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--soft);
+}
+.cp-in {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 11px;
+  width: 100%;
+  min-width: 0;
+}
+.cp-in:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.cp-in-num {
+  font-variant-numeric: tabular-nums;
+}
+.cp-ayuda {
+  font-size: 12px;
+  color: var(--soft);
+}
+.cp-uni-elegir,
+.cp-uni-nueva {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.cp-uni-elegir .cp-in,
+.cp-uni-nueva .cp-in {
+  width: 100%;
+}
+.cp-limite {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  max-width: 260px;
+}
+
+/* El id es lo único irreversible de la pantalla: va aparte, con su advertencia. */
+.cp-id {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.cp-in-mono {
+  font-family: var(--mono);
+  font-size: 14px;
+}
+/* El id de la universidad y su cupo: dos campos chicos que cuelgan del nombre.
+   Van indentados para que se lea que pertenecen a la universidad nueva y no al plan. */
+.cp-sub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  width: 100%;
+  padding-left: 14px;
+  border-left: 2px solid var(--line);
+}
+.cp-bajada {
+  font-size: 14px;
+  color: var(--soft);
+  margin: 0;
+}
+.cp-faltan {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+  color: var(--cu-tx);
+}
+.cp-acciones {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* ── Panel de cambios: agrupado, y con el antes/después enfrentado ───────── */
+/* El panel DICE qué cambió; la grilla de Estructura MUESTRA dónde (.ed-fila.cam-*).
+   Leer "movida de 2° a 3°" sin poder ver la fila era lo abstracto de la versión
+   anterior — feedback de Luz, 8-ago. */
+.ed-grupo {
+  margin-bottom: 16px;
+}
+.ed-grupo-tit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft);
+  padding-bottom: 5px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.ed-grupo-tit.materia-nueva,
+.ed-grupo-tit.correlativa-nueva {
+  color: var(--ap-tx);
+}
+.ed-grupo-tit.materia-borrada,
+.ed-grupo-tit.correlativa-borrada {
+  color: var(--cu-tx);
+}
+
+/* Un antes/después de verdad: los dos valores enfrentados, no un string armado. */
+.ed-parte {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12.5px;
+}
+.ed-parte-campo {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--faint, var(--soft));
+  min-width: 74px;
+}
+.ed-antes {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--cu-bg);
+  color: var(--cu-tx);
+  border-radius: 3px;
+  padding: 1px 6px;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.ed-despues {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--ap-bg);
+  color: var(--ap-tx);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+.ed-flecha {
+  color: var(--soft);
+  margin-right: 2px;
+}
+/* La flecha va PEGADA al "después": si la fila envuelve (nombres largos en un drawer
+   angosto), baja con él en vez de quedar colgando al final del renglón anterior. */
+.ed-parte-despues {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+/* La marca en la grilla: una franja del color del tipo de cambio, sobre el borde
+   izquierdo. No mueve nada de lugar — solo hace que la fila salte a la vista. */
+.ed-fila.cam-materia-nueva,
+.ed-fila.cam-materia-editada,
+.ed-fila.cam-materia-borrada,
+.ed-fila.cam-correlativa-nueva,
+.ed-fila.cam-correlativa-borrada {
+  box-shadow: inset 3px 0 0 0 var(--gold);
+  background: color-mix(in srgb, var(--gold) 5%, transparent);
+}
+.ed-fila.cam-materia-nueva {
+  box-shadow: inset 3px 0 0 0 var(--ap);
+  background: color-mix(in srgb, var(--ap) 6%, transparent);
+}
+.ed-fila.cam-materia-borrada {
+  box-shadow: inset 3px 0 0 0 var(--cu);
+  background: color-mix(in srgb, var(--cu) 6%, transparent);
+}
+
+/* ── Franja de 3 pasos ───────────────────────────────────────────────────── */
+/* Dice QUÉ HACER AHORA y cuánto falta, no qué botones hay. El paso actual se
+   distingue por peso y color; los hechos se apagan. */
+.ed-pasos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+.ed-paso-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%; /* las 3 quedan parejas aunque a una se le parta el detalle en 2 líneas */
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: border-color 0.15s, background 0.15s;
+}
+.ed-paso-btn:hover {
+  border-color: var(--line-fuerte, var(--soft));
+}
+.ed-paso-n {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--sunk, var(--paper));
+  color: var(--soft);
+  border: 1px solid var(--line);
+}
+.ed-paso-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.ed-paso-tit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ed-paso-det {
+  font-size: 11.5px;
+  color: var(--soft);
+}
+
+/* hecho: se apaga, ya no pide atención */
+.ed-paso.listo .ed-paso-n {
+  background: var(--ap-bg);
+  color: var(--ap-tx);
+  border-color: transparent;
+}
+.ed-paso.listo .ed-paso-tit {
+  color: var(--soft);
+}
+/* acá estás */
+.ed-paso.aqui .ed-paso-btn {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 6%, var(--card));
+}
+.ed-paso.aqui .ed-paso-n {
+  background: var(--gold);
+  color: var(--card);
+  border-color: transparent;
+}
+/* bloqueado: hay errores */
+.ed-paso.bloqueado .ed-paso-n {
+  background: var(--cu-bg);
+  color: var(--cu-tx);
+  border-color: transparent;
+}
+.ed-paso.bloqueado.aqui .ed-paso-btn {
+  border-color: var(--cu);
+  background: color-mix(in srgb, var(--cu) 6%, var(--card));
+}
+/* todavía no se puede empezar */
+.ed-paso.pendiente .ed-paso-btn {
+  opacity: 0.55;
+}
+
+@media (max-width: 720px) {
+  .ed-pasos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Deshacer lo último (Ctrl+Z). Discreto: es una red, no una acción principal. */
+.ed-deshacer {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ed-deshacer:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line-fuerte, var(--soft));
+}
+.ed-deshacer:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Permisos de una universidad (solo superadmin) ───────────────────────── */
+.adm-permisos {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.adm-permisos:hover {
+  color: var(--ink);
+  border-color: var(--line-fuerte, var(--soft));
+}
+
+.hb {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 620px;
+}
+.hb-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hb-head h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+.hb-limite,
+.hb-lista,
+.hb-alta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hb-limite-in {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 260px;
+}
+.hb-admins {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* La fila envuelve: en pantallas angostas, el chip de permisos (que es `nowrap`)
+   apretaba el mail hasta recortarlo — y ahí no se puede leer a quién le vas a sacar
+   el acceso, que es justo lo que hay que confirmar antes de tocar "quitar". */
+.hb-admin {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 12px;
+}
+.hb-mail {
+  flex: 1 1 180px;
+  min-width: 0;
+  font-size: 14px;
+  word-break: break-all;
+}
+.hb-permisos {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--soft);
+  white-space: nowrap;
+}
+/* Destructivo pero secundario: no puede pesar más que el mail al que se lo vas a
+   sacar. Se despierta al pasar por encima. */
+.hb-quitar {
+  flex: none;
+  font-weight: 400;
+  color: var(--soft);
+  text-decoration: none;
+}
+.hb-quitar:hover {
+  color: var(--cu-tx);
+  text-decoration: underline;
+}
+.hb-alta-fila {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.hb-alta-fila .cp-in {
+  flex: 1;
+  min-width: 0;
+}
+.hb-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 13.5px;
+}
+.hb-checks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}

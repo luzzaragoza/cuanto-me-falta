@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { RepositorioPlanes } from './admin'
+import { AdminHabilitado, RepositorioPlanes } from './admin'
 import { SesionAdmin, Habilitacion } from '../lib/admin'
 
 // Estos tests existen porque el cliente entra por CONSTRUCTOR. Con el singleton del
@@ -147,5 +147,35 @@ describe('RepositorioPlanes · sin backend', () => {
   it('las escrituras sí tiran: guardar sin backend es un error de programación', async () => {
     await expect(sinBackend.borrarMateria('p', 'A')).rejects.toThrow('Sin backend')
     await expect(sinBackend.publicar('p', null)).rejects.toThrow('Sin backend')
+  })
+})
+
+describe('AdminHabilitado · quién puede qué', () => {
+  const a = (over: Partial<ConstructorParameters<typeof AdminHabilitado>[0]> = {}) =>
+    new AdminHabilitado({
+      user_id: 'u1',
+      email: 'ana@uni.edu.ar',
+      crear: false,
+      editar: true,
+      eliminar: false,
+      otorgado_at: null,
+      ...over,
+    })
+
+  it('resume los permisos en una línea', () => {
+    expect(a().resumen).toBe('editar')
+    expect(a({ crear: true, eliminar: true }).resumen).toBe('crear · editar · eliminar')
+  })
+
+  it('sin ningún permiso lo dice, en vez de quedar en blanco', () => {
+    expect(a({ editar: false }).resumen).toBe('sin permisos')
+  })
+
+  it('se arma desde lo que devuelve la RPC y descarta filas raras', () => {
+    expect(AdminHabilitado.desde({ user_id: 'u', email: 'x@y.z', editar: true })?.email).toBe(
+      'x@y.z',
+    )
+    expect(AdminHabilitado.desde({ user_id: 'u' })).toBeNull() // sin mail no sirve
+    expect(AdminHabilitado.desde(null)).toBeNull()
   })
 })

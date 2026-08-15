@@ -18,6 +18,9 @@ import type { Borrador, MateriaEdit } from '../lib/editorPlan'
 import { useExitAnimation } from '../hooks/useExitAnimation'
 import { Validacion } from '../lib/validarPlan'
 import { Diff, type Cambio, type Guardado as QueGuardar } from '../lib/cambios'
+import { Pasos } from '../lib/pasos'
+import { Historial } from '../lib/historial'
+import { toast } from '../lib/toast'
 import type { PlanDef } from '../data/model'
 import { repo } from '../state/admin'
 
@@ -71,6 +74,16 @@ export function EditorPlan({
     Array<{ version: number; publicado_at: string; nota: string | null }>
   >([])
   const timers = useRef(new Map<number, number>())
+  /** Pila de acciones deshacibles de ESTA sesión (Ctrl+Z). */
+  const [historial, setHistorial] = useState(new Historial())
+  /** El borrador al entrar a un campo de texto: se apila recién al confirmar. */
+  const alEnfocar = useRef<Borrador | null>(null)
+  /**
+   * El listener de teclado se registra UNA vez (antes de los early returns, como manda
+   * React) pero tiene que llamar a la versión fresca de `deshacerUltimo`, que se define
+   * más abajo con el estado actual. La ref es el puente.
+   */
+  const deshacerUltimoRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     let vivo = true
@@ -144,11 +157,40 @@ export function EditorPlan({
 
   useEffect(() => () => timers.current.forEach((t) => clearTimeout(t)), [])
 
+  // Ctrl+Z / ⌘+Z. Se ignora si el foco está en un campo de texto: ahí manda el deshacer
+  // del navegador, que trabaja por carácter. Pisarlo daría un atajo que a veces borra una
+  // letra y a veces una materia entera.
+  useEffect(() => {
+    const alTeclado = (e: KeyboardEvent): void => {
+      if (!(e.key === 'z' || e.key === 'Z') || !(e.ctrlKey || e.metaKey) || e.shiftKey) return
+      const foco = document.activeElement
+      const enTexto =
+        foco instanceof HTMLInputElement &&
+        (foco.type === 'text' || foco.type === 'number' || foco.type === '')
+      if (enTexto) return
+      e.preventDefault()
+      deshacerUltimoRef.current()
+    }
+    window.addEventListener('keydown', alTeclado)
+    return () => window.removeEventListener('keydown', alTeclado)
+  }, [])
+
   // Qué cambió contra lo que ven los alumnos. Se recalcula con cada edición: es una
   // comparación, no un registro de acciones, así que no puede quedar desincronizada.
   const diff = useMemo(() => (b ? new Diff(publicado, b) : null), [publicado, b])
   const cambios = diff?.cambios ?? []
   const reversibles = diff?.reversibles ?? []
+  /**
+   * Qué le pasó a cada materia, para poder marcarla EN LA GRILLA.
+   *
+   * El panel dice qué cambió; la grilla muestra dónde. Leer "movida de 2° a 3°" sin
+   * poder ver la fila era justo lo abstracto del panel anterior.
+   */
+  const cambioPorCod = useMemo(() => {
+    const m = new Map<string, Cambio['tipo']>()
+    for (const c of diff?.cambios ?? []) for (const cod of c.cods) m.set(cod, c.tipo)
+    return m
+  }, [diff])
 
   // ── derivados del árbol-editor ──
   // Van ACÁ, antes de los early returns: los hooks no pueden ser condicionales.
@@ -188,9 +230,43 @@ export function EditorPlan({
   const avisos = revision.avisos
   const cuenta = b.resumen
   const anios = b.anios
+  // Dónde estás y qué falta. `publicado && !hay cambios` = los alumnos ya ven esto.
+  const pasos = new Pasos(b, revision, publicado !== null && reversibles.length === 0)
   const materias = b.ordenadas
 
   const cambiar = (nuevo: Borrador): void => setB(nuevo)
+
+  /**
+   * Aplica un cambio Y lo deja deshacible. Es la puerta por la que pasan las acciones
+   * discretas (agregar, borrar, mover, tildar, conectar): guarda el borrador ANTERIOR y
+   * qué escritura hace falta para que la base vuelva ahí.
+   */
+  const aplicar = (nuevo: Borrador, etiqueta: string, guardar: QueGuardar | null): void => {
+    setHistorial((h) => h.con({ etiqueta, antes: b, guardar }))
+    setB(nuevo)
+  }
+
+  /**
+   * Apila una edición de texto al salir del campo, y solo si de verdad cambió algo.
+   * Escribir y volver a dejarlo igual no ensucia el historial.
+   */
+  const anotarEdicion = (etiqueta: string, guardar: QueGuardar | null): void => {
+    const antes = alEnfocar.current
+    alEnfocar.current = null
+    if (!antes || antes === b) return
+    setHistorial((h) => h.con({ etiqueta, antes, guardar }))
+  }
+
+  /** Deshace la última acción de esta sesión y persiste la vuelta atrás. */
+  const deshacerUltimo = (): void => {
+    const r = historial.deshacer()
+    if (!r || !puedeEditar) return
+    setHistorial(r.historial)
+    setB(r.accion.antes)
+    void correr(() => persistir(r.accion.antes, r.accion.guardar))
+    toast.show(`Deshecho: ${r.accion.etiqueta}`, 'info')
+  }
+  deshacerUltimoRef.current = deshacerUltimo
 
   /** Escribe lo que corresponda después de deshacer un cambio. */
   const persistir = async (bo: Borrador, g: QueGuardar | null): Promise<void> => {
@@ -246,6 +322,22 @@ export function EditorPlan({
             correlativas
           </span>
         </div>
+        {/* Un atajo que nadie ve no existe: el botón lo hace descubrible y de paso dice
+            QUÉ se va a deshacer, así no hay que adivinar. */}
+        {puedeEditar && (
+          <button
+            className="ed-deshacer"
+            onClick={deshacerUltimo}
+            disabled={!historial.puedeDeshacer}
+            title={
+              historial.ultima
+                ? `Deshacer: ${historial.ultima.etiqueta} (Ctrl+Z)`
+                : 'No hay nada que deshacer'
+            }
+          >
+            ↶ Deshacer
+          </button>
+        )}
         <div className="ed-estado">
           {guardado === 'guardando' && <span className="ed-sav">Guardando…</span>}
           {guardado === 'guardado' && <span className="ed-sav ok">✓ Borrador guardado</span>}
@@ -284,6 +376,32 @@ export function EditorPlan({
           edición en esta universidad.
         </div>
       )}
+
+      {/* Franja de 3 pasos: no dice qué botones hay, dice qué hacer ahora y cuánto
+          falta. Es lo que necesita quien abre esta pantalla por primera vez — el
+          escenario del Gate C. Cada paso lleva a su pestaña. */}
+      <ol className="ed-pasos">
+        {pasos.lista.map((paso) => (
+          <li
+            className={`ed-paso ${paso.estado}${paso.n === pasos.actual.n ? ' aqui' : ''}`}
+            key={paso.n}
+          >
+            <button
+              className="ed-paso-btn"
+              onClick={() => setPestania(paso.pestania)}
+              aria-current={paso.n === pasos.actual.n ? 'step' : undefined}
+            >
+              <span className="ed-paso-n" aria-hidden="true">
+                {paso.hecho ? '✓' : paso.estado === 'bloqueado' ? '!' : paso.n}
+              </span>
+              <span className="ed-paso-txt">
+                <span className="ed-paso-tit">{paso.titulo}</span>
+                <span className="ed-paso-det">{paso.detalle}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
 
       <div className="ed-tabs" role="tablist">
         {(
@@ -324,15 +442,30 @@ export function EditorPlan({
                     {filas.map((m) => {
                       const dup = b.codigoRepetido(m.cod, m.orden)
                       return (
-                        <div className={`ed-fila ${dup ? 'dup' : ''}`} key={m.orden}>
+                        <div
+                          className={`ed-fila ${dup ? 'dup' : ''} ${
+                            cambioPorCod.get(m.cod) ? `cam-${cambioPorCod.get(m.cod)}` : ''
+                          }`}
+                          key={m.orden}
+                          title={
+                            cambioPorCod.get(m.cod) ? 'Cambió respecto de lo publicado' : undefined
+                          }
+                        >
                           <input
                             className="ed-cod"
                             value={m.cod}
                             placeholder="código"
                             disabled={!puedeEditar}
                             aria-label="Código de la materia"
+                            onFocus={() => (alEnfocar.current = b)}
                             onChange={(e) => cambiar(b.renombrarCodigo(m.orden, e.target.value))}
-                            onBlur={() => guardarFila(m)}
+                            onBlur={() => {
+                              anotarEdicion(`renombrar el código a ${m.cod || '(vacío)'}`, {
+                                que: 'materia',
+                                cod: m.codOriginal ?? m.cod,
+                              })
+                              guardarFila(m)
+                            }}
                           />
                           <input
                             className="ed-nom"
@@ -345,7 +478,14 @@ export function EditorPlan({
                               cambiar(nuevo)
                               guardarConDemora(m.con({ nom: e.target.value }))
                             }}
-                            onBlur={() => guardarFila(m)}
+                            onFocus={() => (alEnfocar.current = b)}
+                            onBlur={() => {
+                              anotarEdicion(`renombrar ${m.cod || 'la materia'}`, {
+                                que: 'materia',
+                                cod: m.codOriginal ?? m.cod,
+                              })
+                              guardarFila(m)
+                            }}
                           />
                           <select
                             className="ed-mover"
@@ -365,7 +505,10 @@ export function EditorPlan({
                               ) {
                                 return
                               }
-                              cambiar(borrador)
+                              aplicar(borrador, `mover ${m.cod || 'la materia'}`, {
+                                que: 'materia',
+                                cod: m.codOriginal ?? m.cod,
+                              })
                               guardarFila(m.con({ anio: a, cuatri: c }))
                             }}
                           >
@@ -381,7 +524,10 @@ export function EditorPlan({
                             title="Optativa: el alumno le pone el nombre. No participa de correlativas."
                             onClick={() => {
                               const nuevo = b.editarMateria(m.orden, { opt: !m.opt })
-                              cambiar(nuevo)
+                              aplicar(nuevo, `marcar ${m.cod || 'la materia'} como optativa`, {
+                                que: 'materia',
+                                cod: m.codOriginal ?? m.cod,
+                              })
                               guardarFila(m.con({ opt: !m.opt }))
                             }}
                           >
@@ -393,7 +539,10 @@ export function EditorPlan({
                             title="Se habilita por requisito especial (por año o % de carrera), no por correlativa."
                             onClick={() => {
                               const nuevo = b.editarMateria(m.orden, { especial: !m.especial })
-                              cambiar(nuevo)
+                              aplicar(nuevo, `marcar ${m.cod || 'la materia'} como especial`, {
+                                que: 'materia',
+                                cod: m.codOriginal ?? m.cod,
+                              })
                               guardarFila(m.con({ especial: !m.especial }))
                             }}
                           >
@@ -409,7 +558,12 @@ export function EditorPlan({
                                 ? `\n\nOjo: ${dependen.join(', ')} la tienen como previa. Esas correlativas se borran también.`
                                 : ''
                               if (!confirm(`¿Borrar ${m.cod || 'esta materia'}?${aviso}`)) return
-                              cambiar(b.quitarMateria(m.orden))
+                              // deshacer un borrado es volver a INSERTAR la fila: por eso
+                              // la escritura de vuelta es 'materia', no 'materia-borrar'
+                              aplicar(b.quitarMateria(m.orden), `borrar ${m.cod || 'la materia'}`, {
+                                que: 'materia',
+                                cod: m.cod,
+                              })
                               if (m.codOriginal) {
                                 void correr(() => repo.borrarMateria(planId, m.codOriginal!))
                               }
@@ -424,7 +578,13 @@ export function EditorPlan({
                     {puedeEditar && (
                       <button
                         className="ed-add"
-                        onClick={() => cambiar(b.agregarMateria(anio, cuatri).borrador)}
+                        onClick={() =>
+                          aplicar(
+                            b.agregarMateria(anio, cuatri).borrador,
+                            'agregar una materia',
+                            null, // la fila nueva todavía no existe en la base
+                          )
+                        }
                       >
                         + materia
                       </button>
@@ -438,7 +598,11 @@ export function EditorPlan({
             <button
               className="ed-add-anio"
               onClick={() =>
-                cambiar(b.agregarMateria((anios.at(-1) ?? 0) + 1, 1).borrador)
+                aplicar(
+                  b.agregarMateria((anios.at(-1) ?? 0) + 1, 1).borrador,
+                  'agregar un año',
+                  null,
+                )
               }
             >
               + agregar {(anios.at(-1) ?? 0) + 1}° año
@@ -569,7 +733,11 @@ export function EditorPlan({
             <button
               className="ed-add"
               onClick={() =>
-                cambiar(b.conTitulos([...b.titulos, new TituloPlan('', anios.at(-1) ?? 1)]))
+                aplicar(
+                  b.conTitulos([...b.titulos, new TituloPlan('', anios.at(-1) ?? 1)]),
+                  'agregar un título',
+                  { que: 'titulos' },
+                )
               }
             >
               + título
@@ -596,29 +764,43 @@ export function EditorPlan({
             </p>
           ) : (
             <>
-              <div className="ed-cuatri-tit">
-                {publicado
-                  ? `Cambios sin publicar · ${reversibles.length}`
-                  : 'Sin publicar todavía'}
-              </div>
-              <ul className="ed-cambios-lista">
-                {cambios.map((c) => (
-                  <li className={`ed-cam ${c.tipo}`} key={c.id}>
+              {(diff?.grupos ?? []).map((g) => (
+                <section className="ed-grupo" key={g.tipo}>
+                  <div className={`ed-grupo-tit ${g.tipo}`}>
                     <span className="ed-cam-signo" aria-hidden="true">
-                      {SIGNO[c.tipo]}
+                      {SIGNO[g.tipo]}
                     </span>
-                    <span className="ed-cam-txt">
-                      <span className="ed-cam-tit">{c.titulo}</span>
-                      {c.detalle && <span className="ed-cam-det">{c.detalle}</span>}
-                    </span>
-                    {c.reversible && puedeEditar && (
-                      <button className="lnk ed-cam-des" onClick={() => deshacer(c)}>
-                        deshacer
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                    {g.etiqueta}
+                  </div>
+                  <ul className="ed-cambios-lista">
+                    {g.cambios.map((c) => (
+                      <li className={`ed-cam ${c.tipo}`} key={c.id}>
+                        <span className="ed-cam-txt">
+                          {c.titulo && <span className="ed-cam-tit">{c.titulo}</span>}
+                          {c.detalle && <span className="ed-cam-det">{c.detalle}</span>}
+                          {c.partes?.map((pt) => (
+                            <span className="ed-parte" key={pt.campo}>
+                              <span className="ed-parte-campo">{pt.campo}</span>
+                              <span className="ed-antes">{pt.antes}</span>
+                              <span className="ed-parte-despues">
+                                <span className="ed-flecha" aria-hidden="true">
+                                  →
+                                </span>
+                                <span className="ed-despues">{pt.despues}</span>
+                              </span>
+                            </span>
+                          ))}
+                        </span>
+                        {c.reversible && puedeEditar && (
+                          <button className="lnk ed-cam-des" onClick={() => deshacer(c)}>
+                            deshacer
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
               {reversibles.length > 1 && puedeEditar && (
                 <button className="ed-descartar" onClick={descartarTodo}>
                   ↺ Descartar los {reversibles.length} cambios y volver a lo publicado
@@ -674,6 +856,7 @@ export function EditorPlan({
                     const v = await repo.publicar(planId, nota.trim() || null)
                     setNota('')
                     setVersiones(await repo.cargarVersiones(planId))
+                        setHistorial((h) => h.vaciado())
                     setError(null)
                     alert(`Publicado como versión ${v}.`)
                   } catch (e) {
@@ -709,6 +892,7 @@ export function EditorPlan({
                       void correr(async () => {
                         await repo.revertir(planId, v.version)
                         setVersiones(await repo.cargarVersiones(planId))
+                        setHistorial((h) => h.vaciado())
                       })
                     }}
                   >
@@ -785,7 +969,12 @@ export function EditorPlan({
                   const [dueno, previa] =
                     direccion === 'anterior' ? [objetivo, cod] : [cod, objetivo]
                   const nuevo = b.alternarPrevia(dueno, previa)
-                  cambiar(nuevo)
+                  const habia = b.previasDe(dueno).includes(previa)
+                  aplicar(
+                    nuevo,
+                    `${habia ? 'quitar' : 'conectar'} ${dueno} ← ${previa}`,
+                    { que: 'previas', cod: dueno },
+                  )
                   void correr(() => repo.guardarPrevias(planId, dueno, nuevo.previasDe(dueno)))
                 },
               }}

@@ -8,9 +8,11 @@
 import { useEffect, useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
 import { Auth, useSession } from '../state/auth'
-import { repo, type UniversidadAdmin } from '../state/admin'
+import { repo, UniversidadAdmin } from '../state/admin'
 import { SesionAdmin, type PlanAdmin } from '../lib/admin'
 import { EditorPlan } from './EditorPlan'
+import { CrearPlan } from './CrearPlan'
+import { Habilitados } from './Habilitados'
 
 const volverALaApp = (): void => {
   location.hash = ''
@@ -33,6 +35,10 @@ export function AdminApp() {
   const [intento, setIntento] = useState(0)
   /** Plan abierto en el editor, o `null` si estamos en la lista. */
   const [editando, setEditando] = useState<{ planId: string; uni: string } | null>(null)
+  /** Universidad desde la que se está creando un plan, o `null`. */
+  const [creando, setCreando] = useState<string | null>(null)
+  /** Universidad cuyos permisos se están administrando (solo superadmin), o `null`. */
+  const [permisos, setPermisos] = useState<string | null>(null)
 
   // el perfil se recarga con la sesión: entrar y salir cambian todo lo que se ve
   useEffect(() => {
@@ -167,12 +173,43 @@ export function AdminApp() {
           />
         )}
 
-        {acceso === 'ok' && sesion && !editando && (
+        {acceso === 'ok' && sesion?.esSuper && permisos !== null && (
+          <Habilitados
+            uni={unis.find((u) => u.id === permisos) ?? new UniversidadAdmin(permisos, permisos)}
+            onCerrar={() => setPermisos(null)}
+            onCambioLimite={() => setIntento((n) => n + 1)}
+          />
+        )}
+
+        {acceso === 'ok' && sesion && !editando && permisos === null && creando !== null && (
+          <CrearPlan
+            sesion={sesion}
+            universidades={unis}
+            uniInicial={creando}
+            idsExistentes={planes.map((p) => p.id)}
+            onCancelar={() => setCreando(null)}
+            onCreado={(planId) => {
+              setCreando(null)
+              setIntento((n) => n + 1) // la lista se recarga con el plan nuevo
+              setEditando({ planId, uni: creando })
+            }}
+          />
+        )}
+
+        {acceso === 'ok' && sesion && !editando && creando === null && permisos === null && (
           <>
             {planes.length === 0 && (
               <div className="adm-card adm-vacio">
                 <h2>Todavía no hay planes</h2>
                 <p>Cuando cargues el primero, va a aparecer acá.</p>
+                {(sesion.esSuper || sesion.universidades.length > 0) && (
+                  <button
+                    className="btn"
+                    onClick={() => setCreando(sesion.universidades[0] ?? unis[0]?.id ?? '')}
+                  >
+                    Crear el primero
+                  </button>
+                )}
               </div>
             )}
 
@@ -184,6 +221,27 @@ export function AdminApp() {
                   <div className="adm-uni-head">
                     <h2>{nombreUni(uni)}</h2>
                     <span className="adm-cupo">{cupo.leyenda}</span>
+                    <button
+                      className="adm-nuevo"
+                      onClick={() => setCreando(uni)}
+                      disabled={!cupo.puedeCrear}
+                      title={
+                        cupo.puedeCrear
+                          ? 'Cargar una carrera nueva'
+                          : cupo.leyenda /* dice por qué no se puede */
+                      }
+                    >
+                      + Plan nuevo
+                    </button>
+                    {sesion.esSuper && (
+                      <button
+                        className="adm-permisos"
+                        onClick={() => setPermisos(uni)}
+                        title="Quién puede tocar los planes de esta universidad"
+                      >
+                        Permisos
+                      </button>
+                    )}
                   </div>
 
                   <ul className="adm-planes">
@@ -231,6 +289,14 @@ export function AdminApp() {
                 </section>
               )
             })}
+
+            {sesion.esSuper && planes.length > 0 && (
+              <div className="adm-super">
+                <button className="lnk" onClick={() => setCreando(unis[0]?.id ?? '')}>
+                  + Plan en otra universidad
+                </button>
+              </div>
+            )}
 
             <p className="adm-nota">
               Los alumnos ven la <strong>versión publicada</strong>. Mientras editás un plan, siguen
