@@ -17,24 +17,9 @@
 
 import { useSyncExternalStore } from 'react'
 import { supabase } from '../lib/supabase'
-import { salir } from './auth'
+import { Auth } from './auth'
 import { store } from './store'
-import {
-  decidirMerge,
-  escribirLocal,
-  guardarBase,
-  guardarConsent,
-  huellaProgreso,
-  leerBase,
-  leerConsent,
-  leerDirty,
-  limpiarDirty,
-  marcarDirty,
-  merge3,
-  snapshotLocal,
-  totalMarcadas,
-  type RemoteData,
-} from '../lib/sync'
+import { Base, Consentimiento, MarcaSinSubir, RemoteData } from '../lib/sync'
 
 export type SyncEstado =
   | 'off'
@@ -75,7 +60,7 @@ export function useSyncEstado(): SyncEstado {
   return useSyncExternalStore(subscribe, () => estado, () => 'off' as const)
 }
 
-export function getConflicto(): Conflicto | null {
+function conflictoActual(): Conflicto | null {
   return conflicto
 }
 
@@ -86,7 +71,7 @@ const DEBOUNCE_MS = 1500
 async function push(): Promise<void> {
   if (!supabase || !userId) return
   setEstado('guardando')
-  const data = snapshotLocal()
+  const data = RemoteData.local()
   const { error } = await supabase.from('progreso').upsert({
     user_id: userId,
     data,
@@ -98,8 +83,8 @@ async function push(): Promise<void> {
   } else {
     // llegó al server: ya no hay cambios pendientes… salvo que hayan editado
     // DURANTE el vuelo (quedó otro push programado) — ahí la marca sigue viva
-    if (!timer) limpiarDirty()
-    guardarBase(userId, data) // esto es lo que la nube tiene ahora
+    if (!timer) MarcaSinSubir.limpiar()
+    Base.guardar(userId, data) // esto es lo que la nube tiene ahora
     setEstado('listo')
   }
 }
@@ -109,7 +94,7 @@ function programarPush(): void {
   if (!userId || estado === 'conflicto' || estado === 'consentimiento') return
   // 'off' = el merge inicial todavía no corrió (o se rechazó el consentimiento):
   // no es un cambio "por encima de la cuenta", no marca nada
-  if (estado !== 'off') marcarDirty(userId)
+  if (estado !== 'off') MarcaSinSubir.poner(userId)
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     timer = null
@@ -122,8 +107,8 @@ function programarPush(): void {
 async function alEntrar(uid: string): Promise<void> {
   if (!supabase) return
   // una marca de cambios pendientes de OTRA cuenta no vale acá (navegador compartido)
-  const flag = leerDirty()
-  if (flag && flag !== uid) limpiarDirty()
+  const flag = MarcaSinSubir.de()
+  if (flag && flag !== uid) MarcaSinSubir.limpiar()
 
   const { data, error } = await supabase
     .from('progreso')
@@ -137,12 +122,13 @@ async function alEntrar(uid: string): Promise<void> {
     return
   }
 
-  const remoto = (data?.data as RemoteData | undefined) ?? null
+  // dato de red: entra por la factory, nunca por un cast (ver `state/store.ts`)
+  const remoto = RemoteData.desde(data?.data)
 
   // Gate de consentimiento (Ley 25.326): antes de guardar nada en el servidor,
   // el usuario tiene que aceptar los TyC/Privacidad UNA vez por cuenta. El registro
   // viaja con los datos: si ya aceptó en otro dispositivo, no se le vuelve a pedir.
-  if (!remoto?.consentimiento && !leerConsent()) {
+  if (!remoto?.consentimiento && !Consentimiento.leer()) {
     remotoPendiente = remoto
     setEstado('consentimiento')
     return
@@ -184,46 +170,46 @@ async function marcarVisto(uid: string): Promise<void> {
 function continuarMerge(remoto: RemoteData | null): void {
   if (!userId) return
   void marcarVisto(userId) // registra la vuelta-a-mirar (no bloquea el merge)
-  const local = snapshotLocal()
+  const local = RemoteData.local()
   // quedaron cambios de ESTE usuario sin subir (editó/borró y refrescó antes del
   // push con debounce): lo local es más nuevo, no se baja nada arriba de eso
-  const dirty = leerDirty() === userId
+  const dirty = MarcaSinSubir.esDe(userId)
   // la última sincronización de esta cuenta EN ESTE dispositivo: la huella decide
   // quién se movió (bajar/subir solo, sin preguntar) y la data completa habilita
   // la fusión cuando se movieron los dos
-  const base = leerBase(userId)
+  const base = Base.leer(userId)
 
-  switch (decidirMerge(remoto, local, dirty, base?.huella ?? null)) {
+  switch (RemoteData.decidir(remoto, local, dirty, base?.huella ?? null)) {
     case 'push':
       // la marca sobrevive a un push fallido + refresh: lo local sigue mandando
-      marcarDirty(userId)
+      MarcaSinSubir.poner(userId)
       void push()
       break
     case 'pull':
-      limpiarDirty() // lo local queda reconciliado con la cuenta
-      guardarBase(userId, remoto!)
-      escribirLocal(remoto!)
+      MarcaSinSubir.limpiar() // lo local queda reconciliado con la cuenta
+      Base.guardar(userId, remoto!)
+      remoto!.escribirLocal()
       marcarTourVisto()
       location.reload() // el singleton del Store se reconstruye con lo bajado
       break
     case 'nada':
-      guardarBase(userId, local)
+      Base.guardar(userId, local)
       // si la fila remota todavía no tiene el consentimiento (cuentas creadas
       // antes de este build), lo subimos ya — si no, otro dispositivo lo re-pediría
-      if (!remoto?.consentimiento && leerConsent()) void push()
+      if (!remoto?.consentimiento && Consentimiento.leer()) void push()
       else setEstado('listo')
       break
     case 'conflicto': {
       // ¿Avanzaron los dos pero en materias DISTINTAS? Con la base completa se
       // fusiona sin perder nada de ningún lado — el modal queda solo para el
       // choque real (misma materia con valores distintos) o sin base (1ª vez).
-      const fusion = base?.data ? merge3(base.data, local, remoto!) : null
+      const fusion = base?.data ? base.data.fusionar(local, remoto!) : null
       if (fusion) {
-        marcarDirty(userId) // la fusión manda hasta que el push aterrice
-        if (huellaProgreso(fusion) === huellaProgreso(local)) {
+        MarcaSinSubir.poner(userId) // la fusión manda hasta que el push aterrice
+        if (fusion.huella === local.huella) {
           void push() // lo local ya ES la fusión: solo falta subirla
         } else {
-          escribirLocal(fusion)
+          fusion.escribirLocal()
           marcarTourVisto()
           location.reload() // remonta con la fusión; el próximo merge la sube
         }
@@ -231,8 +217,8 @@ function continuarMerge(remoto: RemoteData | null): void {
       }
       conflicto = {
         remoto: remoto!,
-        marcadasLocal: totalMarcadas(local),
-        marcadasCuenta: totalMarcadas(remoto),
+        marcadasLocal: local.totalMarcadas,
+        marcadasCuenta: remoto?.totalMarcadas ?? 0,
       }
       setEstado('conflicto')
       break
@@ -241,42 +227,42 @@ function continuarMerge(remoto: RemoteData | null): void {
 }
 
 /** El usuario aceptó los TyC/Privacidad: se registra y sigue el merge normal. */
-export function aceptarConsentimiento(): void {
-  guardarConsent()
+function aceptar(): void {
+  Consentimiento.aceptar()
   const remoto = remotoPendiente
   remotoPendiente = null
   continuarMerge(remoto)
 }
 
 /** No aceptó: se cierra la sesión y la app sigue 100% local (nada se subió). */
-export function rechazarConsentimiento(): void {
+function rechazar(): void {
   remotoPendiente = null
   setEstado('off')
-  void salir()
+  void Auth.salir()
 }
 
 /** El usuario eligió en el modal de conflicto: quedarse con la nube o con lo local. */
-export function resolverConflicto(eleccion: 'nube' | 'local'): void {
+function resolver(eleccion: 'nube' | 'local'): void {
   if (!conflicto || !userId) return
   const remoto = conflicto.remoto
   conflicto = null
   if (eleccion === 'nube') {
-    limpiarDirty() // eligió la nube: los cambios locales pendientes se descartan
-    guardarBase(userId, remoto)
-    escribirLocal(remoto)
+    MarcaSinSubir.limpiar() // eligió la nube: los cambios locales pendientes se descartan
+    Base.guardar(userId, remoto)
+    remoto.escribirLocal()
     marcarTourVisto()
     location.reload()
   } else {
     // decisión explícita del usuario: lo local pisa la nube (la marca sobrevive
     // a un push fallido + refresh, para que la elección no se pierda)
-    marcarDirty(userId)
+    MarcaSinSubir.poner(userId)
     void push()
   }
 }
 
 // ---- init (llamar una vez, en main.tsx) ----
 
-export function initSync(): void {
+function iniciarSync(): void {
   if (!supabase) return
 
   supabase.auth.onAuthStateChange((_evento, session) => {
@@ -311,4 +297,36 @@ export function initSync(): void {
     if (document.visibilityState === 'hidden') flush()
   })
   window.addEventListener('pagehide', flush)
+}
+
+/**
+ * La sincronización del avance con la cuenta: cuándo se sube, cuándo se baja y qué se
+ * le pregunta al usuario.
+ *
+ * `useSyncEstado` queda como función porque es un hook de React (ver `Auth`).
+ */
+export class Sync {
+  /** Arranca el orquestador: merge una vez por sesión + push con debounce. */
+  static iniciar(): void {
+    iniciarSync()
+  }
+
+  /** El conflicto pendiente de resolver, o `null`. */
+  static conflicto(): Conflicto | null {
+    return conflictoActual()
+  }
+
+  /** El usuario aceptó los términos: recién ahí se sube el primer byte. */
+  static aceptarConsentimiento(): void {
+    aceptar()
+  }
+
+  static rechazarConsentimiento(): void {
+    rechazar()
+  }
+
+  /** Resuelve el conflicto con lo que eligió el usuario. */
+  static resolverConflicto(eleccion: 'nube' | 'local'): void {
+    resolver(eleccion)
+  }
 }

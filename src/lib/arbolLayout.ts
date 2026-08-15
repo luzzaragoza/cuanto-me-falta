@@ -28,9 +28,96 @@ export const NODEH = 64 // alto máximo (nombre de hasta 3 líneas)
 export const PADX = 48 // aire a la izquierda (deja lugar al rail de años)
 const PADY = 56 // aire arriba (rótulo del primer cuatrimestre)
 
-export interface GrafoPlan {
-  materias: Pick<MateriaPlan, 'cod' | 'anio' | 'cuatri'>[]
-  correlativas: Correlativa[]
+/** Lo mínimo de una materia que el layout necesita: dónde va y cómo se llama. */
+export type MateriaEnGrafo = Pick<MateriaPlan, 'cod' | 'anio' | 'cuatri'>
+
+/**
+ * El grafo de un plan, listo para dibujar.
+ *
+ * Sabe responder sobre su propia forma (`cadenaDe`, `reducido`, `rama`) y sabe pedirle
+ * al motor que lo acomode (`malla`, `layout`). Antes eran seis funciones sueltas que
+ * recibían el mismo `{materias, correlativas}` como primer parámetro.
+ */
+export class Grafo {
+  readonly materias: readonly MateriaEnGrafo[]
+  readonly correlativas: readonly Correlativa[]
+
+  constructor(materias: readonly MateriaEnGrafo[], correlativas: readonly Correlativa[]) {
+    this.materias = materias
+    this.correlativas = correlativas
+  }
+
+  /** El grafo completo de un plan. */
+  static dePlan(plan: { materias: readonly MateriaEnGrafo[]; correlativas: readonly Correlativa[] }): Grafo {
+    return new Grafo(plan.materias, plan.correlativas)
+  }
+
+  /** La cadena completa de una materia: lo que necesita (`up`) y lo que habilita (`down`). */
+  cadenaDe(foco: string): { up: Set<string>; down: Set<string> } {
+    const up = new Set<string>()
+    const down = new Set<string>()
+    const subir = (cod: string): void => {
+      for (const c of this.correlativas) {
+        if (c.cod === cod && !up.has(c.requiere)) {
+          up.add(c.requiere)
+          subir(c.requiere)
+        }
+      }
+    }
+    const bajar = (cod: string): void => {
+      for (const c of this.correlativas) {
+        if (c.requiere === cod && !down.has(c.cod)) {
+          down.add(c.cod)
+          bajar(c.cod)
+        }
+      }
+    }
+    subir(foco)
+    bajar(foco)
+    return { up, down }
+  }
+
+  /**
+   * El mismo grafo sin las correlativas que ya se DEDUCEN de otras.
+   *
+   * Los planes las tienen a montones — p.ej. Machine Learning I pide Estadística General
+   * *y* Inferencia, que a su vez pide Estadística: la primera no agrega información,
+   * porque no podés tener Inferencia sin Estadística. Dibujarlas es peor que no hacerlo:
+   * la flecha tiene que RODEAR la materia del medio (se ve como un lazo), y si además
+   * sale del mismo nodo que otra, ELK las fusiona en un tronco compartido que nosotros
+   * pintamos de dos colores distintos.
+   *
+   * Sacarlas no pierde nada: la dependencia sigue estando, leída por el camino. Y
+   * garantiza algo lindo: después de reducir, ninguna arista puede ir de la parte
+   * "necesitás" a la parte "habilita" (ese salto siempre pasa por el foco), así que
+   * ningún tronco puede quedar bicolor. Los tests lo verifican.
+   */
+  reducido(): Grafo {
+    return new Grafo(this.materias, reducirTransitivamente(this.correlativas))
+  }
+
+  /**
+   * El subgrafo del "modo rama": la materia + su cadena, con solo las correlativas
+   * internas y sin las que se deducen de otras.
+   */
+  rama(foco: string): Grafo {
+    const { up, down } = this.cadenaDe(foco)
+    const cods = new Set([foco, ...up, ...down])
+    return new Grafo(
+      this.materias.filter((m) => cods.has(m.cod)),
+      this.correlativas.filter((c) => cods.has(c.cod) && cods.has(c.requiere)),
+    ).reducido()
+  }
+
+  /** La malla en reposo: grilla exacta nuestra, con las correlativas cortas ruteadas. */
+  malla(): Promise<Layout> {
+    return layoutMalla(this)
+  }
+
+  /** El layout por capas de ELK. Es el que dibuja el modo rama. */
+  layout(): Promise<Layout> {
+    return layoutGrafo(this)
+  }
 }
 
 export interface Punto {
@@ -44,13 +131,41 @@ export interface Fila {
   bottom: number
 }
 
-export interface ArbolLayout {
-  pos: Record<string, Punto> // esquina superior izquierda de cada tarjeta
+/**
+ * El resultado de acomodar un grafo: dónde va cada tarjeta y por dónde pasa cada flecha.
+ *
+ * `Punto` y `Fila` quedan como formas y no como clases por la misma razón que
+ * `data/json.ts`: son el DATO que sale del cálculo, y se los consume tal cual (React
+ * Flow espera `{x, y}`). El objeto con conducta es este.
+ */
+export class Layout {
+  /** Esquina superior izquierda de cada tarjeta. */
+  readonly pos: Record<string, Punto>
   /** Polilínea absoluta de cada correlativa, por id `requiere->cod`. */
-  aristas: Record<string, Punto[]>
-  width: number
-  height: number
-  filas: Fila[] // presentes en el grafo, en orden temporal
+  readonly aristas: Record<string, Punto[]>
+  readonly width: number
+  readonly height: number
+  /** Filas presentes en el grafo, en orden temporal. */
+  readonly filas: Fila[]
+
+  constructor(campos: {
+    pos: Record<string, Punto>
+    aristas: Record<string, Punto[]>
+    width: number
+    height: number
+    filas: Fila[]
+  }) {
+    this.pos = campos.pos
+    this.aristas = campos.aristas
+    this.width = campos.width
+    this.height = campos.height
+    this.filas = campos.filas
+  }
+
+  /** Los invariantes geométricos de ESTE layout (los verifica CI para cada plan). */
+  get invariantes(): Invariantes {
+    return medirInvariantes(this)
+  }
 }
 
 const cuatriIdx = (m: Pick<MateriaPlan, 'anio' | 'cuatri'>) => (m.anio - 1) * 2 + (m.cuatri - 1)
@@ -90,7 +205,7 @@ interface Grilla {
 /** Tres barridos de baricentro (bajar, subir, bajar): cada materia se acomoda
  *  cerca del promedio de sus vecinas (así la rama que después se junta viaja
  *  poco). Slots ENTEROS y filas centradas: columnas perfectamente alineadas. */
-function grillaMalla(grafo: GrafoPlan): Grilla {
+function grillaMalla(grafo: Grafo): Grilla {
   const porFila = new Map<number, string[]>()
   for (const m of grafo.materias) {
     const q = cuatriIdx(m)
@@ -177,7 +292,7 @@ interface Ruta {
  * esqueleto antes que volver a la trenza.
  */
 function planearCortas(
-  grafo: GrafoPlan,
+  grafo: Grafo,
   g: Grilla,
   xc: (cod: string) => number,
 ): { rutas: Ruta[]; carriles: number[] } {
@@ -196,7 +311,7 @@ function planearCortas(
   const reqs: Req[] = []
   // sin las que se deducen de otras: en la malla son justo las que necesitan
   // atravesar una fila (la del medio es la que las vuelve redundantes)
-  for (const c of reduccionTransitiva(grafo.correlativas)) {
+  for (const c of reducirTransitivamente(grafo.correlativas)) {
     const qs = cuatriDe.get(c.requiere)
     const qt = cuatriDe.get(c.cod)
     if (qs == null || qt == null || qt - qs < 1 || qt - qs > DIST_CORTA) continue
@@ -297,14 +412,14 @@ function planearCortas(
 
 /** La MALLA en reposo: grilla exacta + las correlativas cortas ruteadas por los
  *  pasillos, que crecen solo lo necesario para los carriles que pasan. */
-export async function layoutMalla(grafo: GrafoPlan): Promise<ArbolLayout> {
+async function layoutMalla(grafo: Grafo): Promise<Layout> {
   const g = grillaMalla(grafo)
   const xDe = new Map<string, number>()
   for (const f of g.filas)
     for (const cod of f.cods) xDe.set(cod, PADX + g.slot.get(cod)! * NODEX + NODEW / 2)
   const { rutas, carriles } = planearCortas(grafo, g, (cod) => xDe.get(cod)!)
 
-  const pos: ArbolLayout['pos'] = {}
+  const pos: Layout['pos'] = {}
   const filas: Fila[] = []
   const filaY: number[] = []
   let y = PADY
@@ -322,7 +437,7 @@ export async function layoutMalla(grafo: GrafoPlan): Promise<ArbolLayout> {
   const ultima = filas[filas.length - 1]
 
   const yCarril = (t: Tramo) => filaY[t.gap] + NODEH + LANE0 + t.carril * LANE
-  const aristas: ArbolLayout['aristas'] = {}
+  const aristas: Layout['aristas'] = {}
   for (const r of rutas) {
     const xa = xDe.get(r.src)!
     const xb = xDe.get(r.tgt)!
@@ -334,13 +449,13 @@ export async function layoutMalla(grafo: GrafoPlan): Promise<ArbolLayout> {
     aristas[r.id] = pts
   }
 
-  return {
+  return new Layout({
     pos,
     aristas,
     width: PADX * 2 + (g.maxLen - 1) * NODEX + NODEW,
     height: ultima.bottom + 28,
     filas,
-  }
+  })
 }
 
 const OPCIONES = {
@@ -365,7 +480,7 @@ const OPCIONES = {
 }
 
 /** Corre ELK sobre un grafo (en la app: el subgrafo del modo rama). */
-export async function layoutGrafo(grafo: GrafoPlan): Promise<ArbolLayout> {
+async function layoutGrafo(grafo: Grafo): Promise<Layout> {
   const entrada: ElkNode = {
     id: 'root',
     layoutOptions: OPCIONES,
@@ -383,10 +498,10 @@ export async function layoutGrafo(grafo: GrafoPlan): Promise<ArbolLayout> {
   }
   const res = await elk.layout(entrada)
 
-  const pos: ArbolLayout['pos'] = {}
+  const pos: Layout['pos'] = {}
   for (const n of res.children ?? []) pos[n.id] = { x: (n.x ?? 0) + PADX, y: (n.y ?? 0) + PADY }
 
-  const aristas: ArbolLayout['aristas'] = {}
+  const aristas: Layout['aristas'] = {}
   for (const e of res.edges ?? []) {
     const s = e.sections?.[0]
     if (!s) continue
@@ -411,56 +526,17 @@ export async function layoutGrafo(grafo: GrafoPlan): Promise<ArbolLayout> {
     .map(([cuatri, f]) => ({ cuatri, ...f }))
     .sort((a, b) => a.cuatri - b.cuatri)
 
-  return {
+  return new Layout({
     pos,
     aristas,
     width: (res.width ?? 0) + PADX * 2,
     height: (res.height ?? 0) + PADY + 24,
     filas,
-  }
+  })
 }
 
-/** La cadena completa de una materia: lo que necesita (up) y lo que habilita (down). */
-export function cadenaDe(correlativas: Correlativa[], foco: string): { up: Set<string>; down: Set<string> } {
-  const up = new Set<string>()
-  const down = new Set<string>()
-  const subir = (cod: string) => {
-    for (const c of correlativas) {
-      if (c.cod === cod && !up.has(c.requiere)) {
-        up.add(c.requiere)
-        subir(c.requiere)
-      }
-    }
-  }
-  const bajar = (cod: string) => {
-    for (const c of correlativas) {
-      if (c.requiere === cod && !down.has(c.cod)) {
-        down.add(c.cod)
-        bajar(c.cod)
-      }
-    }
-  }
-  subir(foco)
-  bajar(foco)
-  return { up, down }
-}
-
-/**
- * Reducción transitiva: saca las correlativas que ya se DEDUCEN de otras.
- *
- * Los planes las tienen a montones — p.ej. Machine Learning I pide Estadística
- * General *y* Inferencia, que a su vez pide Estadística: la primera no agrega
- * información, porque no podés tener Inferencia sin Estadística. Dibujarlas es
- * peor que no hacerlo: la flecha tiene que RODEAR la materia del medio (se ve
- * como un lazo), y si además sale del mismo nodo que otra, ELK las fusiona en
- * un tronco compartido que nosotros pintamos de dos colores distintos.
- *
- * Sacarlas no pierde nada: la dependencia sigue estando, leída por el camino.
- * Y garantiza algo lindo: después de reducir, ninguna arista puede ir de la
- * parte "necesitás" a la parte "habilita" (ese salto siempre pasa por el foco),
- * así que ningún tronco puede quedar bicolor. Los tests lo verifican.
- */
-export function reduccionTransitiva(correlativas: Correlativa[]): Correlativa[] {
+/** El motor de la reducción transitiva. La usa `Grafo.reducido()`. */
+function reducirTransitivamente(correlativas: readonly Correlativa[]): Correlativa[] {
   const sig = new Map<string, string[]>()
   for (const c of correlativas)
     (sig.get(c.requiere) ?? sig.set(c.requiere, []).get(c.requiere)!).push(c.cod)
@@ -480,19 +556,6 @@ export function reduccionTransitiva(correlativas: Correlativa[]): Correlativa[] 
   return correlativas.filter((c) => !porOtroCamino(c.requiere, c.cod))
 }
 
-/** Subgrafo del "modo rama": la materia + su cadena, con solo las correlativas
- *  internas y sin las que se deducen de otras (ver `reduccionTransitiva`). */
-export function subgrafoRama(grafo: GrafoPlan, foco: string): GrafoPlan {
-  const { up, down } = cadenaDe(grafo.correlativas, foco)
-  const cods = new Set([foco, ...up, ...down])
-  return {
-    materias: grafo.materias.filter((m) => cods.has(m.cod)),
-    correlativas: reduccionTransitiva(
-      grafo.correlativas.filter((c) => cods.has(c.cod) && cods.has(c.requiere)),
-    ),
-  }
-}
-
 // ---- invariantes geométricos (los verifica CI para cada plan y cada rama) ----
 
 export interface Invariantes {
@@ -508,7 +571,7 @@ export interface Invariantes {
   filasDesordenadas: number
 }
 
-export function invariantes(lay: ArbolLayout): Invariantes {
+function medirInvariantes(lay: Layout): Invariantes {
   interface Seg {
     x1: number
     y1: number

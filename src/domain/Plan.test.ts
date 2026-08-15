@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { Plan, plan } from './Plan'
-import type { PlanDef } from '../data/model'
+import { PlanDef } from '../data/model'
 
 // Grafo de juguete para probar la estructura sin depender del plan real:
 //   A → B → C
 //        └→ D
 // (B necesita A; C y D necesitan B)
-const def: PlanDef = {
+const def = PlanDef.exigir({
   id: 'test',
   universidad: 'x',
   codigo: '0',
@@ -24,7 +24,7 @@ const def: PlanDef = {
     { cod: 'C', requiere: 'B' },
     { cod: 'D', requiere: 'B' },
   ],
-}
+})
 const p = new Plan(def)
 
 const orden = (s: Set<string>) => [...s].sort()
@@ -92,8 +92,8 @@ describe('Plan · cadenas recursivas', () => {
 describe('Plan · títulos por cuatrimestre', () => {
   // Como la Lic. en IA: el título intermedio cae tras el 1° cuatri del último año.
   //   Año 1: A (c1), B (c2) · Año 2: C (c1), D (c2)
-  const def2: PlanDef = {
-    ...def,
+  const def2 = PlanDef.exigir({
+    ...def.aJSON(),
     titulos: [
       { nombre: 'Intermedio', hastaAnio: 2, hastaCuatri: 1 },
       { nombre: 'Final', hastaAnio: 2 },
@@ -105,7 +105,7 @@ describe('Plan · títulos por cuatrimestre', () => {
       { cod: 'D', nom: 'Materia D', anio: 2, cuatri: 2 },
     ],
     correlativas: [],
-  }
+  })
   const p2 = new Plan(def2)
 
   it('un título a mitad de año cuelga de su cuatrimestre', () => {
@@ -120,10 +120,12 @@ describe('Plan · títulos por cuatrimestre', () => {
   })
 
   it('hastaCuatri en el último cuatrimestre del año equivale al año completo', () => {
-    const p3 = new Plan({
-      ...def2,
-      titulos: [{ nombre: 'Final', hastaAnio: 2, hastaCuatri: 2 }],
-    })
+    const p3 = new Plan(
+      PlanDef.exigir({
+        ...def2.aJSON(),
+        titulos: [{ nombre: 'Final', hastaAnio: 2, hastaCuatri: 2 }],
+      }),
+    )
     expect(p3.anios[1].titulo).toBe('Final')
     expect(p3.anios[1].cuatris.every((q) => q.titulo === undefined)).toBe(true)
   })

@@ -8,8 +8,8 @@
 // Cada cambio sabe deshacerse solo (`deshacer`), y dice qué hay que guardar después —
 // así la UI no tiene que adivinar qué escritura corresponde a cada caso.
 
-import type { PlanDef, MateriaPlan } from '../data/model'
-import type { Borrador, MateriaEdit } from './editorPlan'
+import { Correlativa, type PlanDef, type MateriaPlan } from '../data/model'
+import { MateriaEdit, type Borrador } from './editorPlan'
 
 export type TipoCambio =
   | 'sin-publicar'
@@ -52,7 +52,7 @@ const ubic = (m: { anio: number; cuatri: number }): string => `${m.anio}° año 
  * Compara la versión publicada contra el borrador. Devuelve los cambios en orden de
  * lectura: primero la cabecera, después materias, correlativas y títulos.
  */
-export function diffPlanes(publicado: PlanDef | null, borrador: PlanDef): Cambio[] {
+function calcularCambios(publicado: PlanDef | null, borrador: PlanDef): Cambio[] {
   if (!publicado) {
     return [
       {
@@ -185,11 +185,6 @@ export function diffPlanes(publicado: PlanDef | null, borrador: PlanDef): Cambio
   return cambios
 }
 
-/** ¿Hay algo que publicar? */
-export function hayCambios(publicado: PlanDef | null, borrador: PlanDef): boolean {
-  return diffPlanes(publicado, borrador).some((c) => c.reversible)
-}
-
 /**
  * Convierte una materia publicada en una fila editable (para restaurar una borrada).
  * A propósito SIN `codOriginal`: esa marca hace que el guardado haga UPDATE sobre el
@@ -197,22 +192,22 @@ export function hayCambios(publicado: PlanDef | null, borrador: PlanDef): boolea
  * `codOriginal` undefined, el guardado hace upsert y la materia vuelve de verdad.
  */
 function aFila(m: MateriaPlan, orden: number): MateriaEdit {
-  return {
+  return new MateriaEdit({
     cod: m.cod,
     nom: m.nom,
     anio: m.anio,
     cuatri: m.cuatri,
-    opt: m.opt === true,
-    especial: m.especial === true,
+    opt: m.opt,
+    especial: m.especial,
     orden,
-  }
+  })
 }
 
 /**
  * Deshace UN cambio: devuelve el borrador como quedaría y qué hay que guardar.
  * Si el cambio no se puede deshacer, devuelve el borrador igual y `guardar: null`.
  */
-export function deshacerCambio(
+function revertir(
   borrador: Borrador,
   publicado: PlanDef,
   cambio: Cambio,
@@ -223,25 +218,20 @@ export function deshacerCambio(
   switch (cambio.tipo) {
     case 'cabecera':
       return {
-        borrador: {
-          ...borrador,
+        borrador: borrador.conCabecera({
           carrera: publicado.carrera,
           codigo: publicado.codigo,
           anio: publicado.anio,
-        },
+        }),
         guardar: { que: 'cabecera' },
       }
 
     case 'materia-nueva': {
       // se va la materia y, con ella, las correlativas que la mencionaban
       return {
-        borrador: {
-          ...borrador,
-          materias: borrador.materias.filter((m) => m.cod !== cod),
-          correlativas: borrador.correlativas.filter(
-            (c) => c.cod !== cod && c.requiere !== cod,
-          ),
-        },
+        borrador: borrador
+          .conMaterias(borrador.materias.filter((m) => m.cod !== cod))
+          .conCorrelativas(borrador.correlativas.filter((c) => !c.toca(cod))),
         guardar: { que: 'materia-borrar', cod },
       }
     }
@@ -251,7 +241,7 @@ export function deshacerCambio(
       if (!orig) return sinTocar
       const orden = borrador.materias.reduce((max, m) => Math.max(max, m.orden), -1) + 1
       return {
-        borrador: { ...borrador, materias: [...borrador.materias, aFila(orig, orden)] },
+        borrador: borrador.conMaterias([...borrador.materias, aFila(orig, orden)]),
         guardar: { que: 'materia', cod },
       }
     }
@@ -260,21 +250,19 @@ export function deshacerCambio(
       const orig = publicado.materias.find((m) => m.cod === cod)
       if (!orig) return sinTocar
       return {
-        borrador: {
-          ...borrador,
-          materias: borrador.materias.map((m) =>
+        borrador: borrador.conMaterias(
+          borrador.materias.map((m) =>
             m.cod === cod
-              ? {
-                  ...m,
+              ? m.con({
                   nom: orig.nom,
                   anio: orig.anio,
                   cuatri: orig.cuatri,
-                  opt: orig.opt === true,
-                  especial: orig.especial === true,
-                }
+                  opt: orig.opt,
+                  especial: orig.especial,
+                })
               : m,
           ),
-        },
+        ),
         guardar: { que: 'materia', cod },
       }
     }
@@ -282,12 +270,9 @@ export function deshacerCambio(
     case 'correlativa-nueva': {
       const [c1, c2] = cambio.cods
       return {
-        borrador: {
-          ...borrador,
-          correlativas: borrador.correlativas.filter(
-            (c) => !(c.cod === c1 && c.requiere === c2),
-          ),
-        },
+        borrador: borrador.conCorrelativas(
+          borrador.correlativas.filter((c) => !(c.cod === c1 && c.requiere === c2)),
+        ),
         guardar: { que: 'previas', cod: c1 },
       }
     }
@@ -298,18 +283,71 @@ export function deshacerCambio(
       return {
         borrador: existe
           ? borrador
-          : { ...borrador, correlativas: [...borrador.correlativas, { cod: c1, requiere: c2 }] },
+          : borrador.conCorrelativas([...borrador.correlativas, new Correlativa(c1, c2)]),
         guardar: { que: 'previas', cod: c1 },
       }
     }
 
     case 'titulos':
       return {
-        borrador: { ...borrador, titulos: publicado.titulos.map((t) => ({ ...t })) },
+        // los títulos son inmutables: alcanza con copiar el array, no hace falta clonar
+        borrador: borrador.conTitulos([...publicado.titulos]),
         guardar: { que: 'titulos' },
       }
 
     default:
       return sinTocar
+  }
+}
+
+
+/**
+ * La comparación entre lo que ven los alumnos y lo que el admin tiene a medio editar.
+ *
+ * No es un registro de acciones: es una COMPARACIÓN contra la foto publicada. Por eso
+ * sobrevive a recargar la página y es literalmente "esto es lo que va a cambiar para los
+ * alumnos", en vez de "esto es lo que toqué desde que abrí la pantalla".
+ *
+ * Sostiene los dos lados —la foto y el borrador editable— para que quien la use no tenga
+ * que acordarse de pasarlos en el orden correcto en cada llamada.
+ */
+export class Diff {
+  private readonly publicado: PlanDef | null
+  private readonly borrador: Borrador
+  private cache?: Cambio[]
+
+  constructor(publicado: PlanDef | null, borrador: Borrador) {
+    this.publicado = publicado
+    this.borrador = borrador
+  }
+
+  /** Los cambios, en orden de lectura. Se calcula una vez por instancia. */
+  get cambios(): Cambio[] {
+    this.cache ??= calcularCambios(this.publicado, this.borrador.aPlan())
+    return this.cache
+  }
+
+  /** Solo los que se pueden deshacer de a uno (el aviso "sin publicar" no cuenta). */
+  get reversibles(): Cambio[] {
+    return this.cambios.filter((c) => c.reversible)
+  }
+
+  /** ¿Hay algo que publicar? */
+  get hay(): boolean {
+    return this.reversibles.length > 0
+  }
+
+  get cuantos(): number {
+    return this.reversibles.length
+  }
+
+  /**
+   * Deshace UN cambio: devuelve el borrador como quedaría y qué escritura corresponde.
+   * Devolver el `guardar` es a propósito — así la UI no tiene que adivinar si lo que
+   * cambió fue una materia, sus previas o los títulos.
+   */
+  deshacer(cambio: Cambio): { borrador: Borrador; guardar: Guardado | null } {
+    if (!this.publicado) return { borrador: this.borrador, guardar: null }
+    return revertir(this.borrador, this.publicado, cambio)
   }
 }

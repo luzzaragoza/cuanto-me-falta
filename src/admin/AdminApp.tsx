@@ -7,23 +7,9 @@
 
 import { useEffect, useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
-import { entrarConGoogle, salir, useSession } from '../state/auth'
-import {
-  cargarPerfilAdmin,
-  cargarPlanesAdmin,
-  cargarUniversidades,
-  type PlanAdmin,
-  type Universidad,
-} from '../state/admin'
-import {
-  cupoDe,
-  decidirAcceso,
-  esSuper,
-  estadoPlan,
-  puedeEditar,
-  tieneCambiosSinPublicar,
-  type PerfilAdmin,
-} from '../lib/admin'
+import { Auth, useSession } from '../state/auth'
+import { repo, type UniversidadAdmin } from '../state/admin'
+import { SesionAdmin, type PlanAdmin } from '../lib/admin'
 import { EditorPlan } from './EditorPlan'
 
 const volverALaApp = (): void => {
@@ -39,9 +25,9 @@ const fecha = (iso: string | null): string => {
 
 export function AdminApp() {
   const session = useSession()
-  const [perfil, setPerfil] = useState<PerfilAdmin | null>(null)
+  const [sesion, setSesion] = useState<SesionAdmin | null>(null)
   const [planes, setPlanes] = useState<PlanAdmin[]>([])
-  const [unis, setUnis] = useState<Universidad[]>([])
+  const [unis, setUnis] = useState<UniversidadAdmin[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const [intento, setIntento] = useState(0)
@@ -51,17 +37,18 @@ export function AdminApp() {
   // el perfil se recarga con la sesión: entrar y salir cambian todo lo que se ve
   useEffect(() => {
     if (!session) {
-      setPerfil(null)
+      setSesion(null)
       setPlanes([])
       return
     }
     let vivo = true
     setError(null)
-    cargarPerfilAdmin(session.user.id)
+    repo
+      .cargarPerfil(session.user.id)
       .then(async (p) => {
         if (!vivo) return
-        setPerfil(p)
-        const [ps, us] = await Promise.all([cargarPlanesAdmin(p), cargarUniversidades()])
+        setSesion(p)
+        const [ps, us] = await Promise.all([repo.cargarPlanes(p), repo.cargarUniversidades()])
         if (!vivo) return
         setPlanes(ps)
         setUnis(us)
@@ -74,8 +61,11 @@ export function AdminApp() {
     }
   }, [session, intento])
 
-  const acceso = decidirAcceso(authHabilitado, session !== null, perfil)
+  const acceso = SesionAdmin.acceso(authHabilitado, session !== null, sesion)
   const nombreUni = (id: string): string => unis.find((u) => u.id === id)?.nombre ?? id
+  // El cupo es de la universidad (migración 006). Si todavía no llegó la fila, 0: mejor
+  // decir "no entra otro" y que la base desmienta, que ofrecer un botón que va a fallar.
+  const limiteUni = (id: string): number => unis.find((u) => u.id === id)?.limite_planes ?? 0
 
   return (
     <div className="adm">
@@ -96,12 +86,12 @@ export function AdminApp() {
             <div className="adm-quien">
               <span className="adm-mail">{session.user.email}</span>
               <span className="adm-linea2">
-                {perfil && (
-                  <span className={`adm-rol ${esSuper(perfil) ? 'super' : ''}`}>
-                    {esSuper(perfil) ? 'superadmin' : 'admin'}
+                {sesion && (
+                  <span className={`adm-rol ${sesion.esSuper ? 'super' : ''}`}>
+                    {sesion.esSuper ? 'superadmin' : 'admin'}
                   </span>
                 )}
-                <button className="adm-salir" onClick={() => void salir()}>
+                <button className="adm-salir" onClick={() => void Auth.salir()}>
                   Salir
                 </button>
               </span>
@@ -142,7 +132,7 @@ export function AdminApp() {
               Usá la cuenta habilitada para administrar planes — no la que usás para seguir tu
               propia carrera.
             </p>
-            <button className="btn" onClick={() => void entrarConGoogle()}>
+            <button className="btn" onClick={() => void Auth.entrarConGoogle()}>
               Entrar con Google
             </button>
           </div>
@@ -160,16 +150,16 @@ export function AdminApp() {
               administración. Si te corresponden, pedile a quien administra el sistema que te
               habilite para tu universidad.
             </p>
-            <button className="lnk" onClick={() => void salir()}>
+            <button className="lnk" onClick={() => void Auth.salir()}>
               Entrar con otra cuenta
             </button>
           </div>
         )}
 
-        {acceso === 'ok' && perfil && editando && (
+        {acceso === 'ok' && sesion && editando && (
           <EditorPlan
             planId={editando.planId}
-            puedeEditar={puedeEditar(perfil, editando.uni)}
+            puedeEditar={sesion.puedeEditar(editando.uni)}
             onVolver={() => {
               setEditando(null)
               setIntento((n) => n + 1) // la lista se recarga: pudo cambiar la versión publicada
@@ -177,7 +167,7 @@ export function AdminApp() {
           />
         )}
 
-        {acceso === 'ok' && perfil && !editando && (
+        {acceso === 'ok' && sesion && !editando && (
           <>
             {planes.length === 0 && (
               <div className="adm-card adm-vacio">
@@ -188,7 +178,7 @@ export function AdminApp() {
 
             {[...new Set(planes.map((p) => p.universidad_id))].map((uni) => {
               const suyos = planes.filter((p) => p.universidad_id === uni)
-              const cupo = cupoDe(perfil, uni, suyos.length)
+              const cupo = sesion.cupoEn(uni, suyos.length, limiteUni(uni))
               return (
                 <section className="adm-uni" key={uni}>
                   <div className="adm-uni-head">
@@ -198,7 +188,7 @@ export function AdminApp() {
 
                   <ul className="adm-planes">
                     {suyos.map((p) => {
-                      const pendiente = tieneCambiosSinPublicar(p.actualizado_at, p.publicado_at)
+                      const pendiente = p.tieneCambiosSinPublicar
                       return (
                         <li className="adm-plan" key={p.id}>
                           <div className="adm-plan-id">
@@ -212,7 +202,7 @@ export function AdminApp() {
                               className={`adm-pill ${p.version_publicada ? 'ok' : 'no'}`}
                               title="Versión que están viendo los alumnos"
                             >
-                              {estadoPlan(p.estado, p.version_publicada)}
+                              {p.etiquetaEstado}
                             </span>
                             {pendiente && (
                               <span
@@ -231,7 +221,7 @@ export function AdminApp() {
                               className="adm-volver"
                               onClick={() => setEditando({ planId: p.id, uni })}
                             >
-                              {puedeEditar(perfil, uni) ? 'Editar' : 'Ver'}
+                              {sesion.puedeEditar(uni) ? 'Editar' : 'Ver'}
                             </button>
                           </div>
                         </li>

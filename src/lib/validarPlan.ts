@@ -47,18 +47,13 @@ export interface Hallazgo {
   cods: string[]
 }
 
-/** Posición temporal de una materia: 0 = 1°año 1°cuatri, 1 = 1°año 2°cuatri, … */
-export function indiceCuatri(anio: number, cuatri: number): number {
-  return (anio - 1) * 2 + (cuatri - 1)
-}
-
 const vacio = (s: string | undefined): boolean => !s || !s.trim()
 
 /**
  * Valida un plan completo. Devuelve TODOS los hallazgos (errores y avisos), en orden
  * de lectura: primero lo estructural, después las correlativas, al final los títulos.
  */
-export function validarPlan(plan: PlanDef): Hallazgo[] {
+function revisar(plan: PlanDef): Hallazgo[] {
   const h: Hallazgo[] = []
   const err = (regla: Regla, mensaje: string, cods: string[] = []): void => {
     h.push({ regla, severidad: 'error', mensaje, cods })
@@ -125,7 +120,7 @@ export function validarPlan(plan: PlanDef): Hallazgo[] {
 
   // ── 2. Correlativas ─────────────────────────────────────────────────────
   const codigos = new Set(plan.materias.map((m) => m.cod))
-  const idx = new Map(plan.materias.map((m) => [m.cod, indiceCuatri(m.anio, m.cuatri)]))
+  const idx = new Map(plan.materias.map((m) => [m.cod, m.indice]))
   const opts = new Set(plan.materias.filter((m) => m.opt).map((m) => m.cod))
 
   const parejas = new Set<string>()
@@ -209,14 +204,40 @@ export function validarPlan(plan: PlanDef): Hallazgo[] {
   return h
 }
 
-/** Solo los errores (lo que impide publicar). */
-export function erroresDe(plan: PlanDef): Hallazgo[] {
-  return validarPlan(plan).filter((x) => x.severidad === 'error')
-}
+/**
+ * El resultado de revisar un plan: los hallazgos y las preguntas que se les hacen.
+ *
+ * Es un objeto y no tres funciones sueltas porque las tres —"¿qué encontraste?",
+ * "¿cuáles bloquean?", "¿se puede publicar?"— son preguntas sobre EL MISMO análisis,
+ * y antes cada una lo recalculaba desde cero: `esPublicable` llamaba a `erroresDe`, que
+ * llamaba a `validarPlan`. Acá se revisa una vez, en el constructor.
+ */
+export class Validacion {
+  readonly hallazgos: readonly Hallazgo[]
 
-/** ¿Se puede publicar? (no tiene errores; los avisos no bloquean) */
-export function esPublicable(plan: PlanDef): boolean {
-  return erroresDe(plan).length === 0
+  constructor(plan: PlanDef) {
+    this.hallazgos = revisar(plan)
+  }
+
+  /** Lo que impide publicar. */
+  get errores(): Hallazgo[] {
+    return this.hallazgos.filter((x) => x.severidad === 'error')
+  }
+
+  /** Lo raro que conviene mirar, pero no bloquea. */
+  get avisos(): Hallazgo[] {
+    return this.hallazgos.filter((x) => x.severidad === 'aviso')
+  }
+
+  /** ¿Se puede publicar? (no tiene errores; los avisos no bloquean) */
+  get esPublicable(): boolean {
+    return !this.hallazgos.some((x) => x.severidad === 'error')
+  }
+
+  /** Las reglas disparadas, en orden. Atajo para los tests. */
+  get reglas(): Regla[] {
+    return this.hallazgos.map((x) => x.regla)
+  }
 }
 
 /**

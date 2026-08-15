@@ -1,10 +1,10 @@
-import type { PlanDef } from '../model'
+import type { PlanJSON } from '../json'
 
 // UADE · Plan 1121 (2021) · Tecnicatura Universitaria en Desarrollo de Software.
 // Cargado a mano desde el plan oficial, puede tener errores. Carrera corta:
 // 3 años pero solo hasta el 1° cuatrimestre del 3° (5 cuatrimestres, 20 materias).
 // Título: Técnico Universitario en Desarrollo de Software (al terminar 3°).
-export const desarrolloSoftware: PlanDef = {
+export const desarrolloSoftware: PlanJSON = {
   id: 'uade-tec-desarrollo-software',
   universidad: 'uade',
   codigo: '1121',

@@ -1,4 +1,4 @@
-import { resolverConflicto, type Conflicto } from '../state/sync'
+import { Sync, type Conflicto } from '../state/sync'
 
 /**
  * Modal de conflicto del sync: la nube y la memoria local tienen progreso
@@ -19,14 +19,14 @@ export function SyncConflicto({ conflicto }: { conflicto: Conflicto }) {
         </p>
 
         <div className="conf-opts">
-          <button className="conf-opt" onClick={() => resolverConflicto('nube')}>
+          <button className="conf-opt" onClick={() => Sync.resolverConflicto('nube')}>
             <b>Usar el de la nube</b>
             <small>
               {conflicto.marcadasCuenta} materia{conflicto.marcadasCuenta === 1 ? '' : 's'} con
               carga · reemplaza la memoria local
             </small>
           </button>
-          <button className="conf-opt" onClick={() => resolverConflicto('local')}>
+          <button className="conf-opt" onClick={() => Sync.resolverConflicto('local')}>
             <b>Usar la memoria local</b>
             <small>
               {conflicto.marcadasLocal} materia{conflicto.marcadasLocal === 1 ? '' : 's'} con

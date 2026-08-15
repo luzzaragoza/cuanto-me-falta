@@ -15,56 +15,23 @@
 // Descartado: hacer el fetch bloqueante al arrancar. Le agrega latencia al 100% de las
 // visitas (y rompe el offline de la PWA) por un dato que casi nunca cambia.
 //
-// Este módulo es PURO en el sentido del repo: no conoce Supabase ni la red. Solo
-// localStorage (guardado) y el validador. La parte de I/O vive en `state/planesRemoto`.
+// `Registro` no conoce Supabase ni la red: solo localStorage y el validador. La parte
+// de I/O vive en `state/planesRemoto`.
 
-import type { PlanDef, Universidad } from './model'
-import { esPublicable, erroresDe } from '../lib/validarPlan'
+import { PlanDef, Universidad } from './model'
+import { Validacion } from '../lib/validarPlan'
 
 const CACHE_KEY = 'cmf-planes-cache'
 /** Subir esto invalida los cachés viejos de todos los dispositivos. */
 const CACHE_VERSION = 1
 
-export interface Registro {
-  universidades: Universidad[]
-  planes: PlanDef[]
-}
-
-interface CacheGuardado extends Registro {
-  v: number
-  at: string
-}
-
-function tieneStorage(): boolean {
-  return typeof localStorage !== 'undefined'
-}
+const hayStorage = (): boolean => typeof localStorage !== 'undefined'
 
 /**
- * Descarta lo que no se puede dibujar: planes que no pasan el validador y
- * universidades sin id. Un plan roto en el caché o en el backend NO llega a la UI
- * (mejor mostrar 3 carreras que una con las correlativas en círculo).
- */
-export function sanear(reg: Registro): Registro {
-  const planes = reg.planes.filter((p) => {
-    if (esPublicable(p)) return true
-    if (import.meta.env.DEV) {
-      console.warn(
-        `[planes] descarto "${p.carrera}" (${p.id}): ${erroresDe(p)
-          .map((e) => e.mensaje)
-          .join(' · ')}`,
-      )
-    }
-    return false
-  })
-  const universidades = reg.universidades.filter((u) => !!u.id && !!u.nombre)
-  return { universidades, planes }
-}
-
-/**
- * Serialización estable: ordena las CLAVES de cada objeto pero respeta el orden de
- * los arrays (en un plan, el orden de las materias es dato: es cómo se dibuja).
- * Hace falta porque los módulos TS del bundle y el JSON del backend traen las mismas
- * claves en distinto orden, y sin esto todo plan parecería siempre distinto.
+ * Serialización estable: ordena las CLAVES de cada objeto pero respeta el orden de los
+ * arrays (en un plan, el orden de las materias es dato: es cómo se dibuja). Hace falta
+ * porque los módulos TS del bundle y el JSON del backend traen las mismas claves en
+ * distinto orden, y sin esto todo plan parecería siempre distinto.
  */
 function estable(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(estable).join(',')}]`
@@ -79,111 +46,138 @@ function estable(v: unknown): string {
   return JSON.stringify(v) ?? 'null'
 }
 
-/** ¿Dos registros tienen los mismos datos? (para no reescribir el caché al vicio) */
-export function igualRegistro(a: Registro, b: Registro): boolean {
-  return estable(a) === estable(b)
-}
+/** El conjunto de datos académicos que la app tiene cargado: universidades y planes. */
+export class Registro {
+  readonly universidades: readonly Universidad[]
+  readonly planes: readonly PlanDef[]
 
-/** Caché del backend, o `null` si no hay, está vencido de versión o quedó ilegible. */
-export function leerCache(): Registro | null {
-  if (!tieneStorage()) return null
-  try {
-    const raw = localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    const c = JSON.parse(raw) as CacheGuardado
-    if (c?.v !== CACHE_VERSION || !Array.isArray(c.planes) || !Array.isArray(c.universidades)) {
+  constructor(universidades: readonly Universidad[], planes: readonly PlanDef[]) {
+    this.universidades = universidades
+    this.planes = planes
+  }
+
+  static vacio(): Registro {
+    return new Registro([], [])
+  }
+
+  get hayPlanes(): boolean {
+    return this.planes.length > 0
+  }
+
+  plan(id: string): PlanDef | undefined {
+    return this.planes.find((p) => p.id === id)
+  }
+
+  nombreUniversidad(id: string): string {
+    return this.universidades.find((u) => u.id === id)?.nombre ?? id
+  }
+
+  /**
+   * Descarta lo que no se puede dibujar: planes que no pasan el validador y
+   * universidades sin id. Un plan roto en el caché o en el backend NO llega a la UI
+   * (mejor mostrar 3 carreras que una con las correlativas en círculo).
+   */
+  saneado(): Registro {
+    const planes = this.planes.filter((p) => {
+      const v = new Validacion(p)
+      if (v.esPublicable) return true
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[planes] descarto "${p.carrera}" (${p.id}): ${v.errores.map((e) => e.mensaje).join(' · ')}`,
+        )
+      }
+      return false
+    })
+    const universidades = this.universidades.filter((u) => !!u.id && !!u.nombre)
+    return new Registro(universidades, planes)
+  }
+
+  /** La forma canónica: el JSON del cable, no las instancias. */
+  private comoJSON(): unknown {
+    return {
+      universidades: this.universidades.map((u) => u.aJSON()),
+      planes: this.planes.map((p) => p.aJSON()),
+    }
+  }
+
+  /**
+   * ¿Tiene los mismos datos que el otro? (para no reescribir el caché al vicio)
+   * Se comparan las formas CANÓNICAS: así el bundle y el backend, que arman sus objetos
+   * por caminos distintos, dicen lo mismo cuando los datos son los mismos.
+   */
+  igualA(otro: Registro): boolean {
+    return estable(this.comoJSON()) === estable(otro.comoJSON())
+  }
+
+  // ── El caché ────────────────────────────────────────────────────────────
+
+  /**
+   * Caché del backend, o `null` si no hay, está vencido de versión o quedó ilegible.
+   *
+   * ⚠️ Acá está la frontera más peligrosa del modelo: `JSON.parse` devuelve objetos
+   * PLANOS, no instancias. Sin `PlanDef.desde()` el caché entraría igual,
+   * `JSON.stringify` seguiría andando y el primer método que se llame explota — o peor,
+   * no explota y devuelve `undefined`. Todo lo que sale de acá pasa por la factory, y lo
+   * que no cierra se descarta (un caché viejo no puede tumbar la app: para eso está el
+   * bundle).
+   */
+  static leerCache(): Registro | null {
+    if (!hayStorage()) return null
+    try {
+      const raw = localStorage.getItem(CACHE_KEY)
+      if (!raw) return null
+      const c = JSON.parse(raw) as { v?: number; planes?: unknown; universidades?: unknown }
+      if (c?.v !== CACHE_VERSION || !Array.isArray(c.planes) || !Array.isArray(c.universidades)) {
+        return null
+      }
+      const planes = c.planes.map((p) => PlanDef.desde(p)).filter((p): p is PlanDef => p !== null)
+      const universidades = c.universidades
+        .map((u) => Universidad.desde(u))
+        .filter((u): u is Universidad => u !== null)
+      const reg = new Registro(universidades, planes).saneado()
+      return reg.hayPlanes ? reg : null
+    } catch {
       return null
     }
-    const reg = sanear({ universidades: c.universidades, planes: c.planes })
-    return reg.planes.length ? reg : null
-  } catch {
-    return null
-  }
-}
-
-/** Guarda el registro bajado del backend. Silencioso si el storage no está. */
-export function guardarCache(reg: Registro): void {
-  if (!tieneStorage()) return
-  try {
-    const c: CacheGuardado = { v: CACHE_VERSION, at: new Date().toISOString(), ...reg }
-    localStorage.setItem(CACHE_KEY, JSON.stringify(c))
-  } catch {
-    /* sin espacio o en modo privado: seguimos con el bundle, no es fatal */
-  }
-}
-
-export function borrarCache(): void {
-  if (!tieneStorage()) return
-  try {
-    localStorage.removeItem(CACHE_KEY)
-  } catch {
-    /* nada que hacer */
-  }
-}
-
-/**
- * Qué planes usa la app en ESTA carga: el caché si sirve, el bundle si no.
- * Se llama una sola vez, al importar `data/planes`.
- */
-export function registroInicial(bundle: Registro): Registro {
-  const cache = leerCache()
-  if (!cache) return bundle
-  // el caché manda, pero si no trae universidades reusamos las del bundle (los
-  // nombres son para mostrar; sin ellas la UI diría el slug)
-  return {
-    planes: cache.planes,
-    universidades: cache.universidades.length ? cache.universidades : bundle.universidades,
-  }
-}
-
-/**
- * Convierte una fila de la vista `plan_publicado` en un `PlanDef`, o `null` si la
- * forma no cierra. Es dato de red: se desconfía de todo, y las claves ausentes se
- * omiten (no se inventan `false`) para que quede idéntico a los módulos del bundle.
- */
-export function filaAPlan(fila: unknown): PlanDef | null {
-  if (typeof fila !== 'object' || fila === null) return null
-  const f = fila as Record<string, unknown>
-  const txt = (k: string): string | null => (typeof f[k] === 'string' && f[k] ? (f[k] as string) : null)
-  const id = txt('id')
-  const universidad = txt('universidad')
-  const codigo = txt('codigo')
-  const carrera = txt('carrera')
-  const anio = typeof f.anio === 'number' ? f.anio : null
-  if (!id || !universidad || !codigo || !carrera || anio === null) return null
-  if (!Array.isArray(f.materias) || !Array.isArray(f.correlativas) || !Array.isArray(f.titulos)) {
-    return null
   }
 
-  const materias: PlanDef['materias'] = []
-  for (const m of f.materias as Record<string, unknown>[]) {
-    if (typeof m?.cod !== 'string' || typeof m.nom !== 'string') return null
-    if (typeof m.anio !== 'number' || typeof m.cuatri !== 'number') return null
-    materias.push({
-      cod: m.cod,
-      nom: m.nom,
-      anio: m.anio,
-      cuatri: m.cuatri,
-      ...(m.opt === true ? { opt: true } : {}),
-      ...(m.especial === true ? { especial: true } : {}),
-    })
+  /**
+   * Guarda este registro como caché. Silencioso si el storage no está.
+   * Se escribe la forma CANÓNICA, no las instancias: el caché tiene que hablar
+   * exactamente el mismo idioma que el cable y que el bundle, si no `igualA` empezaría a
+   * ver diferencias donde no las hay.
+   */
+  guardarEnCache(): void {
+    if (!hayStorage()) return
+    try {
+      const c = { v: CACHE_VERSION, at: new Date().toISOString(), ...(this.comoJSON() as object) }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(c))
+    } catch {
+      /* sin espacio o en modo privado: seguimos con el bundle, no es fatal */
+    }
   }
 
-  const correlativas: PlanDef['correlativas'] = []
-  for (const c of f.correlativas as Record<string, unknown>[]) {
-    if (typeof c?.cod !== 'string' || typeof c.requiere !== 'string') return null
-    correlativas.push({ cod: c.cod, requiere: c.requiere })
+  static borrarCache(): void {
+    if (!hayStorage()) return
+    try {
+      localStorage.removeItem(CACHE_KEY)
+    } catch {
+      /* nada que hacer */
+    }
   }
 
-  const titulos: PlanDef['titulos'] = []
-  for (const t of f.titulos as Record<string, unknown>[]) {
-    if (typeof t?.nombre !== 'string' || typeof t.hastaAnio !== 'number') return null
-    titulos.push({
-      nombre: t.nombre,
-      hastaAnio: t.hastaAnio,
-      ...(typeof t.hastaCuatri === 'number' ? { hastaCuatri: t.hastaCuatri } : {}),
-    })
+  /**
+   * Qué planes usa la app en ESTA carga: el caché si sirve, el bundle si no.
+   * Se llama una sola vez, al importar `data/planes`.
+   */
+  static inicial(bundle: Registro): Registro {
+    const cache = Registro.leerCache()
+    if (!cache) return bundle
+    // el caché manda, pero si no trae universidades reusamos las del bundle (los
+    // nombres son para mostrar; sin ellas la UI diría el slug)
+    return new Registro(
+      cache.universidades.length ? cache.universidades : bundle.universidades,
+      cache.planes,
+    )
   }
-
-  return { id, universidad, codigo, anio, carrera, materias, correlativas, titulos }
 }

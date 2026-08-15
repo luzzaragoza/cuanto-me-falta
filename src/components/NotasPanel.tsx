@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { MateriaUbicada } from '../domain/Plan'
 import { store, useDB } from '../state/store'
-import { materiasEnEstado, nombreDe, promedio } from '../domain/selectors'
+import { avanceDe } from '../domain/Avance'
 import { useExitAnimation } from '../hooks/useExitAnimation'
 
 /** Agrupa las aprobadas por año, ordenadas por año ascendente. */
@@ -18,9 +18,10 @@ function porAnio(mats: MateriaUbicada[]): [number, MateriaUbicada[]][] {
 /** Drawer lateral para cargar/editar/borrar la nota de cierre de las materias aprobadas. */
 export function NotasPanel({ onClose }: { onClose: () => void }) {
   const db = useDB()
-  const aprobadas = materiasEnEstado(db, 'aprobada')
+  const av = avanceDe(db)
+  const aprobadas = av.materiasEn('aprobada')
   const grupos = porAnio(aprobadas)
-  const prom = promedio(db)
+  const prom = av.promedio
   const { closing, requestClose, onExitEnd } = useExitAnimation(onClose)
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export function NotasPanel({ onClose }: { onClose: () => void }) {
                   {mats.map((m) => (
                     <li className="nota-row" key={m.cod}>
                       <span className="nr-cod">{m.cod.startsWith('CUST') ? '—' : m.cod}</span>
-                      <span className="nr-nom">{nombreDe(db, m.cod)}</span>
+                      <span className="nr-nom">{av.nombreDe(m.cod)}</span>
                       <input
                         type="number"
                         min={1}

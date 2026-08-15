@@ -10,16 +10,8 @@
 
 import { supabase } from '../lib/supabase'
 import { PLANES_BUNDLE, UNIVERSIDADES_BUNDLE } from '../data/planes'
-import {
-  borrarCache,
-  filaAPlan,
-  guardarCache,
-  igualRegistro,
-  leerCache,
-  sanear,
-  type Registro,
-} from '../data/registro'
-import type { Universidad } from '../data/model'
+import { Registro } from '../data/registro'
+import { PlanDef, Universidad } from '../data/model'
 
 export type ResultadoRefresco =
   /** No hay credenciales de Supabase: la app es 100% local. */
@@ -39,7 +31,7 @@ const DEMORA_MS = 4000
 let corrido = false
 
 /** Baja los planes publicados y actualiza el caché si hace falta. */
-export async function refrescarPlanes(): Promise<ResultadoRefresco> {
+async function refrescar(): Promise<ResultadoRefresco> {
   if (!supabase) return 'sin-backend'
   try {
     const [rp, ru] = await Promise.all([
@@ -52,29 +44,33 @@ export async function refrescarPlanes(): Promise<ResultadoRefresco> {
     ])
     if (rp.error || ru.error) return avisar('error', rp.error?.message ?? ru.error?.message)
 
-    const planes = (rp.data ?? []).map(filaAPlan).filter((p) => p !== null)
+    // La vista devuelve un plan por fila con la forma de `PlanJSON`, así que la fila ES
+    // el JSON: entra derecho por la factory, que es la única frontera del modelo.
+    const planes = (rp.data ?? [])
+      .map((fila) => PlanDef.desde(fila))
+      .filter((p): p is PlanDef => p !== null)
     if (planes.length !== (rp.data ?? []).length) {
       avisar('error', 'alguna fila de plan_publicado no tiene la forma esperada')
     }
-    const universidades = (ru.data ?? []).filter(
-      (u): u is Universidad => typeof u?.id === 'string' && typeof u?.nombre === 'string',
-    )
+    const universidades = (ru.data ?? [])
+      .map((u) => Universidad.desde(u))
+      .filter((u): u is Universidad => u !== null)
 
-    const remoto = sanear({ universidades, planes })
-    if (remoto.planes.length === 0) return avisar('vacio', 'sin planes publicados')
+    const remoto = new Registro(universidades, planes).saneado()
+    if (!remoto.hayPlanes) return avisar('vacio', 'sin planes publicados')
 
-    const bundle: Registro = { universidades: UNIVERSIDADES_BUNDLE, planes: PLANES_BUNDLE }
+    const bundle = new Registro(UNIVERSIDADES_BUNDLE, PLANES_BUNDLE)
     // Si el backend dice exactamente lo que ya viaja en el bundle, no guardamos nada:
     // el caché solo existe cuando el backend DIVERGE del snapshot publicado. Así el día
     // que esto se estrena no cambia absolutamente nada del comportamiento actual.
-    if (igualRegistro(remoto, bundle)) {
-      if (leerCache()) borrarCache()
+    if (remoto.igualA(bundle)) {
+      if (Registro.leerCache()) Registro.borrarCache()
       return 'sin-cambios'
     }
-    const cache = leerCache()
-    if (cache && igualRegistro(remoto, cache)) return 'sin-cambios'
+    const cache = Registro.leerCache()
+    if (cache && remoto.igualA(cache)) return 'sin-cambios'
 
-    guardarCache(remoto)
+    remoto.guardarEnCache()
     if (import.meta.env.DEV) {
       console.info(`[planes] caché actualizado: ${remoto.planes.length} planes del backend`)
     }
@@ -85,11 +81,11 @@ export async function refrescarPlanes(): Promise<ResultadoRefresco> {
 }
 
 /** Programa el refresco para cuando el navegador esté tranquilo. No bloquea nada. */
-export function programarRefresco(): void {
+function programar(): void {
   if (corrido || !supabase) return
   corrido = true
   const lanzar = (): void => {
-    void refrescarPlanes()
+    void refrescar()
   }
   if (typeof requestIdleCallback === 'function') {
     requestIdleCallback(lanzar, { timeout: DEMORA_MS })
@@ -101,4 +97,22 @@ export function programarRefresco(): void {
 function avisar<T extends ResultadoRefresco>(r: T, detalle?: string): T {
   if (import.meta.env.DEV) console.warn(`[planes] ${r}${detalle ? `: ${detalle}` : ''}`)
   return r
+}
+
+/**
+ * El refresco de los datos académicos contra el backend (la mitad con I/O del ADR-11).
+ *
+ * Corre UNA vez por carga, en segundo plano, y solo deja el caché listo para la próxima
+ * vez que se abra la app: no reemplaza los planes en caliente.
+ */
+export class RefrescoDePlanes {
+  /** Baja los planes publicados y actualiza el caché si hace falta. */
+  static correr(): Promise<ResultadoRefresco> {
+    return refrescar()
+  }
+
+  /** Lo agenda para cuando el navegador esté tranquilo. No bloquea nada. */
+  static programar(): void {
+    programar()
+  }
 }

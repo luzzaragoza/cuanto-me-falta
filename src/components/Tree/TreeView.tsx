@@ -12,20 +12,12 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Plan, plan as planAlumno } from '../../domain/Plan'
-import { nombreDe } from '../../domain/selectors'
+import { avanceDe } from '../../domain/Avance'
 import { useDB } from '../../state/store'
 import type { Estado } from '../../types'
 import { useExitAnimation } from '../../hooks/useExitAnimation'
-import { track } from '../../lib/analytics'
-import {
-  layoutGrafo,
-  layoutMalla,
-  subgrafoRama,
-  NODEW,
-  type ArbolLayout,
-  type GrafoPlan,
-  type Punto,
-} from '../../lib/arbolLayout'
+import { Analytics } from '../../lib/analytics'
+import { Grafo, Layout, NODEW, type Punto } from '../../lib/arbolLayout'
 import { MateriaNode, type NodeRole } from './MateriaNode'
 import { BandNode } from './BandNode'
 import { TreeEdge, type TreeEdgeData } from './TreeEdge'
@@ -68,7 +60,7 @@ interface Rama {
   minX: number
 }
 
-function centrarRama(lay: ArbolLayout, malla: ArbolLayout): { dx: number; dy: number } {
+function centrarRama(lay: Layout, malla: Layout): { dx: number; dy: number } {
   const cods = Object.keys(lay.pos)
   const prom = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(xs.length, 1)
   const dx = prom(cods.map((c) => malla.pos[c]?.x ?? 0)) - prom(cods.map((c) => lay.pos[c].x))
@@ -114,7 +106,7 @@ export function TreeView({
   // memoizado: sin esto `db` sería un objeto nuevo en cada render y el useMemo de los
   // nodos se recalcularía siempre (y las advertencias de exhaustive-deps tendrían razón)
   const db = useMemo(
-    () => (estadosExternos ? { ...dbAlumno, states: estadosExternos } : dbAlumno),
+    () => (estadosExternos ? dbAlumno.conVistaDeEstados(estadosExternos) : dbAlumno),
     [dbAlumno, estadosExternos],
   )
   const [sel, setSel] = useState<string | null>(focus)
@@ -136,17 +128,14 @@ export function TreeView({
     [plan],
   )
 
-  const grafo: GrafoPlan = useMemo(
-    () => ({ materias: plan.def.materias, correlativas: plan.def.correlativas }),
-    [plan],
-  )
+  const grafo = useMemo(() => Grafo.dePlan(plan.def), [plan])
 
   // ── layout de la MALLA (una vez; ELK es async pero tarda ms) ──
   // grilla compacta nuestra + ruteo ELK: el mapa se recorre, no se explora
-  const [malla, setMalla] = useState<ArbolLayout | null>(null)
+  const [malla, setMalla] = useState<Layout | null>(null)
   useEffect(() => {
     let vivo = true
-    void layoutMalla(grafo).then((l) => {
+    void grafo.malla().then((l) => {
       if (vivo) setMalla(l)
     })
     return () => {
@@ -162,13 +151,13 @@ export function TreeView({
       setRama(null)
       return
     }
-    const sub = subgrafoRama(grafo, sel)
+    const sub = grafo.rama(sel)
     if (sub.materias.length <= 1) {
       setRama(null) // sin cadena no hay rama que juntar: queda la malla
       return
     }
     let vivo = true
-    void layoutGrafo(sub).then((lay) => {
+    void sub.layout().then((lay) => {
       if (!vivo) return
       const { dx, dy } = centrarRama(lay, malla)
       const pos: Rama['pos'] = {}
@@ -289,8 +278,8 @@ export function TreeView({
           // Con un plan externo (el editor) el nombre es el del PLAN QUE SE DIBUJA: si
           // no, `nombreDe` lo busca en el plan del alumno y muestra el nombre de otra
           // materia con el mismo código, o solo el código si no existe allá.
-          nom: planExterno ? (nombres.get(m.cod) ?? m.cod) : nombreDe(db, m.cod),
-          estado: db.states[m.cod] ?? 'pendiente',
+          nom: planExterno ? (nombres.get(m.cod) ?? m.cod) : avanceDe(db).nombreDe(m.cod),
+          estado: db.estado(m.cod),
           role: role(m.cod),
           tint: tint(m.cod),
           edit: !edicion
@@ -383,7 +372,7 @@ export function TreeView({
   }, [db, sel, malla, rama, enRama, grafo, bandas, plan, planExterno, nombres, edicion])
 
   const hint = sel
-    ? `${nombreDe(db, sel)} · necesitás ${up.size} · habilita ${down.size}${enRama ? ' · clic afuera para volver' : ''}`
+    ? `${avanceDe(db).nombreDe(sel)} · necesitás ${up.size} · habilita ${down.size}${enRama ? ' · clic afuera para volver' : ''}`
     : 'Tocá una materia para ver qué necesita y qué habilita'
 
   return (
@@ -449,7 +438,7 @@ export function TreeView({
               const next = sel === n.id ? null : n.id
               // ¿descubren solos el modo rama? (el foco que llega por URL/panel no
               // cuenta: ahí la rama se la dimos nosotros)
-              if (next && subgrafoRama(grafo, next).materias.length > 1) track('arbol_rama')
+              if (next && grafo.rama(next).materias.length > 1) Analytics.evento('arbol_rama')
               setSel(next)
             }}
             onPaneClick={() => setSel(null)}

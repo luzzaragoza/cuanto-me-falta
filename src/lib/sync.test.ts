@@ -1,26 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { DB } from '../types'
+import { DB, type DBJSON } from '../types'
 import { PLAN_POR_DEFECTO } from '../data/planes'
-import { storageKey } from '../state/planActivo'
-import {
-  CONSENT_VERSION,
-  contarMarcadas,
-  decidirMerge,
-  escribirLocal,
-  guardarBase,
-  guardarConsent,
-  hayProgreso,
-  huellaProgreso,
-  leerBase,
-  leerConsent,
-  leerDirty,
-  limpiarDirty,
-  marcarDirty,
-  merge3,
-  snapshotLocal,
-  totalMarcadas,
-  type RemoteData,
-} from './sync'
+import { PlanActivo } from '../state/planActivo'
+import { Base, Consentimiento, MarcaSinSubir, RemoteData } from './sync'
 
 // mismo localStorage en memoria que usa Store.test
 function fakeLocalStorage(): Storage {
@@ -41,19 +23,11 @@ beforeEach(() => {
   globalThis.localStorage = fakeLocalStorage()
 })
 
-const db = (over: Partial<DB> = {}): DB => ({
-  states: {},
-  notas: {},
-  optNames: {},
-  custom: [],
-  ...over,
-})
+const db = (over: Partial<DBJSON> = {}): DB =>
+  DB.desde({ states: {}, notas: {}, optNames: {}, custom: [], ...over })
 
-const remote = (planes: Record<string, DB>, planActivo = PLAN_POR_DEFECTO): RemoteData => ({
-  version: 1,
-  planActivo,
-  planes,
-})
+const remote = (planes: Record<string, DB>, planActivo = PLAN_POR_DEFECTO): RemoteData =>
+  new RemoteData(planActivo, planes)
 
 describe('sync · conteos', () => {
   it('contarMarcadas suma estados no-pendientes y notas', () => {
@@ -61,13 +35,12 @@ describe('sync · conteos', () => {
       states: { A: 'aprobada', B: 'cursando', C: 'pendiente' },
       notas: { A: 8 },
     })
-    expect(contarMarcadas(d)).toBe(3) // A, B + la nota de A
+    expect(d.marcadas).toBe(3) // A, B + la nota de A
   })
 
   it('hayProgreso ignora el perfil solo', () => {
-    expect(hayProgreso(remote({ x: db({ profile: { name: 'Luz', photo: '' } }) }))).toBe(false)
-    expect(hayProgreso(remote({ x: db({ states: { A: 'cursando' } }) }))).toBe(true)
-    expect(hayProgreso(null)).toBe(false)
+    expect(remote({ x: db({ profile: { name: 'Luz', photo: '' } }) }).hayProgreso).toBe(false)
+    expect(remote({ x: db({ states: { A: 'cursando' } }) }).hayProgreso).toBe(true)
   })
 
   it('totalMarcadas suma sobre todos los planes', () => {
@@ -75,7 +48,7 @@ describe('sync · conteos', () => {
       a: db({ states: { X: 'aprobada' } }),
       b: db({ states: { Y: 'cursando', Z: 'final' } }),
     })
-    expect(totalMarcadas(r)).toBe(3)
+    expect(r.totalMarcadas).toBe(3)
   })
 })
 
@@ -84,37 +57,37 @@ describe('sync · decidirMerge', () => {
   const vacio = remote({ p: db() })
 
   it('cuenta vacía + local con progreso → push', () => {
-    expect(decidirMerge(null, conProgreso)).toBe('push')
-    expect(decidirMerge(vacio, conProgreso)).toBe('push')
+    expect(RemoteData.decidir(null, conProgreso)).toBe('push')
+    expect(RemoteData.decidir(vacio, conProgreso)).toBe('push')
   })
 
   it('cuenta con progreso + local vacío → pull', () => {
-    expect(decidirMerge(conProgreso, vacio)).toBe('pull')
+    expect(RemoteData.decidir(conProgreso, vacio)).toBe('pull')
   })
 
   it('mismo progreso en ambos → nada', () => {
     const igual = remote({ p: db({ states: { A: 'aprobada' } }) })
-    expect(decidirMerge(conProgreso, igual)).toBe('nada')
+    expect(RemoteData.decidir(conProgreso, igual)).toBe('nada')
   })
 
   it('progreso distinto en ambos → conflicto (nunca pisar sin preguntar)', () => {
     const otro = remote({ p: db({ states: { A: 'cursando' } }) })
-    expect(decidirMerge(conProgreso, otro)).toBe('conflicto')
+    expect(RemoteData.decidir(conProgreso, otro)).toBe('conflicto')
   })
 
   it('el perfil no cuenta como diferencia (la foto puede ser por-dispositivo)', () => {
     const conPerfil = remote({
       p: db({ states: { A: 'aprobada' }, profile: { name: 'Luz', photo: 'x' } }),
     })
-    expect(decidirMerge(conProgreso, conPerfil)).toBe('nada')
+    expect(RemoteData.decidir(conProgreso, conPerfil)).toBe('nada')
   })
 
   it('las materias custom cuentan como progreso y como diferencia', () => {
     const conCustom = remote({ p: db({ custom: [{ cod: 'CUST1', nom: 'Extra', y: 1, c: 1 }] }) })
-    expect(hayProgreso(conCustom)).toBe(true)
+    expect(conCustom.hayProgreso).toBe(true)
     // solo-custom local vs cuenta vacía → sube; distinto custom en ambos lados → pregunta
-    expect(decidirMerge(vacio, conCustom)).toBe('push')
-    expect(decidirMerge(conProgreso, conCustom)).toBe('conflicto')
+    expect(RemoteData.decidir(vacio, conCustom)).toBe('push')
+    expect(RemoteData.decidir(conProgreso, conCustom)).toBe('conflicto')
   })
 })
 
@@ -123,29 +96,29 @@ describe('sync · cambios sin subir (dirty)', () => {
   const vacio = remote({ p: db() })
 
   it('la marca va y viene por localStorage', () => {
-    expect(leerDirty()).toBeNull()
-    marcarDirty('user-1')
-    expect(leerDirty()).toBe('user-1')
-    limpiarDirty()
-    expect(leerDirty()).toBeNull()
+    expect(MarcaSinSubir.de()).toBeNull()
+    MarcaSinSubir.poner('user-1')
+    expect(MarcaSinSubir.de()).toBe('user-1')
+    MarcaSinSubir.limpiar()
+    expect(MarcaSinSubir.de()).toBeNull()
   })
 
   it('con cambios sin subir, un borrado local NO se resucita con pull: gana lo local', () => {
     // el caso "Reiniciar todo + F5 antes del push": local vacío pero más nuevo
-    expect(decidirMerge(conProgreso, vacio, true)).toBe('push')
-    expect(decidirMerge(conProgreso, vacio, false)).toBe('pull')
+    expect(RemoteData.decidir(conProgreso, vacio, true)).toBe('push')
+    expect(RemoteData.decidir(conProgreso, vacio, false)).toBe('pull')
   })
 
   it('con cambios sin subir e igual progreso, flushea lo pendiente (push)', () => {
     // ej.: cambió solo el perfil y refrescó antes del debounce
     const igual = remote({ p: db({ states: { A: 'aprobada' } }) })
-    expect(decidirMerge(conProgreso, igual, true)).toBe('push')
-    expect(decidirMerge(conProgreso, igual, false)).toBe('nada')
+    expect(RemoteData.decidir(conProgreso, igual, true)).toBe('push')
+    expect(RemoteData.decidir(conProgreso, igual, false)).toBe('nada')
   })
 
   it('el conflicto sigue preguntando aunque haya cambios sin subir', () => {
     const otro = remote({ p: db({ states: { A: 'cursando' } }) })
-    expect(decidirMerge(conProgreso, otro, true)).toBe('conflicto')
+    expect(RemoteData.decidir(conProgreso, otro, true)).toBe('conflicto')
   })
 })
 
@@ -155,43 +128,43 @@ describe('sync · base de última sincronización (no preguntar en cada disposit
   const avanceLocal = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 9 } }) })
 
   it('la base va y viene por localStorage, y es por cuenta', () => {
-    expect(leerBase('user-1')).toBeNull()
-    guardarBase('user-1', comun)
-    expect(leerBase('user-1')?.huella).toBe(huellaProgreso(comun))
-    expect(leerBase('user-2')).toBeNull() // la base de otra cuenta no vale
+    expect(Base.leer('user-1')).toBeNull()
+    Base.guardar('user-1', comun)
+    expect(Base.leer('user-1')?.huella).toBe(comun.huella)
+    expect(Base.leer('user-2')).toBeNull() // la base de otra cuenta no vale
   })
 
   it('guardarBase guarda la data completa y leerBase la devuelve (habilita merge3)', () => {
-    guardarBase('user-1', comun)
-    expect(leerBase('user-1')?.data?.planes.p.states.A).toBe('aprobada')
+    Base.guardar('user-1', comun)
+    expect(Base.leer('user-1')?.data?.planes.p.states.A).toBe('aprobada')
   })
 
   it('solo la nube avanzó desde la última sincronización → pull, sin preguntar', () => {
-    expect(decidirMerge(avanceNube, comun, false, huellaProgreso(comun))).toBe('pull')
+    expect(RemoteData.decidir(avanceNube, comun, false, comun.huella)).toBe('pull')
   })
 
   it('solo lo local avanzó (p.ej. offline) → push, sin preguntar', () => {
-    expect(decidirMerge(comun, avanceLocal, false, huellaProgreso(comun))).toBe('push')
+    expect(RemoteData.decidir(comun, avanceLocal, false, comun.huella)).toBe('push')
   })
 
   it('avanzaron los dos a la vez → sigue preguntando (algo se puede perder)', () => {
-    expect(decidirMerge(avanceNube, avanceLocal, false, huellaProgreso(comun))).toBe('conflicto')
+    expect(RemoteData.decidir(avanceNube, avanceLocal, false, comun.huella)).toBe('conflicto')
   })
 
   it('sin base (1ª vez de la cuenta en este dispositivo) → pregunta, como siempre', () => {
-    expect(decidirMerge(avanceNube, avanceLocal, false, null)).toBe('conflicto')
+    expect(RemoteData.decidir(avanceNube, avanceLocal, false, null)).toBe('conflicto')
   })
 
   it('la huella es canónica: el orden de inserción no inventa diferencias', () => {
     const unOrden = remote({ p: db({ states: { A: 'aprobada', B: 'cursando' } }) })
     const otroOrden = remote({ p: db({ states: { B: 'cursando', A: 'aprobada' } }) })
-    expect(huellaProgreso(unOrden)).toBe(huellaProgreso(otroOrden))
-    expect(decidirMerge(unOrden, otroOrden)).toBe('nada')
+    expect(unOrden.huella).toBe(otroOrden.huella)
+    expect(RemoteData.decidir(unOrden, otroOrden)).toBe('nada')
   })
 
   it('un pendiente explícito o un plan presente-pero-vacío no cuentan en la huella', () => {
     const conRuido = remote({ p: db({ states: { A: 'aprobada', Z: 'pendiente' } }), q: db() })
-    expect(huellaProgreso(conRuido)).toBe(huellaProgreso(comun))
+    expect(conRuido.huella).toBe(comun.huella)
   })
 })
 
@@ -201,7 +174,7 @@ describe('sync · merge3 (avanzaron los dos: fusionar sin perder nada)', () => {
   it('cambios en materias distintas se fusionan: cada lado aporta lo suyo', () => {
     const local = remote({ p: db({ states: { A: 'aprobada', B: 'cursando' }, notas: { A: 8 } }) })
     const nube = remote({ p: db({ states: { A: 'aprobada', C: 'final' }, notas: { A: 8, C: 7 } }) })
-    const f = merge3(base, local, nube)!
+    const f = base.fusionar(local, nube)!
     expect(f.planes.p.states).toEqual({ A: 'aprobada', B: 'cursando', C: 'final' })
     expect(f.planes.p.notas).toEqual({ A: 8, C: 7 })
   })
@@ -209,18 +182,18 @@ describe('sync · merge3 (avanzaron los dos: fusionar sin perder nada)', () => {
   it('la misma materia tocada distinto en los dos lados → null (conflicto real)', () => {
     const local = remote({ p: db({ states: { A: 'cursando' } }) })
     const nube = remote({ p: db({ states: { A: 'final' } }) })
-    expect(merge3(base, local, nube)).toBeNull()
+    expect(base.fusionar(local, nube)).toBeNull()
   })
 
   it('la misma materia tocada IGUAL en los dos lados no es conflicto', () => {
     const cambio = { states: { A: 'aprobada' as const, B: 'cursando' as const }, notas: { A: 8 } }
-    expect(merge3(base, remote({ p: db(cambio) }), remote({ p: db(cambio) }))!.planes.p.states.B).toBe('cursando')
+    expect(base.fusionar(remote({ p: db(cambio) }), remote({ p: db(cambio) }))!.planes.p.states.B).toBe('cursando')
   })
 
   it('borrar en un lado y no tocar en el otro queda borrado (nada resucita)', () => {
     const local = remote({ p: db({ notas: { A: 8 } }) }) // desmarcó A acá
     const nube = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 8, B: 9 } }) }) // y allá sumó una nota
-    const f = merge3(base, local, nube)!
+    const f = base.fusionar(local, nube)!
     expect(f.planes.p.states.A).toBeUndefined()
     expect(f.planes.p.notas).toEqual({ A: 8, B: 9 })
   })
@@ -229,14 +202,14 @@ describe('sync · merge3 (avanzaron los dos: fusionar sin perder nada)', () => {
     const aBase = { states: { A: 'aprobada' as const }, notas: { A: 8 } }
     const local = remote({ p: db({ ...aBase, custom: [{ cod: 'X1', nom: 'Extra local', y: 1, c: 1 }] }) })
     const nube = remote({ p: db({ ...aBase, custom: [{ cod: 'X2', nom: 'Extra nube', y: 2, c: 1 }] }) })
-    const f = merge3(base, local, nube)!
+    const f = base.fusionar(local, nube)!
     expect(f.planes.p.custom.map((m) => m.cod).sort()).toEqual(['X1', 'X2'])
   })
 
   it('un plan que solo existe de un lado viaja entero a la fusión', () => {
     const local = remote({ p: base.planes.p, q: db({ states: { Q1: 'cursando' } }) })
     const nube = remote({ p: db({ states: { A: 'aprobada' }, notas: { A: 8, Z: 10 } }) })
-    const f = merge3(base, local, nube)!
+    const f = base.fusionar(local, nube)!
     expect(f.planes.q.states.Q1).toBe('cursando')
     expect(f.planes.p.notas.Z).toBe(10)
   })
@@ -244,10 +217,10 @@ describe('sync · merge3 (avanzaron los dos: fusionar sin perder nada)', () => {
 
 describe('sync · snapshot y escritura local', () => {
   it('snapshotLocal levanta el progreso de todos los planes guardados', () => {
-    localStorage.setItem(storageKey(PLAN_POR_DEFECTO), JSON.stringify(db({ states: { A: 'aprobada' } })))
+    localStorage.setItem(PlanActivo.claveDe(PLAN_POR_DEFECTO), JSON.stringify(db({ states: { A: 'aprobada' } })))
     localStorage.setItem('plan-uade-lic-gestion-ti-v3', JSON.stringify(db({ notas: { B: 9 } })))
 
-    const snap = snapshotLocal()
+    const snap = RemoteData.local()
     expect(snap.planes[PLAN_POR_DEFECTO].states.A).toBe('aprobada')
     expect(snap.planes['uade-lic-gestion-ti'].notas.B).toBe(9)
     expect(snap.planActivo).toBe(PLAN_POR_DEFECTO)
@@ -258,7 +231,7 @@ describe('sync · snapshot y escritura local', () => {
       { 'uade-lic-gestion-ti': db({ states: { X: 'final' } }) },
       'uade-lic-gestion-ti',
     )
-    escribirLocal(r)
+    r.escribirLocal()
     const guardado = JSON.parse(localStorage.getItem('plan-uade-lic-gestion-ti-v3')!)
     expect(guardado.states.X).toBe('final')
     expect(localStorage.getItem('cmf-plan-activo')).toBe('uade-lic-gestion-ti')
@@ -266,40 +239,40 @@ describe('sync · snapshot y escritura local', () => {
 
   it('escribirLocal conserva el perfil local si el remoto no trae uno', () => {
     localStorage.setItem(
-      storageKey(PLAN_POR_DEFECTO),
-      JSON.stringify(db({ profile: { name: 'Luz', photo: 'foto' } })),
+      PlanActivo.claveDe(PLAN_POR_DEFECTO),
+      JSON.stringify(db({ profile: { name: 'Luz', photo: 'foto' } }).aJSON()),
     )
-    escribirLocal(remote({ [PLAN_POR_DEFECTO]: db({ states: { A: 'aprobada' } }) }))
-    const guardado = JSON.parse(localStorage.getItem(storageKey(PLAN_POR_DEFECTO))!)
+    remote({ [PLAN_POR_DEFECTO]: db({ states: { A: 'aprobada' } }) }).escribirLocal()
+    const guardado = JSON.parse(localStorage.getItem(PlanActivo.claveDe(PLAN_POR_DEFECTO))!)
     expect(guardado.states.A).toBe('aprobada')
     expect(guardado.profile.name).toBe('Luz') // no se perdió
   })
 
   it('el consentimiento se guarda, entra al snapshot y viaja con escribirLocal', () => {
-    expect(leerConsent()).toBeNull()
-    expect(snapshotLocal().consentimiento).toBeUndefined()
+    expect(Consentimiento.leer()).toBeNull()
+    expect(RemoteData.local().consentimiento).toBeUndefined()
 
-    const c = guardarConsent()
-    expect(c.version).toBe(CONSENT_VERSION)
-    expect(leerConsent()?.version).toBe(CONSENT_VERSION)
-    expect(snapshotLocal().consentimiento?.version).toBe(CONSENT_VERSION)
+    const c = Consentimiento.aceptar()
+    expect(c.version).toBe(Consentimiento.VERSION)
+    expect(Consentimiento.leer()?.version).toBe(Consentimiento.VERSION)
+    expect(RemoteData.local().consentimiento?.version).toBe(Consentimiento.VERSION)
 
     // otro dispositivo: baja la data remota y adopta el consentimiento que viene en ella
-    const snap = snapshotLocal()
+    const snap = RemoteData.local()
     globalThis.localStorage = fakeLocalStorage() // "dispositivo nuevo"
-    expect(leerConsent()).toBeNull()
-    escribirLocal(snap)
-    expect(leerConsent()?.version).toBe(CONSENT_VERSION)
+    expect(Consentimiento.leer()).toBeNull()
+    snap.escribirLocal()
+    expect(Consentimiento.leer()?.version).toBe(Consentimiento.VERSION)
   })
 
   it('ida y vuelta: snapshot → escribir → mismo snapshot', () => {
     localStorage.setItem(
-      storageKey(PLAN_POR_DEFECTO),
+      PlanActivo.claveDe(PLAN_POR_DEFECTO),
       JSON.stringify(db({ states: { A: 'aprobada', B: 'cursando' }, notas: { A: 10 } })),
     )
-    const snap = snapshotLocal()
+    const snap = RemoteData.local()
     localStorage.clear()
-    escribirLocal(snap)
-    expect(decidirMerge(snap, snapshotLocal())).toBe('nada')
+    snap.escribirLocal()
+    expect(RemoteData.decidir(snap, RemoteData.local())).toBe('nada')
   })
 })

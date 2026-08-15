@@ -1,5 +1,5 @@
-import type { PlanDef, Universidad } from '../model'
-import { registroInicial } from '../registro'
+import { PlanDef, Universidad } from '../model'
+import { Registro } from '../registro'
 import { ingInformatica } from './ing-informatica'
 import { gestionTecnologia } from './gestion-tecnologia'
 import { desarrolloSoftware } from './desarrollo-software'
@@ -13,23 +13,27 @@ import { iaCienciaDatos } from './ia-ciencia-datos'
 // levanta del caché y eso es lo que se usa. Ver `src/data/registro.ts` (ADR-11).
 
 /** Universidades del bundle (piso y fallback). */
-export const UNIVERSIDADES_BUNDLE: Universidad[] = [{ id: 'uade', nombre: 'UADE' }]
+export const UNIVERSIDADES_BUNDLE: Universidad[] = [new Universidad('uade', 'UADE')]
 
-/** Planes del bundle (piso y fallback). El orden es el del selector de carrera. */
+/**
+ * Planes del bundle (piso y fallback). El orden es el del selector de carrera.
+ *
+ * Los módulos de al lado son literales JSON: acá cruzan la frontera y se vuelven
+ * objetos. Se usa `exigir()` y no `desde()` a propósito — un plan del repo mal formado
+ * es un bug del repo, y tiene que reventar al importar (o sea, en CI), no degradarse
+ * en silencio como sí corresponde con lo que llega del backend.
+ */
 export const PLANES_BUNDLE: PlanDef[] = [
   ingInformatica,
   gestionTecnologia,
   desarrolloSoftware,
   iaCienciaDatos,
-]
+].map((j) => PlanDef.exigir(j))
 
-const registro = registroInicial({
-  universidades: UNIVERSIDADES_BUNDLE,
-  planes: PLANES_BUNDLE,
-})
+const registro = Registro.inicial(new Registro(UNIVERSIDADES_BUNDLE, PLANES_BUNDLE))
 
-export const UNIVERSIDADES: Universidad[] = registro.universidades
-export const PLANES: PlanDef[] = registro.planes
+export const UNIVERSIDADES: readonly Universidad[] = registro.universidades
+export const PLANES: readonly PlanDef[] = registro.planes
 
 /** Plan que se muestra por defecto (y clave de storage legacy — no cambiar el id). */
 export const PLAN_POR_DEFECTO = ingInformatica.id
@@ -40,7 +44,7 @@ export function getPlanDef(id: string): PlanDef {
     PLANES.find((p) => p.id === id) ??
     PLANES.find((p) => p.id === PLAN_POR_DEFECTO) ??
     PLANES[0] ??
-    ingInformatica
+    PLANES_BUNDLE[0]
   )
 }
 

@@ -37,7 +37,7 @@ function urlConAuth(): boolean {
 }
 
 /** Inyecta el script del proveedor. Llamar una sola vez, al arrancar la app. */
-export function initAnalytics(): void {
+function iniciarAnalytics(): void {
   if (!inCliente() || esLocal()) return
 
   // Aterrizando de un redirect de OAuth, la pageview inicial registraría la URL
@@ -130,7 +130,7 @@ function flushPendientes(): void {
  * No-op si no hay analytics configurado o si corre en local. Nunca rompe la UI.
  * En dev loguea a la consola para poder verificar la instrumentación sin proveedor.
  */
-export function track(name: string, data?: Props): void {
+function emitirEvento(name: string, data?: Props): void {
   if (import.meta.env.DEV) console.debug('[track]', name, data ?? {})
   if (!inCliente() || esLocal()) return
   if (provider !== 'umami' && provider !== 'plausible') return
@@ -147,16 +147,16 @@ export function track(name: string, data?: Props): void {
  * por usuario, con un flag en localStorage: la 1ª materia que marca, y cuando llega a 5
  * (el umbral de "activado" del plan comercial). `marcadas` = materias no-pendientes.
  */
-export function trackActivacion(marcadas: number): void {
+function emitirActivacion(marcadas: number): void {
   if (!inCliente()) return
   try {
     if (marcadas >= 1 && !localStorage.getItem('cmf-ev-primera')) {
       localStorage.setItem('cmf-ev-primera', '1')
-      track('primera_materia')
+      emitirEvento('primera_materia')
     }
     if (marcadas >= 5 && !localStorage.getItem('cmf-ev-activado')) {
       localStorage.setItem('cmf-ev-activado', '1')
-      track('activado')
+      emitirEvento('activado')
     }
   } catch {
     /* noop */
@@ -172,10 +172,10 @@ export function trackActivacion(marcadas: number): void {
  *   quién, aparte de instalarla, la abre. La diferencia entre ambas = instalan
  *   pero no vuelven.
  */
-export function trackPwa(): void {
+function emitirPwa(): void {
   if (!inCliente()) return
   try {
-    window.addEventListener('appinstalled', () => track('pwa_instalada'))
+    window.addEventListener('appinstalled', () => emitirEvento('pwa_instalada'))
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as { standalone?: boolean }).standalone === true
@@ -186,7 +186,7 @@ export function trackPwa(): void {
     // contar una vez. Si hay que re-medir de nuevo, subir el número.
     if (standalone && !localStorage.getItem('cmf-ev-pwa2')) {
       localStorage.setItem('cmf-ev-pwa2', '1')
-      track('pwa_abierta')
+      emitirEvento('pwa_abierta')
     }
   } catch {
     /* noop */
@@ -219,7 +219,7 @@ export type SesionDecision = {
 }
 
 /** Lógica pura. Fechas 'YYYY-MM-DD' → la comparación lexicográfica es cronológica. */
-export function decidirSesion(hoy: string, s: SesionEstado): SesionDecision {
+function decidirLaSesion(hoy: string, s: SesionEstado): SesionDecision {
   const esAlta = s.primerDia === null
   const primerDia = s.primerDia ?? hoy
   const nuevoDia = s.ultimoDia !== hoy // primera apertura de la jornada
@@ -234,11 +234,11 @@ export function decidirSesion(hoy: string, s: SesionEstado): SesionDecision {
 }
 
 /** Aplica `decidirSesion` contra localStorage y dispara los eventos. Llamar al arrancar. */
-export function trackSesion(): void {
+function emitirSesion(): void {
   if (!inCliente()) return
   try {
     const hoy = new Date().toISOString().slice(0, 10)
-    const d = decidirSesion(hoy, {
+    const d = decidirLaSesion(hoy, {
       primerDia: localStorage.getItem('cmf-primer-dia'),
       ultimoDia: localStorage.getItem('cmf-dia'),
       yaRegreso: !!localStorage.getItem('cmf-regreso'),
@@ -247,9 +247,55 @@ export function trackSesion(): void {
     if (d.nuevoPrimerDia) localStorage.setItem('cmf-primer-dia', d.nuevoPrimerDia)
     if (d.nuevoUltimoDia) localStorage.setItem('cmf-dia', d.nuevoUltimoDia)
     if (d.marcarRegreso) localStorage.setItem('cmf-regreso', '1')
-    if (d.diaActivo) track('dia_activo')
-    if (d.regreso) track('regreso')
+    if (d.diaActivo) emitirEvento('dia_activo')
+    if (d.regreso) emitirEvento('regreso')
   } catch {
     /* noop */
+  }
+}
+
+/**
+ * La analítica de la app: eventos anónimos, nunca datos personales.
+ *
+ * Es toda `static` porque es un único canal contra un único proveedor cargado en la
+ * página — no hay dos analíticas conviviendo, así que instanciarla no significaría nada.
+ * La clase existe para que la puerta de entrada sea UNA y explícita, en vez de cinco
+ * funciones sueltas importadas desde media app.
+ *
+ * Regla dura que no cambia: **la analítica jamás tira abajo la UI.** Todo lo de adentro
+ * va envuelto en try/catch, y es no-op sin proveedor configurado o corriendo en local.
+ */
+export class Analytics {
+  /** Inyecta el script del proveedor. Se llama una sola vez, al arrancar la app. */
+  static iniciar(): void {
+    iniciarAnalytics()
+  }
+
+  /** Registra un evento custom, agnóstico del proveedor. */
+  static evento(name: string, data?: Props): void {
+    emitirEvento(name, data)
+  }
+
+  /** Hitos de ACTIVACIÓN (la métrica del Gate A): 1ª materia marcada y llegar a 5. */
+  static activacion(marcadas: number): void {
+    emitirActivacion(marcadas)
+  }
+
+  /** Señales de instalación como app: `pwa_instalada` y `pwa_abierta`. */
+  static pwa(): void {
+    emitirPwa()
+  }
+
+  /** Día activo y regreso (retención). Se llama al arrancar. */
+  static sesion(): void {
+    emitirSesion()
+  }
+
+  /**
+   * La decisión pura de qué eventos de sesión corresponden hoy. Separada del I/O para
+   * poder probar el calendario sin tocar localStorage ni el reloj.
+   */
+  static decidirSesion(hoy: string, s: SesionEstado): SesionDecision {
+    return decidirLaSesion(hoy, s)
   }
 }

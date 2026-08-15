@@ -24,23 +24,22 @@ const n = (v) => (v === undefined || v === null ? 'null' : String(Number(v)))
 const b = (v) => (v ? 'true' : 'false')
 
 const server = await createServer({ logLevel: 'error', server: { middlewareMode: true } })
-let planes, universidades, esPublicable, erroresDe
+let planes, universidades, Validacion
 try {
   const reg = await server.ssrLoadModule('/src/data/planes/index.ts')
   const val = await server.ssrLoadModule('/src/lib/validarPlan.ts')
   planes = reg.PLANES
   universidades = reg.UNIVERSIDADES
-  esPublicable = val.esPublicable
-  erroresDe = val.erroresDe
+  Validacion = val.Validacion
 } finally {
   await server.close()
 }
 
 // Ningún plan roto entra al seed: es el mismo validador que usan CI y el editor.
-const roto = planes.find((p) => !esPublicable(p))
+const roto = planes.find((p) => !new Validacion(p).esPublicable)
 if (roto) {
   console.error(`✗ ${roto.carrera} no pasa el validador:`)
-  for (const e of erroresDe(roto)) console.error(`   [${e.regla}] ${e.mensaje}`)
+  for (const e of new Validacion(roto).errores) console.error(`   [${e.regla}] ${e.mensaje}`)
   process.exit(1)
 }
 

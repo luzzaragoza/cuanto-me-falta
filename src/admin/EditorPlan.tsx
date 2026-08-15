@@ -12,49 +12,14 @@
 //    además con un retardo corto mientras escribís.
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { TituloPlan } from '../data/model'
+import { TituloPlan } from '../data/model'
 import { Plan } from '../domain/Plan'
-import {
-  agregarMateria,
-  alternarPrevia,
-  aniosDe,
-  aPlanDef,
-  codigoRepetido,
-  dependenDe,
-  editarMateria,
-  elegiblesComoPosterior,
-  elegiblesComoPrevia,
-  guardable,
-  moverMateria,
-  ordenar,
-  previasDe,
-  quitarMateria,
-  renombrarCodigo,
-  resumen,
-  type Borrador,
-  type MateriaEdit,
-} from '../lib/editorPlan'
+import type { Borrador, MateriaEdit } from '../lib/editorPlan'
 import { useExitAnimation } from '../hooks/useExitAnimation'
-import { validarPlan } from '../lib/validarPlan'
-import {
-  deshacerCambio,
-  diffPlanes,
-  type Cambio,
-  type Guardado as QueGuardar,
-} from '../lib/cambios'
+import { Validacion } from '../lib/validarPlan'
+import { Diff, type Cambio, type Guardado as QueGuardar } from '../lib/cambios'
 import type { PlanDef } from '../data/model'
-import {
-  borrarMateria,
-  cargarBorrador,
-  cargarPublicado,
-  guardarCabecera,
-  cargarVersiones,
-  guardarMateria,
-  guardarPrevias,
-  guardarTitulos,
-  publicarPlan,
-  revertirPlan,
-} from '../state/admin'
+import { repo } from '../state/admin'
 
 // El árbol vive en su propio chunk (pesa: trae el motor de layout). Solo lo baja quien
 // entra a cargar correlativas.
@@ -109,11 +74,11 @@ export function EditorPlan({
 
   useEffect(() => {
     let vivo = true
-    cargarBorrador(planId)
+    repo.cargarBorrador(planId)
       .then((bo) => {
         if (!vivo) return
         setB(bo)
-        return Promise.all([cargarVersiones(planId), cargarPublicado(planId)]).then(
+        return Promise.all([repo.cargarVersiones(planId), repo.cargarPublicado(planId)]).then(
           ([vs, pub]) => {
             if (!vivo) return
             setVersiones(vs)
@@ -143,18 +108,17 @@ export function EditorPlan({
   /** Guarda una materia si ya tiene lo mínimo; si no, no molesta. */
   const guardarFila = useCallback(
     (m: MateriaEdit) => {
-      if (!guardable(m)) return
+      if (!m.guardable) return
       void correr(async () => {
-        await guardarMateria(planId, m)
+        await repo.guardarMateria(planId, m)
         // tras el primer guardado deja de ser nueva y su código pasa a ser el de la base
         setB((prev) =>
           prev
-            ? {
-                ...prev,
-                materias: prev.materias.map((x) =>
-                  x.orden === m.orden ? { ...x, nueva: false, codOriginal: m.cod.trim() } : x,
+            ? prev.conMaterias(
+                prev.materias.map((x) =>
+                  x.orden === m.orden ? x.con({ nueva: false, codOriginal: m.cod.trim() }) : x,
                 ),
-              }
+              )
             : prev,
         )
       })
@@ -182,29 +146,27 @@ export function EditorPlan({
 
   // Qué cambió contra lo que ven los alumnos. Se recalcula con cada edición: es una
   // comparación, no un registro de acciones, así que no puede quedar desincronizada.
-  const cambios = useMemo(
-    () => (b ? diffPlanes(publicado, aPlanDef(b)) : []),
-    [publicado, b],
-  )
-  const reversibles = cambios.filter((c) => c.reversible)
+  const diff = useMemo(() => (b ? new Diff(publicado, b) : null), [publicado, b])
+  const cambios = diff?.cambios ?? []
+  const reversibles = diff?.reversibles ?? []
 
   // ── derivados del árbol-editor ──
   // Van ACÁ, antes de los early returns: los hooks no pueden ser condicionales.
   // El plan se rearma en cada cambio a propósito: así el esqueleto del árbol se
   // actualiza mientras conectás.
-  const planDelBorrador = useMemo(() => (b ? new Plan(aPlanDef(b)) : null), [b])
+  const planDelBorrador = useMemo(() => (b ? new Plan(b.aPlan()) : null), [b])
   const elegiblesAhora = useMemo(() => {
     if (!b) return new Set<string>()
     if (!objetivo) return new Set(b.materias.filter((m) => m.cod.trim()).map((m) => m.cod))
     const lista =
       direccion === 'anterior'
-        ? elegiblesComoPrevia(b, objetivo)
-        : elegiblesComoPosterior(b, objetivo)
+        ? b.elegiblesComoPrevia(objetivo)
+        : b.elegiblesComoPosterior(objetivo)
     return new Set(lista.map((m) => m.cod))
   }, [b, objetivo, direccion])
   const conectadasAhora = useMemo(() => {
     if (!b || !objetivo) return new Set<string>()
-    return new Set(direccion === 'anterior' ? previasDe(b, objetivo) : dependenDe(b, objetivo))
+    return new Set(direccion === 'anterior' ? b.previasDe(objetivo) : b.dependenDe(objetivo))
   }, [b, objetivo, direccion])
 
   if (error && !b) {
@@ -220,32 +182,32 @@ export function EditorPlan({
   }
   if (!b) return <div className="adm-card adm-vacio">Abriendo el plan…</div>
 
-  const plan = aPlanDef(b)
-  const hallazgos = validarPlan(plan)
-  const errores = hallazgos.filter((h) => h.severidad === 'error')
-  const avisos = hallazgos.filter((h) => h.severidad === 'aviso')
-  const cuenta = resumen(b)
-  const anios = aniosDe(b)
-  const materias = ordenar(b.materias)
+  const plan = b.aPlan()
+  const revision = new Validacion(plan)
+  const errores = revision.errores
+  const avisos = revision.avisos
+  const cuenta = b.resumen
+  const anios = b.anios
+  const materias = b.ordenadas
 
   const cambiar = (nuevo: Borrador): void => setB(nuevo)
 
   /** Escribe lo que corresponda después de deshacer un cambio. */
   const persistir = async (bo: Borrador, g: QueGuardar | null): Promise<void> => {
     if (!g) return
-    if (g.que === 'materia-borrar') return borrarMateria(planId, g.cod)
-    if (g.que === 'previas') return guardarPrevias(planId, g.cod, previasDe(bo, g.cod))
-    if (g.que === 'titulos') return guardarTitulos(planId, bo.titulos)
+    if (g.que === 'materia-borrar') return repo.borrarMateria(planId, g.cod)
+    if (g.que === 'previas') return repo.guardarPrevias(planId, g.cod, bo.previasDe(g.cod))
+    if (g.que === 'titulos') return repo.guardarTitulos(planId, bo.titulos)
     if (g.que === 'cabecera') {
-      return guardarCabecera(planId, { codigo: bo.codigo, anio: bo.anio, carrera: bo.carrera })
+      return repo.guardarCabecera(planId, { codigo: bo.codigo, anio: bo.anio, carrera: bo.carrera })
     }
     const m = bo.materias.find((x) => x.cod === g.cod)
-    if (m) return guardarMateria(planId, m)
+    if (m) return repo.guardarMateria(planId, m)
   }
 
   const deshacer = (c: Cambio): void => {
     if (!publicado) return
-    const { borrador: r, guardar } = deshacerCambio(b, publicado, c)
+    const { borrador: r, guardar } = new Diff(publicado, b).deshacer(c)
     cambiar(r)
     void correr(() => persistir(r, guardar))
   }
@@ -258,7 +220,7 @@ export function EditorPlan({
     void correr(async () => {
       let actual = b
       for (const c of reversibles) {
-        const { borrador: r, guardar } = deshacerCambio(actual, publicado, c)
+        const { borrador: r, guardar } = new Diff(publicado, actual).deshacer(c)
         actual = r
         await persistir(actual, guardar)
       }
@@ -360,7 +322,7 @@ export function EditorPlan({
                   <div className="ed-cuatri" key={cuatri}>
                     <div className="ed-cuatri-tit">{cuatri}° cuatrimestre</div>
                     {filas.map((m) => {
-                      const dup = codigoRepetido(b, m.cod, m.orden)
+                      const dup = b.codigoRepetido(m.cod, m.orden)
                       return (
                         <div className={`ed-fila ${dup ? 'dup' : ''}`} key={m.orden}>
                           <input
@@ -369,8 +331,8 @@ export function EditorPlan({
                             placeholder="código"
                             disabled={!puedeEditar}
                             aria-label="Código de la materia"
-                            onChange={(e) => cambiar(renombrarCodigo(b, m.orden, e.target.value))}
-                            onBlur={() => guardarFila({ ...m, cod: m.cod })}
+                            onChange={(e) => cambiar(b.renombrarCodigo(m.orden, e.target.value))}
+                            onBlur={() => guardarFila(m)}
                           />
                           <input
                             className="ed-nom"
@@ -379,9 +341,9 @@ export function EditorPlan({
                             disabled={!puedeEditar}
                             aria-label="Nombre de la materia"
                             onChange={(e) => {
-                              const nuevo = editarMateria(b, m.orden, { nom: e.target.value })
+                              const nuevo = b.editarMateria(m.orden, { nom: e.target.value })
                               cambiar(nuevo)
-                              guardarConDemora({ ...m, nom: e.target.value })
+                              guardarConDemora(m.con({ nom: e.target.value }))
                             }}
                             onBlur={() => guardarFila(m)}
                           />
@@ -392,7 +354,7 @@ export function EditorPlan({
                             aria-label="Año y cuatrimestre"
                             onChange={(e) => {
                               const [a, c] = e.target.value.split('-').map(Number)
-                              const { borrador, rotas } = moverMateria(b, m.orden, a, c)
+                              const { borrador, rotas } = b.moverMateria(m.orden, a, c)
                               if (
                                 rotas.length &&
                                 !confirm(
@@ -404,7 +366,7 @@ export function EditorPlan({
                                 return
                               }
                               cambiar(borrador)
-                              guardarFila({ ...m, anio: a, cuatri: c })
+                              guardarFila(m.con({ anio: a, cuatri: c }))
                             }}
                           >
                             {opcionesCuatri.map((o) => (
@@ -418,9 +380,9 @@ export function EditorPlan({
                             disabled={!puedeEditar}
                             title="Optativa: el alumno le pone el nombre. No participa de correlativas."
                             onClick={() => {
-                              const nuevo = editarMateria(b, m.orden, { opt: !m.opt })
+                              const nuevo = b.editarMateria(m.orden, { opt: !m.opt })
                               cambiar(nuevo)
-                              guardarFila({ ...m, opt: !m.opt })
+                              guardarFila(m.con({ opt: !m.opt }))
                             }}
                           >
                             OPT
@@ -430,9 +392,9 @@ export function EditorPlan({
                             disabled={!puedeEditar}
                             title="Se habilita por requisito especial (por año o % de carrera), no por correlativa."
                             onClick={() => {
-                              const nuevo = editarMateria(b, m.orden, { especial: !m.especial })
+                              const nuevo = b.editarMateria(m.orden, { especial: !m.especial })
                               cambiar(nuevo)
-                              guardarFila({ ...m, especial: !m.especial })
+                              guardarFila(m.con({ especial: !m.especial }))
                             }}
                           >
                             ESP
@@ -442,14 +404,14 @@ export function EditorPlan({
                             disabled={!puedeEditar}
                             title="Borrar la materia"
                             onClick={() => {
-                              const dependen = dependenDe(b, m.cod)
+                              const dependen = b.dependenDe(m.cod)
                               const aviso = dependen.length
                                 ? `\n\nOjo: ${dependen.join(', ')} la tienen como previa. Esas correlativas se borran también.`
                                 : ''
                               if (!confirm(`¿Borrar ${m.cod || 'esta materia'}?${aviso}`)) return
-                              cambiar(quitarMateria(b, m.orden))
+                              cambiar(b.quitarMateria(m.orden))
                               if (m.codOriginal) {
-                                void correr(() => borrarMateria(planId, m.codOriginal!))
+                                void correr(() => repo.borrarMateria(planId, m.codOriginal!))
                               }
                             }}
                           >
@@ -462,7 +424,7 @@ export function EditorPlan({
                     {puedeEditar && (
                       <button
                         className="ed-add"
-                        onClick={() => cambiar(agregarMateria(b, anio, cuatri).borrador)}
+                        onClick={() => cambiar(b.agregarMateria(anio, cuatri).borrador)}
                       >
                         + materia
                       </button>
@@ -476,7 +438,7 @@ export function EditorPlan({
             <button
               className="ed-add-anio"
               onClick={() =>
-                cambiar(agregarMateria(b, (anios.at(-1) ?? 0) + 1, 1).borrador)
+                cambiar(b.agregarMateria((anios.at(-1) ?? 0) + 1, 1).borrador)
               }
             >
               + agregar {(anios.at(-1) ?? 0) + 1}° año
@@ -509,7 +471,7 @@ export function EditorPlan({
             {materias
               .filter((m) => m.cod.trim() && !m.opt)
               .map((m) => {
-                const n = previasDe(b, m.cod).length
+                const n = b.previasDe(m.cod).length
                 const primerCuatri = m.anio === (anios[0] ?? 1) && m.cuatri === 1
                 return (
                   <button
@@ -517,7 +479,7 @@ export function EditorPlan({
                     className={`ed-rc ${n ? 'con' : primerCuatri ? 'na' : 'sin'}`}
                     title={
                       n
-                        ? `Necesita: ${previasDe(b, m.cod)
+                        ? `Necesita: ${b.previasDe(m.cod)
                             .map((c) => b.materias.find((x) => x.cod === c)?.nom ?? c)
                             .join(', ')}`
                         : primerCuatri
@@ -558,11 +520,11 @@ export function EditorPlan({
                 aria-label="Nombre del título"
                 onChange={(e) => {
                   const titulos = b.titulos.map((x, j) =>
-                    j === i ? { ...x, nombre: e.target.value } : x,
+                    j === i ? new TituloPlan(e.target.value, x.hastaAnio, x.hastaCuatri) : x,
                   )
-                  cambiar({ ...b, titulos })
+                  cambiar(b.conTitulos(titulos))
                 }}
-                onBlur={() => void correr(() => guardarTitulos(planId, b.titulos))}
+                onBlur={() => void correr(() => repo.guardarTitulos(planId, b.titulos))}
               />
               <select
                 className="ed-mover ed-hasta"
@@ -572,12 +534,10 @@ export function EditorPlan({
                 onChange={(e) => {
                   const [a, c] = e.target.value.split('-').map(Number)
                   const titulos: TituloPlan[] = b.titulos.map((x, j) =>
-                    j === i
-                      ? { nombre: x.nombre, hastaAnio: a, ...(c ? { hastaCuatri: c } : {}) }
-                      : x,
+                    j === i ? new TituloPlan(x.nombre, a, c || undefined) : x,
                   )
-                  cambiar({ ...b, titulos })
-                  void correr(() => guardarTitulos(planId, titulos))
+                  cambiar(b.conTitulos(titulos))
+                  void correr(() => repo.guardarTitulos(planId, titulos))
                 }}
               >
                 {(anios.length ? anios : [1]).flatMap((a) => [
@@ -597,8 +557,8 @@ export function EditorPlan({
                 disabled={!puedeEditar}
                 onClick={() => {
                   const titulos = b.titulos.filter((_, j) => j !== i)
-                  cambiar({ ...b, titulos })
-                  void correr(() => guardarTitulos(planId, titulos))
+                  cambiar(b.conTitulos(titulos))
+                  void correr(() => repo.guardarTitulos(planId, titulos))
                 }}
               >
                 ✕
@@ -609,10 +569,7 @@ export function EditorPlan({
             <button
               className="ed-add"
               onClick={() =>
-                cambiar({
-                  ...b,
-                  titulos: [...b.titulos, { nombre: '', hastaAnio: anios.at(-1) ?? 1 }],
-                })
+                cambiar(b.conTitulos([...b.titulos, new TituloPlan('', anios.at(-1) ?? 1)]))
               }
             >
               + título
@@ -714,9 +671,9 @@ export function EditorPlan({
                 setPublicando(true)
                 void (async () => {
                   try {
-                    const v = await publicarPlan(planId, nota.trim() || null)
+                    const v = await repo.publicar(planId, nota.trim() || null)
                     setNota('')
-                    setVersiones(await cargarVersiones(planId))
+                    setVersiones(await repo.cargarVersiones(planId))
                     setError(null)
                     alert(`Publicado como versión ${v}.`)
                   } catch (e) {
@@ -750,8 +707,8 @@ export function EditorPlan({
                         return
                       }
                       void correr(async () => {
-                        await revertirPlan(planId, v.version)
-                        setVersiones(await cargarVersiones(planId))
+                        await repo.revertir(planId, v.version)
+                        setVersiones(await repo.cargarVersiones(planId))
                       })
                     }}
                   >
@@ -827,9 +784,9 @@ export function EditorPlan({
                   // la arista es la misma en las dos direcciones: cambia quién es el dueño
                   const [dueno, previa] =
                     direccion === 'anterior' ? [objetivo, cod] : [cod, objetivo]
-                  const nuevo = alternarPrevia(b, dueno, previa)
+                  const nuevo = b.alternarPrevia(dueno, previa)
                   cambiar(nuevo)
-                  void correr(() => guardarPrevias(planId, dueno, previasDe(nuevo, dueno)))
+                  void correr(() => repo.guardarPrevias(planId, dueno, nuevo.previasDe(dueno)))
                 },
               }}
             />
