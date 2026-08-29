@@ -128,6 +128,8 @@ export function TreeView({
     if (enEdicion) setSel(focus)
   }, [focus, enEdicion])
   const flowRef = useRef<ReactFlowInstance | null>(null)
+  /** El lienzo, para encuadrar contra SU ancho y no contra el de la ventana. */
+  const lienzo = useRef<HTMLDivElement | null>(null)
   const [flowListo, setFlowListo] = useState(false)
 
   // Nombres del plan QUE SE DIBUJA. En el editor no se puede usar `nombreDe`: ese busca
@@ -418,7 +420,7 @@ export function TreeView({
         </button>
       </div>
 
-      <div className={`tv-canvas${enRama ? ' rama' : ''}`}>
+      <div className={`tv-canvas${enRama ? ' rama' : ''}`} ref={lienzo}>
         {!malla ? (
           <div className="tv-cargando" aria-label="Calculando el árbol…" />
         ) : (
@@ -462,11 +464,18 @@ export function TreeView({
             onPaneClick={() => setSel(null)}
             onInit={(inst: ReactFlowInstance) => {
               flowRef.current = inst
-              // abrir "cerca" mostrando el arranque del plan, a un zoom cómodo
-              const vw = window.innerWidth
+              // Se abre "cerca": arriba de todo (1° año, que es donde empieza la carrera)
+              // y a un zoom que deje leer las tarjetas, en vez de una vista de pájaro.
+              const vw = lienzo.current?.clientWidth ?? window.innerWidth
               const cols = vw < 560 ? 2.6 : 4.6
               const zoom = Math.min(1, Math.max(0.55, vw / (cols * (NODEW + 22))))
-              inst.setViewport({ x: 24, y: 24, zoom })
+              // Y CENTRADO si el plan entra a lo ancho. Acá había un `x: 24` fijo, así que
+              // un plan más angosto que la pantalla quedaba pegado al margen izquierdo con
+              // todo el vacío a la derecha (lo vio Luz, 12-ago). Si NO entra, se sigue
+              // arrancando por la izquierda: ahí el margen no es vacío, es plan que se
+              // alcanza paneando, y empezar por el medio sería empezar por la mitad de 1°.
+              const ancho = malla.width * zoom
+              inst.setViewport({ x: ancho < vw ? (vw - ancho) / 2 : 24, y: 24, zoom })
               setFlowListo(true)
             }}
             translateExtent={translateExtent}
