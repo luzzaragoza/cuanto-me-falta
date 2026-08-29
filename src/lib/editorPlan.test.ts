@@ -78,6 +78,35 @@ describe('Borrador · correlativas que no se pueden cargar mal', () => {
     expect(base().elegiblesComoPrevia('A')).toEqual([])
   })
 
+  // Lo que le falta a quien intenta conectar dos materias y "no pasa nada": el motivo.
+  describe('por qué no se puede conectar', () => {
+    it('explica el orden temporal en cada dirección', () => {
+      const b = base()
+      // C (2°/1°C) no puede tener como previa a algo posterior…
+      expect(b.porQueNo('A', 'C', 'anterior')).toContain('antes')
+      // …ni habilitar algo anterior
+      expect(b.porQueNo('C', 'A', 'posterior')).toContain('después')
+    })
+
+    it('distingue "mismo cuatrimestre" de "está después"', () => {
+      const b = base().conMaterias([...base().materias, mat('D', 'Materia D', 1, 1, 4)])
+      expect(b.porQueNo('A', 'D', 'anterior')).toContain('mismo cuatrimestre')
+    })
+
+    it('no inventa un motivo cuando sí se puede', () => {
+      expect(base().porQueNo('C', 'A', 'anterior')).toBeNull()
+    })
+
+    it('la misma materia consigo misma lo dice claro', () => {
+      expect(base().porQueNo('A', 'A', 'anterior')).toBe('Es la misma materia.')
+    })
+
+    it('una optativa dice que lo es, y por qué (RN-05)', () => {
+      expect(base().porQueNo('C', 'OPT', 'anterior')).toContain('optativa')
+      expect(base().porQueNo('OPT', 'C', 'posterior')).toContain('optativa')
+    })
+  })
+
   it('poner y sacar una previa es la misma acción', () => {
     let b = base().alternarPrevia('C', 'A')
     expect(b.previasDe('C')).toEqual(['A'])

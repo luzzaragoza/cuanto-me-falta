@@ -50,6 +50,18 @@ export interface Hallazgo {
 const vacio = (s: string | undefined): boolean => !s || !s.trim()
 
 /**
+ * Cómo se nombra una materia en los mensajes: el nombre, con el código al lado.
+ *
+ * Los avisos decían solo el código (`3.4.071 ← 3.4.069`) y eso únicamente lo entiende
+ * quien ya se sabe el plan de memoria. Va el nombre para poder leerlo, y el código para
+ * poder encontrarlo en la grilla.
+ */
+function comoSeLlama(plan: PlanDef, cod: string): string {
+  const m = plan.materias.find((x) => x.cod === cod)
+  return m?.nom?.trim() ? `${m.nom} (${cod})` : cod
+}
+
+/**
  * Valida un plan completo. Devuelve TODOS los hallazgos (errores y avisos), en orden
  * de lectura: primero lo estructural, después las correlativas, al final los títulos.
  */
@@ -130,21 +142,26 @@ function revisar(plan: PlanDef): Hallazgo[] {
       const cuál = !codigos.has(c.cod) ? c.cod : c.requiere
       err(
         'correlativa-inexistente',
-        `La correlativa ${c.cod} ← ${c.requiere} menciona ${cuál}, que no existe en el plan.`,
+        `${comoSeLlama(plan, c.cod)} pide ${cuál}, que no existe en el plan.`,
         [c.cod, c.requiere],
       )
       continue
     }
     if (c.cod === c.requiere) {
-      err('auto-correlativa', `${c.cod} figura como correlativa de sí misma.`, [c.cod])
+      err(
+        'auto-correlativa',
+        `${comoSeLlama(plan, c.cod)} figura como correlativa de sí misma.`,
+        [c.cod],
+      )
       continue
     }
     const k = `${c.cod}<-${c.requiere}`
     if (parejas.has(k)) {
-      err('correlativa-duplicada', `La correlativa ${c.cod} ← ${c.requiere} está repetida.`, [
-        c.cod,
-        c.requiere,
-      ])
+      err(
+        'correlativa-duplicada',
+        `${comoSeLlama(plan, c.cod)} tiene dos veces la misma previa: ${comoSeLlama(plan, c.requiere)}.`,
+        [c.cod, c.requiere],
+      )
       continue
     }
     parejas.add(k)
@@ -155,18 +172,24 @@ function revisar(plan: PlanDef): Hallazgo[] {
     if (idx.get(c.requiere)! >= idx.get(c.cod)!) {
       err(
         'correlativa-no-anterior',
-        `${c.cod} pide ${c.requiere}, que no está en un cuatrimestre anterior. Revisá el año o el cuatrimestre de alguna de las dos.`,
+        `${comoSeLlama(plan, c.cod)} pide ${comoSeLlama(plan, c.requiere)}, que no está en un cuatrimestre anterior. Revisá el año o el cuatrimestre de alguna de las dos.`,
         [c.cod, c.requiere],
       )
     }
 
     // RN-05: las optativas se habilitan por la oferta anual, no por correlativas.
-    // Si un plan futuro necesita una optativa con previas, esto obliga a decidirlo
-    // a conciencia (hay código en StatePopover que las exime del aviso de previas).
+    //
+    // Se evaluó relajarlo a aviso (12-ago), porque hay universidades que sí encadenan sus
+    // optativas. Se descartó por una razón concreta del lado del ALUMNO: `StatePopover`
+    // exime a las optativas del aviso de previas —una optativa es un slot que el alumno
+    // renombra, así que no sabemos cuál eligió—, con lo cual un plan con optativas
+    // encadenadas cargaría bien pero al alumno nunca se le avisarían esas previas. Mejor
+    // una regla dura y honesta que una que se cumple a medias. Si alguna universidad lo
+    // necesita, se revisa junto con esa exención.
     if (opts.has(c.cod) || opts.has(c.requiere)) {
       err(
         'optativa-en-correlativas',
-        `La correlativa ${c.cod} ← ${c.requiere} involucra una optativa. Las optativas no participan de las correlativas.`,
+        `${comoSeLlama(plan, c.cod)} y ${comoSeLlama(plan, c.requiere)}: una de las dos es optativa, y las optativas no participan de las correlativas.`,
         [c.cod, c.requiere],
       )
     }

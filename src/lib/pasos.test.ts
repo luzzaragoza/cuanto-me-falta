@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { Borrador, MateriaEdit } from './editorPlan'
-import { Validacion } from './validarPlan'
 import { Correlativa, TituloPlan } from '../data/model'
 import { Pasos } from './pasos'
 
@@ -21,26 +20,20 @@ function sano(): Borrador {
   })
 }
 
-const pasosDe = (b: Borrador, sinPendientes = false): Pasos =>
-  new Pasos(b, new Validacion(b.aPlan()), sinPendientes)
+const pasosDe = (b: Borrador): Pasos => new Pasos(b)
 
 describe('Pasos · dónde estás y qué falta', () => {
-  it('un plan sano tiene los tres pasos, en orden', () => {
+  // Publicar NO es un paso: fue el tercero por un rato y salió mal (brillaba "acá estás"
+  // mientras la persona seguía en otra pestaña, y abría un panel encima de los otros dos).
+  // Es algo que se hace cuando ya terminaste, así que es un botón aparte.
+  it('son DOS pasos: los de la carga', () => {
     const l = pasosDe(sano()).lista
-    expect(l.map((p) => p.n)).toEqual([1, 2, 3])
-    expect(l.map((p) => p.titulo)).toEqual([
-      'Cargá las materias',
-      'Marcá qué necesita cada una',
-      'Revisá y publicá',
-    ])
+    expect(l.map((p) => p.n)).toEqual([1, 2])
+    expect(l.map((p) => p.titulo)).toEqual(['Cargá las materias', 'Marcá qué necesita cada una'])
   })
 
   it('cada paso lleva a su pestaña', () => {
-    expect(pasosDe(sano()).lista.map((p) => p.pestania)).toEqual([
-      'estructura',
-      'correlativas',
-      'titulos',
-    ])
+    expect(pasosDe(sano()).lista.map((p) => p.destino)).toEqual(['estructura', 'correlativas'])
   })
 })
 
@@ -116,53 +109,6 @@ describe('Pasos · paso 2, las correlativas', () => {
   })
 })
 
-describe('Pasos · paso 3, publicar', () => {
-  // Un plan recién creado dispara el error "no tiene ninguna materia". Es cierto, pero
-  // como PASO 3 es ruido: no empezaste, no está roto. Arrancar con una alarma roja
-  // desalienta y no dice nada que el paso 1 no diga mejor.
-  it('un plan vacío NO muestra errores: muestra que todavía no empezaste', () => {
-    const vacio = new Borrador({
-      id: 'p',
-      universidad: 'u',
-      codigo: '1',
-      anio: 2026,
-      carrera: 'Carrera',
-      materias: [],
-      correlativas: [],
-      titulos: [],
-    })
-    const p3 = pasosDe(vacio).lista[2]
-    expect(p3.estado).toBe('pendiente')
-    expect(p3.detalle).toBe('Cuando termines de cargar')
-  })
-
-  it('con errores queda bloqueado y dice cuántos', () => {
-    const roto = sano().alternarPrevia('A', 'C') // previa posterior en el tiempo
-    const p3 = pasosDe(roto).lista[2]
-    expect(p3.estado).toBe('bloqueado')
-    expect(p3.detalle).toContain('1 error')
-  })
-
-  it('sin errores, está listo para publicar', () => {
-    const p3 = pasosDe(sano()).lista[2]
-    expect(p3.estado).toBe('enCurso')
-    expect(p3.detalle).toBe('Listo para publicar')
-  })
-
-  it('si ya se publicó y no hay cambios, está hecho', () => {
-    const p3 = pasosDe(sano(), true).lista[2]
-    expect(p3.estado).toBe('listo')
-    expect(p3.detalle).toBe('Los alumnos ya ven esta versión')
-  })
-
-  it('los avisos no bloquean, pero se cuentan', () => {
-    const sinTitulos = sano().conTitulos([])
-    const p3 = pasosDe(sinTitulos).lista[2]
-    expect(p3.estado).toBe('enCurso')
-    expect(p3.detalle).toContain('aviso')
-  })
-})
-
 describe('Pasos · en cuál conviene estar', () => {
   it('el actual es el primero que no está listo', () => {
     const vacio = new Borrador({
@@ -179,11 +125,9 @@ describe('Pasos · en cuál conviene estar', () => {
 
     const sinCorrelativas = sano().alternarPrevia('B', 'A') // saca la única
     expect(pasosDe(sinCorrelativas).actual.n).toBe(2)
-
-    expect(pasosDe(sano()).actual.n).toBe(3)
   })
 
-  it('con todo hecho, se queda en el último (no hay cuarto paso)', () => {
-    expect(pasosDe(sano(), true).actual.n).toBe(3)
+  it('con todo hecho, se queda en el último (no hay tercer paso)', () => {
+    expect(pasosDe(sano()).actual.n).toBe(2)
   })
 })

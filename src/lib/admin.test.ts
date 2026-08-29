@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Habilitacion, PlanAdmin, PlanNuevo, SesionAdmin, UniversidadNueva } from './admin'
 
-const hab = (over: Partial<{ crear: boolean; editar: boolean; eliminar: boolean }> = {}) =>
-  new Habilitacion(
-    'uade',
-    over.crear ?? true,
-    over.editar ?? true,
-    over.eliminar ?? false,
-  )
+const hab = () => new Habilitacion('uade')
 
 /** El cupo de UADE en la base. Es de la universidad, no de quien pregunta (006). */
 const LIMITE_UADE = 6
@@ -46,17 +40,19 @@ describe('SesionAdmin · quién entra a la administración', () => {
   })
 })
 
+// Tres roles y nada en el medio (decisión de Luz, 12-ago · `supabase/010`). Lo que se
+// pregunta es DÓNDE puede alguien, no QUÉ: estar habilitado en una universidad es poder
+// crear, editar, publicar y eliminar ahí, hasta el cupo.
 describe('SesionAdmin · permisos por universidad', () => {
-  it('el admin puede editar en la suya y en ninguna otra', () => {
-    expect(admin.puedeEditar('uade')).toBe(true)
-    expect(admin.puedeEditar('otra')).toBe(false)
+  it('el admin puede en la suya y en ninguna otra', () => {
+    expect(admin.puedeEn('uade')).toBe(true)
+    expect(admin.puedeEn('otra')).toBe(false)
   })
 
-  it('el permiso de eliminar es aparte del de editar', () => {
+  it('estar habilitado es poder TODO ahí adentro: no hay permisos a medias', () => {
     expect(admin.puedeEditar('uade')).toBe(true)
-    expect(admin.puedeEliminar('uade')).toBe(false)
-    const conBorrado = new SesionAdmin('admin_uni', [hab({ eliminar: true })])
-    expect(conBorrado.puedeEliminar('uade')).toBe(true)
+    expect(admin.puedeEliminar('uade')).toBe(true)
+    expect(admin.cupoEn('uade', 0, LIMITE_UADE).puedeCrear).toBe(true)
   })
 
   it('el superadmin puede en cualquier universidad', () => {
@@ -64,8 +60,14 @@ describe('SesionAdmin · permisos por universidad', () => {
     expect(superadmin.puedeEliminar('cualquiera')).toBe(true)
   })
 
+  it('gestionar permisos es lo único exclusivo del superadmin', () => {
+    expect(superadmin.puedeGestionarPermisos).toBe(true)
+    expect(admin.puedeGestionarPermisos).toBe(false)
+    expect(alumno.puedeGestionarPermisos).toBe(false)
+  })
+
   it('habilitacionEn no inventa nada', () => {
-    expect(admin.habilitacionEn('uade')?.crear).toBe(true)
+    expect(admin.habilitacionEn('uade')?.universidad_id).toBe('uade')
     expect(admin.habilitacionEn('otra')).toBeUndefined()
   })
 
@@ -110,9 +112,10 @@ describe('SesionAdmin · cupo de planes', () => {
     expect(c.puedeCrear).toBe(false)
   })
 
-  it('sin permiso de crear, el cupo lo dice', () => {
-    const soloLectura = new SesionAdmin('admin_uni', [hab({ crear: false })])
-    const c = soloLectura.cupoEn('uade', 2, LIMITE_UADE)
+  // Ya no existe "habilitado pero sin poder crear": si no podés crear ahí, es porque esa
+  // universidad no es tuya. La leyenda tiene que decir eso y no dejar un botón mudo.
+  it('en una universidad ajena el cupo lo dice, en vez de callarse', () => {
+    const c = admin.cupoEn('otra-uni', 2, LIMITE_UADE)
     expect(c.puedeCrear).toBe(false)
     expect(c.leyenda).toContain('no podés crear planes nuevos')
   })
@@ -135,7 +138,7 @@ describe('SesionAdmin · cupo de planes', () => {
   // apretaba el botón. Ahora el número entra por afuera y es uno solo.
   it('el cupo es de la universidad: dos admins distintos ven lo mismo', () => {
     const ana = new SesionAdmin('admin_uni', [hab()])
-    const beto = new SesionAdmin('admin_uni', [hab({ eliminar: true })])
+    const beto = new SesionAdmin('admin_uni', [hab()])
     expect(ana.cupoEn('uade', 4, LIMITE_UADE).leyenda).toBe(
       beto.cupoEn('uade', 4, LIMITE_UADE).leyenda,
     )
@@ -154,6 +157,7 @@ describe('PlanAdmin · cómo se muestra un plan en la lista', () => {
       version_publicada: 3,
       actualizado_at: null,
       publicado_at: null,
+      tiene_cambios: false,
       ...over,
     })
 
@@ -168,27 +172,37 @@ describe('PlanAdmin · cómo se muestra un plan en la lista', () => {
     expect(plan({ version_publicada: null }).visible).toBe(false)
   })
 
-  it('detecta borrador con cambios sin publicar', () => {
-    const con = plan({ actualizado_at: '2026-08-09T12:00:00Z', publicado_at: '2026-08-08T12:00:00Z' })
-    const sin = plan({ actualizado_at: '2026-08-08T12:00:00Z', publicado_at: '2026-08-09T12:00:00Z' })
-    expect(con.tieneCambiosSinPublicar).toBe(true)
-    expect(sin.tieneCambiosSinPublicar).toBe(false)
+  it('los cambios sin publicar los dice la base, no se deducen acá', () => {
+    expect(plan({ tiene_cambios: true }).tieneCambiosSinPublicar).toBe(true)
+    expect(plan({ tiene_cambios: false }).tieneCambiosSinPublicar).toBe(false)
   })
 
-  it('publicar toca la fila del plan: no cuenta como cambio pendiente', () => {
-    // los dos sellos quedan a milisegundos, dentro de la tolerancia
-    const p = plan({ actualizado_at: '2026-08-08T12:00:01Z', publicado_at: '2026-08-08T12:00:00Z' })
+  // REGRESIÓN del bug que encontró Luz el 12-ago: los 4 planes de UADE decían "Cambios sin
+  // publicar" sin que nadie los tocara. Se comparaba `actualizado_at` contra `publicado_at`,
+  // y la migración 004 movió el primero al publicar sin mover el segundo → los cuatro
+  // quedaron con un sello posterior al otro PARA SIEMPRE.
+  //
+  // Este caso es exactamente esa fila: editado un día después de publicado, pero con el
+  // contenido idéntico a la foto. Tiene que decir que NO hay cambios.
+  it('un sello de edición posterior al de publicación no es un cambio', () => {
+    const p = plan({
+      actualizado_at: '2026-08-09T12:00:00Z',
+      publicado_at: '2026-08-08T12:00:00Z',
+      tiene_cambios: false,
+    })
     expect(p.tieneCambiosSinPublicar).toBe(false)
-  })
-
-  it('nunca publicado con borrador editado: sí tiene cambios', () => {
-    expect(plan({ actualizado_at: '2026-08-08T12:00:00Z' }).tieneCambiosSinPublicar).toBe(true)
   })
 
   it('se arma desde la fila de la base y descarta lo que no cierra', () => {
     expect(PlanAdmin.desde({ id: 'p', universidad_id: 'uade' })?.estado).toBe('borrador')
     expect(PlanAdmin.desde({ universidad_id: 'uade' })).toBeNull()
     expect(PlanAdmin.desde(null)).toBeNull()
+  })
+
+  it('sin el campo de la vista, no inventa una alarma', () => {
+    // Si `plan_editable` no trajo `tiene_cambios`, callarse es mejor que avisar de más:
+    // el falso positivo permanente es justo lo que se vino a arreglar.
+    expect(PlanAdmin.desde({ id: 'p', universidad_id: 'uade' })?.tieneCambiosSinPublicar).toBe(false)
   })
 })
 

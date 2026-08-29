@@ -38,27 +38,16 @@ export type Acceso =
  */
 export class Habilitacion {
   readonly universidad_id: string
-  readonly crear: boolean
-  readonly editar: boolean
-  readonly eliminar: boolean
 
-  constructor(universidad_id: string, crear = false, editar = true, eliminar = false) {
+  constructor(universidad_id: string) {
     this.universidad_id = universidad_id
-    this.crear = crear
-    this.editar = editar
-    this.eliminar = eliminar
   }
 
   static desde(j: unknown): Habilitacion | null {
     if (typeof j !== 'object' || j === null) return null
     const o = j as Record<string, unknown>
     if (typeof o.universidad_id !== 'string') return null
-    return new Habilitacion(o.universidad_id, o.crear === true, o.editar === true, o.eliminar === true)
-  }
-
-  /** ¿Habilita esa acción? */
-  permite(accion: 'crear' | 'editar' | 'eliminar'): boolean {
-    return accion === 'crear' ? this.crear : accion === 'editar' ? this.editar : this.eliminar
+    return new Habilitacion(o.universidad_id)
   }
 }
 
@@ -113,16 +102,33 @@ export class SesionAdmin {
     return this.habilitaciones.find((h) => h.universidad_id === uni)
   }
 
-  private permite(uni: string, accion: 'crear' | 'editar' | 'eliminar'): boolean {
-    return this.esSuper || this.habilitacionEn(uni)?.permite(accion) === true
+  /**
+   * ¿Puede trabajar sobre los planes de esta universidad?
+   *
+   * Es UNA pregunta, no tres. Estar habilitado en una universidad significa poder crear,
+   * editar, publicar y eliminar ahí adentro, hasta el cupo (decisión de Luz, 12-ago: tres
+   * roles y nada en el medio — ver `supabase/010`). Antes había un permiso por acción y
+   * lo único que producía era gente habilitada a medias por error, mirando botones
+   * apagados sin saber por qué.
+   *
+   * Lo que sigue siendo por universidad es DÓNDE: un admin de una facultad no toca los
+   * planes de otra, y eso lo garantiza el RLS, no esta clase.
+   */
+  puedeEn(uni: string): boolean {
+    return this.esSuper || this.habilitacionEn(uni) !== undefined
   }
 
   puedeEditar(uni: string): boolean {
-    return this.permite(uni, 'editar')
+    return this.puedeEn(uni)
   }
 
   puedeEliminar(uni: string): boolean {
-    return this.permite(uni, 'eliminar')
+    return this.puedeEn(uni)
+  }
+
+  /** Gestionar permisos y cupos es lo ÚNICO que distingue al superadmin. */
+  get puedeGestionarPermisos(): boolean {
+    return this.esSuper
   }
 
   /** Las universidades que administra (para filtrar la lista de planes). */
@@ -138,8 +144,7 @@ export class SesionAdmin {
    */
   cupoEn(uni: string, planesActuales: number, limiteUni: number): Cupo {
     if (this.esSuper) return Cupo.sinLimite(planesActuales)
-    const h = this.habilitacionEn(uni)
-    if (!h || !h.crear) return Cupo.sinPermiso(planesActuales, limiteUni)
+    if (!this.puedeEn(uni)) return Cupo.sinPermiso(planesActuales, limiteUni)
     return new Cupo(planesActuales, limiteUni, true)
   }
 }
@@ -207,6 +212,7 @@ export class PlanAdmin {
   readonly version_publicada: number | null
   readonly actualizado_at: string | null
   readonly publicado_at: string | null
+  readonly tiene_cambios: boolean
 
   constructor(campos: {
     id: string
@@ -218,6 +224,7 @@ export class PlanAdmin {
     version_publicada: number | null
     actualizado_at: string | null
     publicado_at: string | null
+    tiene_cambios: boolean
   }) {
     this.id = campos.id
     this.universidad_id = campos.universidad_id
@@ -228,6 +235,7 @@ export class PlanAdmin {
     this.version_publicada = campos.version_publicada
     this.actualizado_at = campos.actualizado_at
     this.publicado_at = campos.publicado_at
+    this.tiene_cambios = campos.tiene_cambios
   }
 
   static desde(j: unknown): PlanAdmin | null {
@@ -246,6 +254,9 @@ export class PlanAdmin {
       version_publicada: num(o.version_publicada),
       actualizado_at: txt(o.actualizado_at),
       publicado_at: txt(o.publicado_at),
+      // Si la vista no trajo el campo, "no hay cambios": una falsa alarma permanente es
+      // justo el bug que esto vino a matar, y es peor que no avisar.
+      tiene_cambios: o.tiene_cambios === true,
     })
   }
 
@@ -260,18 +271,21 @@ export class PlanAdmin {
   }
 
   /**
-   * ¿El borrador tiene cambios sin publicar? Se compara la última edición de las filas
-   * contra cuándo se publicó la foto que está viendo el alumno.
+   * ¿El borrador tiene cambios sin publicar?
+   *
+   * Lo contesta la BASE (`plan_editable.tiene_cambios`), comparando el borrador contra la
+   * foto publicada. Acá antes se comparaban dos timestamps (`actualizado_at` contra
+   * `publicado_at`) con 2 segundos de tolerancia, y estaba MAL: la migración 004 movió
+   * `actualizado_at` de los 4 planes al publicarlos sin mover `publicado_at`, así que los
+   * cuatro decían "cambios sin publicar" para siempre, sin que nadie los tocara (lo vio
+   * Luz el 12-ago; alcanzaba con abrir la pantalla).
+   *
+   * La lección es más grande que el bug: dos relojes son una INFERENCIA sobre si el
+   * contenido cambió, y cualquier cosa que toque la fila —publicar, revertir, una
+   * migración— la invalida. El contenido se compara con el contenido. Ver `supabase/009`.
    */
   get tieneCambiosSinPublicar(): boolean {
-    if (!this.actualizado_at) return false
-    if (!this.publicado_at) return true
-    const a = Date.parse(this.actualizado_at)
-    const p = Date.parse(this.publicado_at)
-    if (Number.isNaN(a) || Number.isNaN(p)) return false
-    // 2s de tolerancia: publicar toca la fila del plan, así que los dos sellos quedan
-    // casi iguales y no queremos que eso se vea como "tiene cambios sin publicar".
-    return a - p > 2000
+    return this.tiene_cambios
   }
 }
 

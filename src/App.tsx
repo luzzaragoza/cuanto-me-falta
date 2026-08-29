@@ -23,6 +23,7 @@ import { Sync, useSyncEstado } from './state/sync'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
 import { Tour } from './components/Tour'
+import { PASOS_ALUMNO } from './components/tourPasos'
 
 // El árbol vive en un chunk aparte (elkjs + React Flow pesan ~medio MB gz y no
 // hacen falta para abrir la app). Se precalienta en idle (abajo) así la primera
@@ -186,7 +187,7 @@ export function App() {
           </Suspense>
         )}
 
-        {showTour && <Tour onClose={closeTour} onMark={marcarPrimera} />}
+        {showTour && <Tour pasos={PASOS_ALUMNO} onClose={closeTour} onMark={marcarPrimera} />}
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 

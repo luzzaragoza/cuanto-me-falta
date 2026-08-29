@@ -92,24 +92,28 @@ describe('RepositorioPlanes · cargarPerfil', () => {
   })
 })
 
+// La lista lee la VISTA `plan_editable`, no la tabla `plan`: la vista agrega
+// `tiene_cambios`, que compara el borrador contra la foto publicada. Cuando esto se
+// deducía de dos timestamps, los 4 planes de UADE decían "cambios sin publicar" para
+// siempre (ver `supabase/009` y la regresión en `lib/admin.test.ts`).
 describe('RepositorioPlanes · cargarPlanes', () => {
   it('el admin pide SOLO los de sus universidades (los publicados de otras serían ruido)', async () => {
-    const { cliente, consultas } = clienteFalso({ plan: { data: [], error: null } })
+    const { cliente, consultas } = clienteFalso({ plan_editable: { data: [], error: null } })
     const sesion = new SesionAdmin('admin_uni', [new Habilitacion('uade')])
     await new RepositorioPlanes(cliente).cargarPlanes(sesion)
 
-    expect(consultas).toEqual(['plan?universidad_id in (uade)'])
+    expect(consultas).toEqual(['plan_editable?universidad_id in (uade)'])
   })
 
   it('el superadmin no filtra: los ve todos', async () => {
-    const { cliente, consultas } = clienteFalso({ plan: { data: [], error: null } })
+    const { cliente, consultas } = clienteFalso({ plan_editable: { data: [], error: null } })
     await new RepositorioPlanes(cliente).cargarPlanes(new SesionAdmin('superadmin'))
 
-    expect(consultas).toEqual(['plan?'])
+    expect(consultas).toEqual(['plan_editable?'])
   })
 
   it('un admin sin ninguna universidad no consulta nada', async () => {
-    const { cliente, consultas } = clienteFalso({ plan: { data: [], error: null } })
+    const { cliente, consultas } = clienteFalso({ plan_editable: { data: [], error: null } })
     const planes = await new RepositorioPlanes(cliente).cargarPlanes(new SesionAdmin('admin_uni'))
 
     expect(planes).toEqual([])
@@ -118,7 +122,7 @@ describe('RepositorioPlanes · cargarPlanes', () => {
 
   it('descarta filas que no tienen la forma esperada', async () => {
     const { cliente } = clienteFalso({
-      plan: {
+      plan_editable: {
         data: [
           { id: 'p1', universidad_id: 'uade', carrera: 'Ing.', estado: 'publicado', version_publicada: 2 },
           { sin: 'id' },
@@ -150,31 +154,23 @@ describe('RepositorioPlanes · sin backend', () => {
   })
 })
 
-describe('AdminHabilitado · quién puede qué', () => {
+describe('AdminHabilitado · quién está habilitado', () => {
   const a = (over: Partial<ConstructorParameters<typeof AdminHabilitado>[0]> = {}) =>
-    new AdminHabilitado({
-      user_id: 'u1',
-      email: 'ana@uni.edu.ar',
-      crear: false,
-      editar: true,
-      eliminar: false,
-      otorgado_at: null,
-      ...over,
-    })
+    new AdminHabilitado({ user_id: 'u1', email: 'ana@uni.edu.ar', otorgado_at: null, ...over })
 
-  it('resume los permisos en una línea', () => {
-    expect(a().resumen).toBe('editar')
-    expect(a({ crear: true, eliminar: true }).resumen).toBe('crear · editar · eliminar')
+  // Estar en la lista ES poder todo en esa universidad (`supabase/010`), así que lo único
+  // que queda por decir de cada uno es desde cuándo.
+  it('dice desde cuándo está habilitado', () => {
+    expect(a({ otorgado_at: '2026-08-12T15:00:00Z' }).resumen).toContain('desde el')
   })
 
-  it('sin ningún permiso lo dice, en vez de quedar en blanco', () => {
-    expect(a({ editar: false }).resumen).toBe('sin permisos')
+  it('sin fecha no inventa una', () => {
+    expect(a().resumen).toBe('habilitado')
+    expect(a({ otorgado_at: 'cualquier cosa' }).resumen).toBe('habilitado')
   })
 
   it('se arma desde lo que devuelve la RPC y descarta filas raras', () => {
-    expect(AdminHabilitado.desde({ user_id: 'u', email: 'x@y.z', editar: true })?.email).toBe(
-      'x@y.z',
-    )
+    expect(AdminHabilitado.desde({ user_id: 'u', email: 'x@y.z' })?.email).toBe('x@y.z')
     expect(AdminHabilitado.desde({ user_id: 'u' })).toBeNull() // sin mail no sirve
     expect(AdminHabilitado.desde(null)).toBeNull()
   })

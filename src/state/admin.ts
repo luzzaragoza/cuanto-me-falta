@@ -47,24 +47,11 @@ export class UniversidadAdmin {
 export class AdminHabilitado {
   readonly user_id: string
   readonly email: string
-  readonly crear: boolean
-  readonly editar: boolean
-  readonly eliminar: boolean
   readonly otorgado_at: string | null
 
-  constructor(campos: {
-    user_id: string
-    email: string
-    crear: boolean
-    editar: boolean
-    eliminar: boolean
-    otorgado_at: string | null
-  }) {
+  constructor(campos: { user_id: string; email: string; otorgado_at: string | null }) {
     this.user_id = campos.user_id
     this.email = campos.email
-    this.crear = campos.crear
-    this.editar = campos.editar
-    this.eliminar = campos.eliminar
     this.otorgado_at = campos.otorgado_at
   }
 
@@ -75,18 +62,22 @@ export class AdminHabilitado {
     return new AdminHabilitado({
       user_id: o.user_id,
       email: o.email,
-      crear: o.crear === true,
-      editar: o.editar === true,
-      eliminar: o.eliminar === true,
       otorgado_at: typeof o.otorgado_at === 'string' ? o.otorgado_at : null,
     })
   }
 
-  /** Qué puede hacer, en una línea. */
+  /**
+   * Desde cuándo está habilitado.
+   *
+   * Acá vivía un resumen de sus permisos ("crear · editar"), que dejó de tener sentido:
+   * estar en esta lista ES poder todo en esa universidad (`supabase/010`). Lo que sí
+   * importa saber de un habilitado es desde cuándo lo está.
+   */
   get resumen(): string {
-    const p = [this.crear && 'crear', this.editar && 'editar', this.eliminar && 'eliminar']
-    const puede = p.filter(Boolean).join(' · ')
-    return puede || 'sin permisos'
+    if (!this.otorgado_at) return 'habilitado'
+    const d = new Date(this.otorgado_at)
+    if (Number.isNaN(d.getTime())) return 'habilitado'
+    return `desde el ${d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`
   }
 }
 
@@ -131,10 +122,10 @@ export class RepositorioPlanes {
     if (!this.db) return SesionAdmin.estudiante()
     const [rp, rh] = await Promise.all([
       this.db.from('perfil').select('rol').eq('user_id', userId).maybeSingle(),
-      this.db
-        .from('admin_uni')
-        .select('universidad_id, crear, editar, eliminar')
-        .eq('user_id', userId),
+      // Solo `universidad_id`: las columnas de permiso por acción quedaron vestigiales en
+      // la 010 y la 011 las borra. El código tiene que dejar de pedirlas ANTES de que
+      // desaparezcan, o el día de la 011 esta consulta se rompe.
+      this.db.from('admin_uni').select('universidad_id').eq('user_id', userId),
     ])
     if (rp.error) throw new Error(rp.error.message)
     if (rh.error) throw new Error(rh.error.message)
@@ -148,10 +139,13 @@ export class RepositorioPlanes {
    */
   async cargarPlanes(sesion: SesionAdmin): Promise<PlanAdmin[]> {
     if (!this.db) return []
+    // `plan_editable`, no `plan`: la vista agrega `tiene_cambios`, que compara el borrador
+    // contra la foto publicada de verdad en vez de inferirlo de dos timestamps (ver
+    // `supabase/009` y `PlanAdmin.tieneCambiosSinPublicar`).
     let q = this.db
-      .from('plan')
+      .from('plan_editable')
       .select(
-        'id, universidad_id, codigo, anio, carrera, estado, version_publicada, actualizado_at, publicado_at',
+        'id, universidad_id, codigo, anio, carrera, estado, version_publicada, actualizado_at, publicado_at, tiene_cambios',
       )
       .order('universidad_id')
       .order('orden')
@@ -297,20 +291,14 @@ export class RepositorioPlanes {
    * Habilita (o actualiza) a alguien como admin de una universidad, por su mail.
    * Tira con un mensaje claro si esa cuenta todavía no entró nunca con Google.
    */
-  async habilitarAdmin(datos: {
-    email: string
-    uni: string
-    crear: boolean
-    editar: boolean
-    eliminar: boolean
-  }): Promise<void> {
+  async habilitarAdmin(datos: { email: string; uni: string }): Promise<void> {
     const db = this.exigir()
+    // Sin matices: habilitar es habilitar (`supabase/010`). La función también le sube el
+    // rol a `admin_uni` si era estudiante — sin eso quedaría con permisos sobre la
+    // universidad pero rebotado en la puerta.
     const { error } = await db.rpc('habilitar_admin', {
       p_email: datos.email.trim(),
       p_uni: datos.uni,
-      p_crear: datos.crear,
-      p_editar: datos.editar,
-      p_eliminar: datos.eliminar,
     })
     if (error) throw new Error(error.message)
   }

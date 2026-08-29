@@ -1,4 +1,4 @@
-// En qué parte de la carga está el plan: los tres pasos, con dónde estás y qué falta.
+// En qué parte de la carga está el plan: los dos pasos, con dónde estás y qué falta.
 //
 // El editor tiene tres pestañas y no dice en cuál conviene estar. Para quien abre la
 // pantalla por primera vez —el escenario del Gate C: alguien que no es Luz cargando una
@@ -12,10 +12,15 @@
 // terminó cuando no sabemos. Por eso el paso 2 informa un CONTEO y no un porcentaje.
 
 import type { Borrador } from './editorPlan'
-import type { Validacion } from './validarPlan'
 
-/** A qué pestaña del editor lleva cada paso. */
-export type PestaniaPaso = 'estructura' | 'correlativas' | 'titulos'
+/**
+ * A dónde lleva cada paso.
+ *
+ * El tercero NO es una pestaña: "revisá y publicá" es el panel lateral, que se abre desde
+ * cualquier parte del editor. Mandarlo a la pestaña Títulos —como hacía antes— dejaba a la
+ * persona mirando los títulos sin entender por qué.
+ */
+export type DestinoPaso = 'estructura' | 'correlativas'
 
 export type EstadoPaso =
   /** Todavía no se puede empezar (depende del anterior). */
@@ -33,20 +38,20 @@ export class Paso {
   /** Qué hay hecho, en números concretos. Nunca un porcentaje inventado. */
   readonly detalle: string
   readonly estado: EstadoPaso
-  readonly pestania: PestaniaPaso
+  readonly destino: DestinoPaso
 
   constructor(campos: {
     n: number
     titulo: string
     detalle: string
     estado: EstadoPaso
-    pestania: PestaniaPaso
+    destino: DestinoPaso
   }) {
     this.n = campos.n
     this.titulo = campos.titulo
     this.detalle = campos.detalle
     this.estado = campos.estado
-    this.pestania = campos.pestania
+    this.destino = campos.destino
   }
 
   get hecho(): boolean {
@@ -56,19 +61,21 @@ export class Paso {
 
 export class Pasos {
   private readonly b: Borrador
-  private readonly v: Validacion
-  /** ¿Ya hay una versión publicada, y el borrador está igual? */
-  private readonly sinCambiosPendientes: boolean
 
-  constructor(borrador: Borrador, validacion: Validacion, sinCambiosPendientes = false) {
+  constructor(borrador: Borrador) {
     this.b = borrador
-    this.v = validacion
-    this.sinCambiosPendientes = sinCambiosPendientes
   }
 
+  /**
+   * Los pasos de la CARGA. Publicar no es uno.
+   *
+   * Fue el tercero por un rato y salió mal (feedback de Luz, 12-ago): brillaba como
+   * "acá estás" mientras la persona seguía trabajando en la pestaña anterior, y abría un
+   * panel encima de los otros dos pasos. Publicar no es una etapa por la que se avanza:
+   * es algo que se hace cuando ya terminaste. Por eso volvió a ser un botón aparte.
+   */
   get lista(): Paso[] {
-    const uno = this.materias()
-    return [uno, this.correlativas(), this.publicar(uno.hecho)]
+    return [this.materias(), this.correlativas()]
   }
 
   /**
@@ -91,7 +98,7 @@ export class Pasos {
         titulo: 'Cargá las materias',
         detalle: 'Todavía no hay ninguna',
         estado: 'enCurso',
-        pestania: 'estructura',
+        destino: 'estructura',
       })
     }
     if (aMedias > 0) {
@@ -100,7 +107,7 @@ export class Pasos {
         titulo: 'Cargá las materias',
         detalle: `${aMedias} ${aMedias === 1 ? 'quedó' : 'quedaron'} sin nombre`,
         estado: 'enCurso',
-        pestania: 'estructura',
+        destino: 'estructura',
       })
     }
     return new Paso({
@@ -108,7 +115,7 @@ export class Pasos {
       titulo: 'Cargá las materias',
       detalle: `${conCodigo.length} en ${anios} ${anios === 1 ? 'año' : 'años'}`,
       estado: 'listo',
-      pestania: 'estructura',
+      destino: 'estructura',
     })
   }
 
@@ -121,7 +128,7 @@ export class Pasos {
         titulo: 'Marcá qué necesita cada una',
         detalle: 'Después de cargar las materias',
         estado: 'pendiente',
-        pestania: 'correlativas',
+        destino: 'correlativas',
       })
     }
     const n = this.b.correlativas.length
@@ -138,51 +145,7 @@ export class Pasos {
               conPrevias === 1 ? 'materia tiene' : 'materias tienen'
             } previas`,
       estado: n === 0 ? 'enCurso' : 'listo',
-      pestania: 'correlativas',
-    })
-  }
-
-  // ── 3 · revisar y publicar ──
-  private publicar(materiasListas: boolean): Paso {
-    // Un plan recién creado NO tiene errores: es que todavía no empezaste. El
-    // validador dice "no tiene ninguna materia", que es cierto y es ruido — arrancar
-    // con una alarma roja en el paso 3 desalienta y no informa nada que el paso 1 no
-    // esté diciendo mejor.
-    if (!materiasListas) {
-      return new Paso({
-        n: 3,
-        titulo: 'Revisá y publicá',
-        detalle: 'Cuando termines de cargar',
-        estado: 'pendiente',
-        pestania: 'titulos',
-      })
-    }
-    const errores = this.v.errores.length
-    if (errores > 0) {
-      return new Paso({
-        n: 3,
-        titulo: 'Revisá y publicá',
-        detalle: `${errores} ${errores === 1 ? 'error' : 'errores'} que hay que corregir`,
-        estado: 'bloqueado',
-        pestania: 'titulos',
-      })
-    }
-    if (this.sinCambiosPendientes) {
-      return new Paso({
-        n: 3,
-        titulo: 'Revisá y publicá',
-        detalle: 'Los alumnos ya ven esta versión',
-        estado: 'listo',
-        pestania: 'titulos',
-      })
-    }
-    const avisos = this.v.avisos.length
-    return new Paso({
-      n: 3,
-      titulo: 'Revisá y publicá',
-      detalle: avisos > 0 ? `Listo para publicar · ${avisos} aviso(s)` : 'Listo para publicar',
-      estado: 'enCurso',
-      pestania: 'titulos',
+      destino: 'correlativas',
     })
   }
 }

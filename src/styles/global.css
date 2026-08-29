@@ -2824,6 +2824,8 @@ body {
   padding-top: 14px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3726,11 +3728,13 @@ body {
   background: var(--paper);
   color: var(--soft);
 }
-.ed-pub-fila {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+/* El campo de observaciones ocupa el ancho: el botón de publicar ya no está a su lado,
+   se mudó al pie del drawer (que es donde la mano lo busca). */
+.ed-pub-nota {
+  width: 100%;
+  /* `flex: none`: el cuerpo del drawer es una columna flex, así que sin esto el campo se
+     estira y ocupa todo el alto libre (media pantalla para escribir una línea). */
+  flex: none;
 }
 .ed-versiones {
   margin-top: 16px;
@@ -4124,8 +4128,53 @@ body {
   border-color: var(--line);
   cursor: not-allowed;
 }
-.adm-super {
-  margin: 4px 0 18px;
+/* ── Panel del superadmin ─────────────────────────────────────────────────
+   Permisos y cupos vivían colgados de la lista de planes: un botón en el encabezado de
+   cada universidad y un enlace al pie, los dos invisibles para un admin de universidad.
+   O sea, espacio muerto en el 90% de las sesiones. Acá son la pantalla entera. */
+.ps-unis {
+  margin-top: 18px;
+}
+.ps-lista {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.ps-uni {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  margin-bottom: 6px;
+}
+.ps-uni-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+/* Los dos números que se miran de un vistazo: cuánto se usó del cupo y cuánta gente
+   entra. Ancho fijo para que formen columna y no bailen fila a fila. */
+.ps-cupo {
+  flex: none;
+  min-width: 108px;
+}
+.ps-admins {
+  flex: none;
+  min-width: 74px;
+}
+.ps-acciones {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.ps-acciones .cp-ayuda {
+  margin-top: 8px;
 }
 
 .cp {
@@ -4490,6 +4539,15 @@ body {
   gap: 16px;
   flex-wrap: wrap;
 }
+/* Sin esto el bloque de título toma su ancho natural (la bajada es larga) y empuja el
+   "volver" a un renglón propio, donde parece parte del contenido y no la salida. */
+.hb-head > div:first-child {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.hb-head > .lnk {
+  flex: none;
+}
 .hb-head h2 {
   font-family: var(--serif);
   font-size: 22px;
@@ -4574,3 +4632,240 @@ body {
   gap: 6px;
   cursor: pointer;
 }
+
+/* ── Confirmaciones propias (reemplazan confirm/alert del navegador) ─────── */
+.sheet.cf {
+  max-width: 460px;
+}
+.sheet.cf h2 {
+  margin-bottom: 8px;
+}
+/* La lista de "qué se rompe" o "a quién afecta": el nativo no podía mostrarla. */
+.cf-detalle {
+  margin: 0 0 4px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+  color: var(--soft);
+  max-height: 180px;
+  overflow-y: auto;
+}
+/* Destructivo: el color dice lo que el texto ya dice, para que no haya sorpresa. */
+.btn.peligro {
+  background: var(--cu-tx);
+}
+.btn.peligro:hover {
+  background: var(--cu);
+}
+
+/* La barra del árbol-editor: quién es la materia activa y qué se puede hacer. */
+.ed-ab-quien {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.ed-ab-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--soft);
+}
+
+/* El contador de cambios sin publicar, ahora en el paso 3 (antes vivía en la barra). */
+.ed-paso .ed-badge {
+  margin-left: auto;
+  flex: none;
+}
+
+/* El diálogo de confirmar va por encima del drawer de publicar (z-index 92): si no,
+   aparecía detrás y había que cerrar el drawer para poder contestarlo. */
+.modal.cf-wrap {
+  z-index: 130;
+}
+
+/* ── Correlativas: la lista donde se trabaja ─────────────────────────────── */
+/* La versión anterior alineaba el "necesita X" al BORDE DERECHO. Con 52 materias en
+   1280px eso deja mil píxeles de blanco entre la pregunta y la respuesta, y hay que
+   cruzarlos con la vista una vez por materia ("me da náuseas", Luz, 12-ago).
+
+   Acá el nombre vive en una columna de ancho fijo y las previas arrancan justo al lado:
+   el ojo BAJA por una columna en vez de barrer el ancho. Es la misma razón por la que
+   una tabla tiene columnas y no texto justificado a los dos márgenes. */
+.ed-anio {
+  margin-bottom: 20px;
+}
+.ed-anio-tit {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.ed-cuatri {
+  margin-bottom: 12px;
+}
+/* "no llevan previas" se dice una vez por bloque. Antes se repetía en cada fila: cinco
+   veces lo mismo, debajo de un título que ya lo decía. */
+.ed-cuatri-tit em {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--sans);
+  font-size: 11.5px;
+}
+
+/* El filtro: "¿qué me falta?" es una pregunta que se hace UNA vez, no 52. */
+.ed-filtro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  font-size: 13px;
+}
+.ed-filtro label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.ed-cx {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+.ed-cx.abierta {
+  border-color: var(--gold);
+}
+/* Las que no pueden llevar previas (1° cuatrimestre, optativas) no son filas rotas: son
+   filas que no hacen nada. Sin borde ni fondo, para que no compitan con las que sí. */
+.ed-cx.fija {
+  border-color: transparent;
+  background: none;
+  margin-bottom: 0;
+}
+/* Y apretadas: son cinco renglones que no hacen nada, no tienen por qué ocupar el mismo
+   alto que las que sí se trabajan. */
+.ed-cx.fija .ed-cx-cab {
+  padding: 3px 12px;
+}
+.ed-cx-cab {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 21rem) 1fr;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--ink);
+}
+.ed-cx-cab:disabled {
+  cursor: default;
+  color: var(--soft);
+}
+.ed-cx-flecha {
+  color: var(--soft);
+}
+.ed-cx-nom {
+  min-width: 0;
+}
+/* Las previas, pegadas al nombre. Vacío cuando no hay: la ausencia de previas no es un
+   pendiente, y marcarla como tal llenaba la pantalla de falsas alarmas. */
+.ed-cx-est {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+.ed-cx-est em {
+  font-style: normal;
+  color: var(--soft);
+}
+.ed-pill {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ap-bg);
+  color: var(--ap-tx);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* El panel de elegir: buscador arriba, lista de alto FIJO abajo. El alto fijo importa —
+   sin él, abrir una materia de 4° año empujaba media pantalla hacia abajo. */
+.ed-cx-panel {
+  border-top: 1px solid var(--line);
+  padding: 10px 12px 12px 36px;
+}
+.ed-cx-busca {
+  width: 100%;
+  max-width: 420px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.ed-cx-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 2px 14px;
+  max-height: 230px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+.ed-cx-op {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.ed-cx-op:hover {
+  background: var(--sunk, var(--paper));
+}
+/* Lo ya elegido se ve sin leer los checkboxes uno por uno. */
+.ed-cx-op.si {
+  background: var(--ap-bg);
+  color: var(--ap-tx);
+}
+.ed-cx-op-nom {
+  min-width: 0;
+}
+.ed-cx-nada {
+  margin: 0;
+  padding: 8px 6px;
+  font-size: 13px;
+  color: var(--soft);
+}
+
+/* En pantallas angostas la columna fija no entra: el nombre y sus previas pasan a dos
+   renglones, que sigue siendo "pegados" — que es lo que importa. */
+@media (max-width: 720px) {
+  .ed-cx-cab {
+    grid-template-columns: 14px 1fr;
+  }
+  .ed-cx-est {
+    grid-column: 2;
+  }
+}
+

@@ -121,7 +121,7 @@ export function CrearPlan({
                 className="cp-in"
                 value={uniNombre}
                 onChange={(e) => setUniNombre(e.target.value)}
-                placeholder="Universidad Tecnológica Nacional"
+                placeholder="Nombre completo de la universidad"
                 aria-label="Nombre de la universidad nueva"
                 autoFocus
               />
@@ -182,7 +182,7 @@ export function CrearPlan({
             className="cp-in"
             value={carrera}
             onChange={(e) => setCarrera(e.target.value)}
-            placeholder="Ingeniería en Informática"
+            placeholder="Nombre completo de la carrera"
             aria-label="Nombre de la carrera"
           />
         </label>
@@ -194,7 +194,7 @@ export function CrearPlan({
               className="cp-in"
               value={codigo}
               onChange={(e) => setCodigo(e.target.value)}
-              placeholder="1621"
+              placeholder="—"
               aria-label="Código del plan"
             />
             <span className="cp-ayuda">El que usa la facultad</span>

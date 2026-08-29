@@ -1,12 +1,19 @@
-// Quién puede tocar los planes de una universidad, y con qué permisos.
+// Quién puede tocar los planes de una universidad.
 //
-// Es el paso 4 del sprint: hasta ahora habilitar a alguien era un `insert` corrido a mano
-// en el SQL Editor de Supabase. Para vender esto a una facultad, la secretaría académica
-// tiene que poder dar y sacar permisos sin llamar a nadie.
+// Hasta acá, habilitar a alguien era un `insert` corrido a mano en el SQL Editor de
+// Supabase. Para vender esto a una facultad, la secretaría académica tiene que poder dar y
+// sacar permisos sin llamar a nadie.
 //
-// Solo lo ve el superadmin. Y las tres operaciones pasan por funciones `security definer`
-// (migración 008) porque el mail vive en `auth.users`, que PostgREST no expone: el
-// navegador no puede traducir un mail a un `user_id`, ni listar el padrón de cuentas.
+// SIN MATICES (decisión de Luz, 12-ago): habilitar a alguien en una universidad es darle
+// todo ahí adentro —crear, editar, publicar, eliminar— hasta el cupo. Antes había tres
+// casillas y lo único que producían era gente habilitada a medias por error, mirando un
+// botón apagado sin entender por qué. Lo que sí se reparte es el CUPO, porque es la
+// cláusula del contrato. Ver `supabase/010`.
+//
+// Solo lo ve el superadmin, y solo se llega desde su panel. Las tres operaciones pasan por
+// funciones `security definer` (migración 008) porque el mail vive en `auth.users`, que
+// PostgREST no expone: el navegador no puede traducir un mail a un `user_id` ni listar el
+// padrón de cuentas.
 //
 // Se habilita POR MAIL y no por id porque el superadmin conoce a la persona por su mail —
 // pedirle un UUID sería pedirle que abra el panel de Supabase, que es justo lo que esta
@@ -14,6 +21,7 @@
 
 import { useEffect, useState } from 'react'
 import { repo, type AdminHabilitado, type UniversidadAdmin } from '../state/admin'
+import { useConfirmar } from '../components/Confirmar'
 
 export function Habilitados({
   uni,
@@ -30,10 +38,8 @@ export function Habilitados({
   const [error, setError] = useState<string | null>(null)
 
   const [email, setEmail] = useState('')
-  const [crear, setCrear] = useState(false)
-  const [editar, setEditar] = useState(true)
-  const [eliminar, setEliminar] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const { pedir, dialogo } = useConfirmar()
 
   const [limite, setLimite] = useState(String(uni.limite_planes))
 
@@ -55,7 +61,7 @@ export function Habilitados({
     setGuardando(true)
     setError(null)
     try {
-      await repo.habilitarAdmin({ email, uni: uni.id, crear, editar, eliminar })
+      await repo.habilitarAdmin({ email, uni: uni.id })
       setEmail('')
       recargar()
     } catch (e) {
@@ -65,15 +71,20 @@ export function Habilitados({
     }
   }
 
-  const revocar = async (a: AdminHabilitado): Promise<void> => {
-    if (!confirm(`¿Sacarle los permisos a ${a.email}? Tiene efecto inmediato.`)) return
-    setError(null)
-    try {
-      await repo.revocarAdmin(a.email, uni.id)
-      recargar()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    }
+  const revocar = (a: AdminHabilitado): void => {
+    pedir({
+      titulo: '¿Sacarle los permisos?',
+      texto: `${a.email} deja de poder tocar los planes de ${uni.nombre}. Tiene efecto inmediato: los permisos se chequean en la base en cada operación, no quedan cacheados en su sesión.`,
+      confirmar: 'Sacar los permisos',
+      peligro: true,
+      onSi: () => {
+        setError(null)
+        void repo
+          .revocarAdmin(a.email, uni.id)
+          .then(recargar)
+          .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+      },
+    })
   }
 
   const guardarLimite = async (): Promise<void> => {
@@ -91,15 +102,17 @@ export function Habilitados({
 
   return (
     <div className="adm-card hb">
+      {dialogo}
       <div className="hb-head">
         <div>
-          <h2>Permisos de {uni.nombre}</h2>
+          <h2>Permisos y cupo de {uni.nombre}</h2>
           <p className="cp-bajada">
-            Quién puede cargar y publicar planes de esta universidad.
+            Quien esté acá puede cargar, editar, publicar y eliminar los planes de esta
+            universidad, hasta el cupo.
           </p>
         </div>
         <button className="lnk" onClick={onCerrar}>
-          ← Volver a los planes
+          ← Volver a las universidades
         </button>
       </div>
 
@@ -140,7 +153,7 @@ export function Habilitados({
               <li className="hb-admin" key={a.user_id}>
                 <span className="hb-mail">{a.email}</span>
                 <span className="hb-permisos">{a.resumen}</span>
-                <button className="lnk hb-quitar" onClick={() => void revocar(a)}>
+                <button className="lnk hb-quitar" onClick={() => revocar(a)}>
                   quitar
                 </button>
               </li>
@@ -168,27 +181,10 @@ export function Habilitados({
             {guardando ? 'Habilitando…' : 'Habilitar'}
           </button>
         </div>
-        <div className="hb-checks">
-          <label>
-            <input type="checkbox" checked={editar} onChange={(e) => setEditar(e.target.checked)} />
-            Editar y publicar planes
-          </label>
-          <label>
-            <input type="checkbox" checked={crear} onChange={(e) => setCrear(e.target.checked)} />
-            Crear planes nuevos
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={eliminar}
-              onChange={(e) => setEliminar(e.target.checked)}
-            />
-            Eliminar planes
-          </label>
-        </div>
         <p className="cp-ayuda">
-          La persona tiene que haber entrado al menos una vez con Google. No se pueden crear
-          cuentas desde acá.
+          La persona tiene que haber entrado al menos una vez con Google (no se pueden crear
+          cuentas desde acá). Queda habilitada para todo en {uni.nombre}; lo que la limita es
+          el cupo de arriba.
         </p>
       </div>
     </div>

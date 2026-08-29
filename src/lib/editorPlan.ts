@@ -82,9 +82,17 @@ export class MateriaEdit {
     return MateriaPlan.indiceDe(this.anio, this.cuatri)
   }
 
-  /** ¿Tiene lo mínimo para poder guardarse? */
+  /**
+   * ¿Alcanza para guardarla? Solo hace falta el NOMBRE.
+   *
+   * El código dejó de ser obligatorio para quien carga: no todas las universidades
+   * numeran sus materias, y pedirle un código a alguien que no tiene ninguno lo obliga a
+   * inventarlo. En la base sigue siendo la identidad de la materia —parte de la PK, lo
+   * que referencian las correlativas y lo que ancla el progreso del alumno—, así que
+   * cuando falta se asigna uno solo (`Borrador.codigoLibre`).
+   */
   get guardable(): boolean {
-    return this.codLimpio !== '' && this.nom.trim() !== ''
+    return this.nom.trim() !== ''
   }
 
   /** Una fila recién agregada, sin código todavía, no es parte del plan aún. */
@@ -180,6 +188,23 @@ export class Borrador {
     return [...new Set(this.materias.map((m) => m.anio))].sort((a, z) => a - z)
   }
 
+  /**
+   * Un código que no esté usado, para una materia que no trae uno: M01, M02, M03…
+   *
+   * No se recicla ni se renumera: si borrás la M02, la próxima sigue siendo M04. Un
+   * código es la identidad permanente de una materia (lo referencian las correlativas y
+   * el progreso guardado de cada alumno), así que reusarlo haría que el avance de una
+   * materia vieja apareciera en una nueva.
+   */
+  codigoLibre(): string {
+    const usados = new Set(this.materias.map((m) => m.codLimpio).filter(Boolean))
+    for (let n = 1; n < 1000; n++) {
+      const cod = `M${String(n).padStart(2, '0')}`
+      if (!usados.has(cod)) return cod
+    }
+    return `M${Date.now()}`
+  }
+
   /** Cuenta lo que hay, para el encabezado del editor. */
   get resumen(): { materias: number; correlativas: number; titulos: number } {
     return {
@@ -221,7 +246,41 @@ export class Borrador {
   }
 
   /**
-   * Materias que pueden tener a `cod` COMO previa: cuatrimestre posterior y no optativas.
+   * Por qué NO se puede conectar `otra` como previa/posterior de `cod`, o `null` si sí
+   * se puede. Es lo que se le muestra a quien intenta y no entiende por qué no pasa nada.
+   *
+   * Dos razones posibles: el **orden temporal** (una previa tiene que ir antes, si no la
+   * materia no se puede cursar) y las **optativas** (RN-05: se habilitan por la oferta
+   * anual del año, no por correlativas).
+   */
+  porQueNo(cod: string, otra: string, direccion: 'anterior' | 'posterior'): string | null {
+    if (cod === otra) return 'Es la misma materia.'
+    const yo = this.materias.find((m) => m.cod === cod)
+    const ella = this.materias.find((m) => m.cod === otra)
+    if (!yo || !ella) return null
+    if (!ella.cargada) return 'Esta fila todavía no tiene nombre.'
+    if (ella.opt) {
+      return 'Es una optativa: se habilita por la oferta del año, no por correlativas.'
+    }
+    if (yo.opt && direccion === 'posterior') {
+      return 'Una optativa no habilita materias: se habilita por la oferta del año.'
+    }
+    const antes = direccion === 'anterior'
+    if (antes && ella.indice >= yo.indice) {
+      return ella.indice === yo.indice
+        ? 'Está en el mismo cuatrimestre: una previa tiene que ir antes.'
+        : 'Está después: una previa tiene que ir antes.'
+    }
+    if (!antes && ella.indice <= yo.indice) {
+      return ella.indice === yo.indice
+        ? 'Está en el mismo cuatrimestre: lo que se habilita va después.'
+        : 'Está antes: lo que se habilita va después.'
+    }
+    return null
+  }
+
+  /**
+   * Materias que pueden tener a `cod` COMO previa: las de un cuatrimestre posterior.
    * Es la dirección inversa, y existe porque cargar un plan se lee en los dos sentidos:
    * "esta necesita…" o "esta habilita…".
    */

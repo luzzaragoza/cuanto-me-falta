@@ -12,7 +12,9 @@ import { repo, UniversidadAdmin } from '../state/admin'
 import { SesionAdmin, type PlanAdmin } from '../lib/admin'
 import { EditorPlan } from './EditorPlan'
 import { CrearPlan } from './CrearPlan'
-import { Habilitados } from './Habilitados'
+import { PanelSuper } from './PanelSuper'
+import { Tour } from '../components/Tour'
+import { PASOS_LISTA, TOUR_LISTA_KEY, marcarTourVisto, tourVisto } from './tourAdmin'
 
 const volverALaApp = (): void => {
   location.hash = ''
@@ -37,8 +39,9 @@ export function AdminApp() {
   const [editando, setEditando] = useState<{ planId: string; uni: string } | null>(null)
   /** Universidad desde la que se está creando un plan, o `null`. */
   const [creando, setCreando] = useState<string | null>(null)
-  /** Universidad cuyos permisos se están administrando (solo superadmin), o `null`. */
-  const [permisos, setPermisos] = useState<string | null>(null)
+  /** El panel del superadmin (permisos y cupos), abierto o cerrado. */
+  const [panelSuper, setPanelSuper] = useState(false)
+  const [tourHecho, setTourHecho] = useState(() => tourVisto(TOUR_LISTA_KEY))
 
   // el perfil se recarga con la sesión: entrar y salir cambian todo lo que se ve
   useEffect(() => {
@@ -96,6 +99,14 @@ export function AdminApp() {
                   <span className={`adm-rol ${sesion.esSuper ? 'super' : ''}`}>
                     {sesion.esSuper ? 'superadmin' : 'admin'}
                   </span>
+                )}
+                {/* Un admin de universidad NO ve esto: repartir permisos es lo único
+                    exclusivo del superadmin, y ofrecérselo a quien no puede es ofrecerle
+                    una puerta que la base le va a cerrar. */}
+                {sesion?.puedeGestionarPermisos && !panelSuper && (
+                  <button className="adm-salir" onClick={() => setPanelSuper(true)}>
+                    Permisos y cupos
+                  </button>
                 )}
                 <button className="adm-salir" onClick={() => void Auth.salir()}>
                   Salir
@@ -173,15 +184,20 @@ export function AdminApp() {
           />
         )}
 
-        {acceso === 'ok' && sesion?.esSuper && permisos !== null && (
-          <Habilitados
-            uni={unis.find((u) => u.id === permisos) ?? new UniversidadAdmin(permisos, permisos)}
-            onCerrar={() => setPermisos(null)}
+        {acceso === 'ok' && sesion?.puedeGestionarPermisos && panelSuper && !editando && (
+          <PanelSuper
+            universidades={unis}
+            planes={planes}
+            onCrearPlan={(uni) => {
+              setPanelSuper(false)
+              setCreando(uni)
+            }}
+            onCerrar={() => setPanelSuper(false)}
             onCambioLimite={() => setIntento((n) => n + 1)}
           />
         )}
 
-        {acceso === 'ok' && sesion && !editando && permisos === null && creando !== null && (
+        {acceso === 'ok' && sesion && !editando && !panelSuper && creando !== null && (
           <CrearPlan
             sesion={sesion}
             universidades={unis}
@@ -196,7 +212,7 @@ export function AdminApp() {
           />
         )}
 
-        {acceso === 'ok' && sesion && !editando && creando === null && permisos === null && (
+        {acceso === 'ok' && sesion && !editando && creando === null && !panelSuper && (
           <>
             {planes.length === 0 && (
               <div className="adm-card adm-vacio">
@@ -233,15 +249,7 @@ export function AdminApp() {
                     >
                       + Plan nuevo
                     </button>
-                    {sesion.esSuper && (
-                      <button
-                        className="adm-permisos"
-                        onClick={() => setPermisos(uni)}
-                        title="Quién puede tocar los planes de esta universidad"
-                      >
-                        Permisos
-                      </button>
-                    )}
+
                   </div>
 
                   <ul className="adm-planes">
@@ -254,6 +262,11 @@ export function AdminApp() {
                             <span className="adm-meta">
                               plan {p.codigo} · {p.anio}
                             </span>
+                            {/* El id es PERMANENTE y no se puede cambiar. Tenerlo solo en
+                                la base obligaba a abrir Supabase para saber cuál te tocó. */}
+                            <code className="adm-id" title="Identificador permanente del plan">
+                              {p.id}
+                            </code>
                           </div>
                           <div className="adm-plan-estado">
                             <span
@@ -290,18 +303,19 @@ export function AdminApp() {
               )
             })}
 
-            {sesion.esSuper && planes.length > 0 && (
-              <div className="adm-super">
-                <button className="lnk" onClick={() => setCreando(unis[0]?.id ?? '')}>
-                  + Plan en otra universidad
-                </button>
-              </div>
-            )}
+            {/* El tour corre una sola vez y recién con la lista PINTADA: sus pasos apuntan a
+            elementos reales, y si no existen todavía no hay nada que resaltar. */}
+        {!tourHecho && planes.length > 0 && (
+          <Tour
+            pasos={PASOS_LISTA}
+            onClose={() => {
+              marcarTourVisto(TOUR_LISTA_KEY)
+              setTourHecho(true)
+            }}
+          />
+        )}
 
-            <p className="adm-nota">
-              Los alumnos ven la <strong>versión publicada</strong>. Mientras editás un plan, siguen
-              viendo la anterior; al publicar, reciben un aviso y deciden cuándo actualizar.
-            </p>
+
           </>
         )}
       </main>

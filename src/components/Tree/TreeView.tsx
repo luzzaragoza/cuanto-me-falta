@@ -84,6 +84,16 @@ export interface ModoEdicion {
   elegibles: Set<string>
   yaConectadas: Set<string>
   onAlternar: (cod: string) => void
+  /**
+   * Clickear una materia que NO se puede conectar la vuelve el nuevo objetivo.
+   *
+   * Antes ese clic no hacía nada y había que encontrar un enlace chiquito en la barra
+   * para cambiar de materia. El gesto natural es tocar la que te interesa: ahora eso
+   * funciona, y la barra dejó de ser el único camino.
+   */
+  onElegirObjetivo: (cod: string) => void
+  /** Por qué esa materia no se puede conectar (para el tooltip). */
+  porQueNo?: (cod: string) => string | null
 }
 
 export function TreeView({
@@ -292,6 +302,10 @@ export function TreeView({
                   ? 'elegible'
                   : 'apagada',
           editDir: edicion?.direccion,
+          motivo:
+            edicion && m.cod !== edicion.objetivo && !edicion.elegibles.has(m.cod)
+              ? (edicion.porQueNo?.(m.cod) ?? undefined)
+              : undefined,
         },
         className: enRama && !viaja ? 'fondo' : undefined,
         draggable: false,
@@ -420,7 +434,11 @@ export function TreeView({
                 if (n.id === edicion.objetivo) return
                 if (edicion.elegibles.has(n.id) || edicion.yaConectadas.has(n.id)) {
                   edicion.onAlternar(n.id)
+                  return
                 }
+                // No se puede conectar con esta: entonces el clic quiere decir "quiero trabajar
+                // sobre ESTA otra". Es el gesto natural, y antes no hacía nada.
+                edicion.onElegirObjetivo(n.id)
                 return
               }
               // En modo rama, TODO lo que no sea una tarjeta de la rama es "afuera"
