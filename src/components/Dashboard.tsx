@@ -60,7 +60,9 @@ export function Dashboard({ db, onOpenTree, onOpenNotas }: Props) {
             {a.cursando} cursando
           </span>
           <span className="c">
-            <i style={{ background: '#D8D2C6' }} />
+            {/* El resto de la leyenda usa tokens (`--ap`, `--cu`, `--fi`); este era el
+                único literal, y es el mismo gris que marca las materias pendientes. */}
+            <i style={{ background: 'var(--line-fuerte)' }} />
             {a.pendientes} pendientes
           </span>
           <span className="c">{a.total} en total</span>

@@ -33,18 +33,22 @@ const nodeTypes = { materia: MateriaNode, band: BandNode, rotulo: RotuloNode }
 const edgeTypes = { tree: TreeEdge }
 
 // Escalas de color por profundidad: directas claritas → más lejos, más oscuro.
-const NEED_SHADES = [
-  { background: '#ECE6FB', borderColor: '#C4B2EF', color: '#4A35A0' },
-  { background: '#C7B2F0', borderColor: '#A083E2', color: '#3A2880' },
-  { background: '#9C79E5', borderColor: '#7E55D8', color: '#ffffff' },
-  { background: '#6B4FCF', borderColor: '#543AAE', color: '#ffffff' },
-]
-const UNLOCK_SHADES = [
-  { background: '#D6F0ED', borderColor: '#A2D7D0', color: '#0A5F5C' },
-  { background: '#A6DDD5', borderColor: '#75C5BB', color: '#07514E' },
-  { background: '#4FB6AC', borderColor: '#2E9E93', color: '#ffffff' },
-  { background: '#0E8C8C', borderColor: '#0A6E6E', color: '#ffffff' },
-]
+//
+// Los VALORES viven en `global.css` (`--need-N-*` / `--unlock-N-*`), no acá. Estos
+// literales eran los últimos 24 colores de la app fuera de la paleta, y tenerlos en un
+// .tsx significaba que cambiar los colores del árbol era tocar código y no la hoja de
+// estilos. Un `var()` dentro de un estilo inline lo resuelve el navegador igual que en
+// una regla CSS, así que no se pierde nada.
+const NEED_SHADES = [1, 2, 3, 4].map((n) => ({
+  background: `var(--need-${n}-bg)`,
+  borderColor: `var(--need-${n}-line)`,
+  color: `var(--need-${n}-tx)`,
+}))
+const UNLOCK_SHADES = [1, 2, 3, 4].map((n) => ({
+  background: `var(--unlock-${n}-bg)`,
+  borderColor: `var(--unlock-${n}-line)`,
+  color: `var(--unlock-${n}-tx)`,
+}))
 const shadeIdx = (lvl: number | undefined) => Math.min(Math.max((lvl ?? 1) - 1, 0), 3)
 
 /** La rama de `sel` re-acomodada compacta ("modo rama"), corrida para nacer
@@ -354,8 +358,8 @@ export function TreeView({
         className: enRama ? 'e-malla fondo-e' : 'e-malla',
         data: { pts } satisfies TreeEdgeData,
         interactionWidth: 0, // las flechas no comen clics (el clic pasa al fondo)
-        style: { stroke: '#b0a690', strokeWidth: 1.6 },
-        markerEnd: flecha('#b0a690', 12),
+        style: { stroke: 'var(--tv-arista)', strokeWidth: 1.6 },
+        markerEnd: flecha('var(--tv-arista)', 12),
         zIndex: 0,
       })
     }

@@ -10,6 +10,11 @@ import { CarreraSelect } from './CarreraSelect'
 
 // Marca en serif de sistema (Georgia) para que el ¿ del logo sea idéntico al
 // del favicon / OG (generados con esa fuente). El wordmark de abajo sí usa Fraunces.
+//
+// El dorado y el blanco van LITERALES, no como tokens: este badge tiene que coincidir
+// con el favicon y la imagen de OG, que son PNG generados aparte. Si siguiera a la
+// paleta, un cambio de colores dejaría el logo de la app distinto del de la pestaña
+// del navegador y del que se ve al compartir el link.
 const LogoBadge = () => (
   <svg viewBox="0 0 100 100" width="60" height="60" aria-hidden="true">
     <rect x="4" y="4" width="92" height="92" rx="22" fill="#c39200" />
