@@ -7,24 +7,14 @@
 
 import { useEffect, useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
-import { entrarConGoogle, salir, useSession } from '../state/auth'
-import {
-  cargarPerfilAdmin,
-  cargarPlanesAdmin,
-  cargarUniversidades,
-  type PlanAdmin,
-  type Universidad,
-} from '../state/admin'
-import {
-  cupoDe,
-  decidirAcceso,
-  esSuper,
-  estadoPlan,
-  puedeEditar,
-  tieneCambiosSinPublicar,
-  type PerfilAdmin,
-} from '../lib/admin'
+import { Auth, useSession } from '../state/auth'
+import { repo, UniversidadAdmin } from '../state/admin'
+import { SesionAdmin, type PlanAdmin } from '../lib/admin'
 import { EditorPlan } from './EditorPlan'
+import { CrearPlan } from './CrearPlan'
+import { PanelSuper } from './PanelSuper'
+import { Tour } from '../components/Tour'
+import { PASOS_LISTA, TOUR_LISTA_KEY, marcarTourVisto, tourVisto } from './tourAdmin'
 
 const volverALaApp = (): void => {
   location.hash = ''
@@ -39,29 +29,35 @@ const fecha = (iso: string | null): string => {
 
 export function AdminApp() {
   const session = useSession()
-  const [perfil, setPerfil] = useState<PerfilAdmin | null>(null)
+  const [sesion, setSesion] = useState<SesionAdmin | null>(null)
   const [planes, setPlanes] = useState<PlanAdmin[]>([])
-  const [unis, setUnis] = useState<Universidad[]>([])
+  const [unis, setUnis] = useState<UniversidadAdmin[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const [intento, setIntento] = useState(0)
   /** Plan abierto en el editor, o `null` si estamos en la lista. */
   const [editando, setEditando] = useState<{ planId: string; uni: string } | null>(null)
+  /** Universidad desde la que se está creando un plan, o `null`. */
+  const [creando, setCreando] = useState<string | null>(null)
+  /** El panel del superadmin (permisos y cupos), abierto o cerrado. */
+  const [panelSuper, setPanelSuper] = useState(false)
+  const [tourHecho, setTourHecho] = useState(() => tourVisto(TOUR_LISTA_KEY))
 
   // el perfil se recarga con la sesión: entrar y salir cambian todo lo que se ve
   useEffect(() => {
     if (!session) {
-      setPerfil(null)
+      setSesion(null)
       setPlanes([])
       return
     }
     let vivo = true
     setError(null)
-    cargarPerfilAdmin(session.user.id)
+    repo
+      .cargarPerfil(session.user.id)
       .then(async (p) => {
         if (!vivo) return
-        setPerfil(p)
-        const [ps, us] = await Promise.all([cargarPlanesAdmin(p), cargarUniversidades()])
+        setSesion(p)
+        const [ps, us] = await Promise.all([repo.cargarPlanes(p), repo.cargarUniversidades()])
         if (!vivo) return
         setPlanes(ps)
         setUnis(us)
@@ -74,8 +70,11 @@ export function AdminApp() {
     }
   }, [session, intento])
 
-  const acceso = decidirAcceso(authHabilitado, session !== null, perfil)
+  const acceso = SesionAdmin.acceso(authHabilitado, session !== null, sesion)
   const nombreUni = (id: string): string => unis.find((u) => u.id === id)?.nombre ?? id
+  // El cupo es de la universidad (migración 006). Si todavía no llegó la fila, 0: mejor
+  // decir "no entra otro" y que la base desmienta, que ofrecer un botón que va a fallar.
+  const limiteUni = (id: string): number => unis.find((u) => u.id === id)?.limite_planes ?? 0
 
   return (
     <div className="adm">
@@ -96,12 +95,20 @@ export function AdminApp() {
             <div className="adm-quien">
               <span className="adm-mail">{session.user.email}</span>
               <span className="adm-linea2">
-                {perfil && (
-                  <span className={`adm-rol ${esSuper(perfil) ? 'super' : ''}`}>
-                    {esSuper(perfil) ? 'superadmin' : 'admin'}
+                {sesion && (
+                  <span className={`adm-rol ${sesion.esSuper ? 'super' : ''}`}>
+                    {sesion.esSuper ? 'superadmin' : 'admin'}
                   </span>
                 )}
-                <button className="adm-salir" onClick={() => void salir()}>
+                {/* Un admin de universidad NO ve esto: repartir permisos es lo único
+                    exclusivo del superadmin, y ofrecérselo a quien no puede es ofrecerle
+                    una puerta que la base le va a cerrar. */}
+                {sesion?.puedeGestionarPermisos && !panelSuper && (
+                  <button className="adm-salir" onClick={() => setPanelSuper(true)}>
+                    Permisos y cupos
+                  </button>
+                )}
+                <button className="adm-salir" onClick={() => void Auth.salir()}>
                   Salir
                 </button>
               </span>
@@ -142,7 +149,7 @@ export function AdminApp() {
               Usá la cuenta habilitada para administrar planes — no la que usás para seguir tu
               propia carrera.
             </p>
-            <button className="btn" onClick={() => void entrarConGoogle()}>
+            <button className="btn" onClick={() => void Auth.entrarConGoogle()}>
               Entrar con Google
             </button>
           </div>
@@ -160,16 +167,16 @@ export function AdminApp() {
               administración. Si te corresponden, pedile a quien administra el sistema que te
               habilite para tu universidad.
             </p>
-            <button className="lnk" onClick={() => void salir()}>
+            <button className="lnk" onClick={() => void Auth.salir()}>
               Entrar con otra cuenta
             </button>
           </div>
         )}
 
-        {acceso === 'ok' && perfil && editando && (
+        {acceso === 'ok' && sesion && editando && (
           <EditorPlan
             planId={editando.planId}
-            puedeEditar={puedeEditar(perfil, editando.uni)}
+            puedeEditar={sesion.puedeEditar(editando.uni)}
             onVolver={() => {
               setEditando(null)
               setIntento((n) => n + 1) // la lista se recarga: pudo cambiar la versión publicada
@@ -177,28 +184,77 @@ export function AdminApp() {
           />
         )}
 
-        {acceso === 'ok' && perfil && !editando && (
+        {acceso === 'ok' && sesion?.puedeGestionarPermisos && panelSuper && !editando && (
+          <PanelSuper
+            universidades={unis}
+            planes={planes}
+            onCrearPlan={(uni) => {
+              setPanelSuper(false)
+              setCreando(uni)
+            }}
+            onCerrar={() => setPanelSuper(false)}
+            onCambioLimite={() => setIntento((n) => n + 1)}
+          />
+        )}
+
+        {acceso === 'ok' && sesion && !editando && !panelSuper && creando !== null && (
+          <CrearPlan
+            sesion={sesion}
+            universidades={unis}
+            uniInicial={creando}
+            idsExistentes={planes.map((p) => p.id)}
+            onCancelar={() => setCreando(null)}
+            onCreado={(planId) => {
+              setCreando(null)
+              setIntento((n) => n + 1) // la lista se recarga con el plan nuevo
+              setEditando({ planId, uni: creando })
+            }}
+          />
+        )}
+
+        {acceso === 'ok' && sesion && !editando && creando === null && !panelSuper && (
           <>
             {planes.length === 0 && (
               <div className="adm-card adm-vacio">
                 <h2>Todavía no hay planes</h2>
                 <p>Cuando cargues el primero, va a aparecer acá.</p>
+                {(sesion.esSuper || sesion.universidades.length > 0) && (
+                  <button
+                    className="btn"
+                    onClick={() => setCreando(sesion.universidades[0] ?? unis[0]?.id ?? '')}
+                  >
+                    Crear el primero
+                  </button>
+                )}
               </div>
             )}
 
             {[...new Set(planes.map((p) => p.universidad_id))].map((uni) => {
               const suyos = planes.filter((p) => p.universidad_id === uni)
-              const cupo = cupoDe(perfil, uni, suyos.length)
+              const cupo = sesion.cupoEn(uni, suyos.length, limiteUni(uni))
               return (
                 <section className="adm-uni" key={uni}>
                   <div className="adm-uni-head">
                     <h2>{nombreUni(uni)}</h2>
                     <span className="adm-cupo">{cupo.leyenda}</span>
+                    <button
+                      className="adm-nuevo"
+                      onClick={() => setCreando(uni)}
+                      disabled={!cupo.puedeCrear}
+                      title={
+                        cupo.puedeCrear
+                          ? 'Cargar una carrera nueva'
+                          : cupo.leyenda /* dice por qué no se puede */
+                      }
+                    >
+                      + Plan nuevo
+                    </button>
+
                   </div>
 
                   <ul className="adm-planes">
                     {suyos.map((p) => {
-                      const pendiente = tieneCambiosSinPublicar(p.actualizado_at, p.publicado_at)
+                      const pendiente = p.tieneCambiosSinPublicar
                       return (
                         <li className="adm-plan" key={p.id}>
                           <div className="adm-plan-id">
@@ -206,13 +262,18 @@ export function AdminApp() {
                             <span className="adm-meta">
                               plan {p.codigo} · {p.anio}
                             </span>
+                            {/* El id es PERMANENTE y no se puede cambiar. Tenerlo solo en
+                                la base obligaba a abrir Supabase para saber cuál te tocó. */}
+                            <code className="adm-id" title="Identificador permanente del plan">
+                              {p.id}
+                            </code>
                           </div>
                           <div className="adm-plan-estado">
                             <span
                               className={`adm-pill ${p.version_publicada ? 'ok' : 'no'}`}
                               title="Versión que están viendo los alumnos"
                             >
-                              {estadoPlan(p.estado, p.version_publicada)}
+                              {p.etiquetaEstado}
                             </span>
                             {pendiente && (
                               <span
@@ -231,7 +292,7 @@ export function AdminApp() {
                               className="adm-volver"
                               onClick={() => setEditando({ planId: p.id, uni })}
                             >
-                              {puedeEditar(perfil, uni) ? 'Editar' : 'Ver'}
+                              {sesion.puedeEditar(uni) ? 'Editar' : 'Ver'}
                             </button>
                           </div>
                         </li>
@@ -242,10 +303,19 @@ export function AdminApp() {
               )
             })}
 
-            <p className="adm-nota">
-              Los alumnos ven la <strong>versión publicada</strong>. Mientras editás un plan, siguen
-              viendo la anterior; al publicar, reciben un aviso y deciden cuándo actualizar.
-            </p>
+            {/* El tour corre una sola vez y recién con la lista PINTADA: sus pasos apuntan a
+            elementos reales, y si no existen todavía no hay nada que resaltar. */}
+        {!tourHecho && planes.length > 0 && (
+          <Tour
+            pasos={PASOS_LISTA}
+            onClose={() => {
+              marcarTourVisto(TOUR_LISTA_KEY)
+              setTourHecho(true)
+            }}
+          />
+        )}
+
+
           </>
         )}
       </main>

@@ -1,64 +1,34 @@
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react'
+import type { Step } from './tourPasos'
 
-interface Step {
-  sel: string // selector del elemento real a resaltar
-  titulo: string
-  texto: string
-  cta?: boolean // paso de cierre: el botón primario invita a marcar, no a avanzar
-}
+// Tour sobre los elementos REALES de la pantalla: guía en contexto, no pantallas previas
+// que se leen y se olvidan. Los pasos entran por PROP — nació con los del alumno adentro,
+// pero la administración necesita los suyos, que son otro momento y otro vocabulario.
 
-// Tour sobre los elementos REALES de la app (guía en contexto, no pantallas previas).
-// Cierra sobre la 1ª materia con una llamada a la acción: el dato del embudo dice
-// que el 64% entra y no marca nada, así que el tour no termina explicando — termina
-// empujando el primer toque (la métrica de activación del Gate A).
-const STEPS: Step[] = [
-  {
-    sel: '#plan .mat',
-    titulo: 'Marcá tus materias',
-    texto: 'Tocá una materia para poner su estado: pendiente, cursando, pend. de final o aprobada.',
-  },
-  {
-    sel: '#plan .corr-btn',
-    titulo: 'Correlativas',
-    texto: 'Este botón te muestra qué necesitás antes de una materia y qué habilita después.',
-  },
-  {
-    sel: '.nav-tiles .nav-tile:first-child',
-    titulo: 'Árbol de correlativas',
-    texto: 'Tocá una materia y vas a ver toda su cadena: lo que necesitás y lo que habilita.',
-  },
-  {
-    sel: '.nav-tiles .nav-tile:last-child',
-    titulo: 'Notas',
-    texto: 'Cargá la nota de las materias aprobadas y mirá tu promedio.',
-  },
-  {
-    sel: '.head .actions',
-    titulo: 'Opciones',
-    texto: 'Exportá un PDF o un backup, cambiá de carrera y más.',
-  },
-  {
-    sel: '#plan .mat',
-    titulo: '¡Ahora probá vos!',
-    texto: 'Empezá por esta: tocala y marcá cómo la llevás. Tu avance se calcula solo.',
-    cta: true,
-  },
-]
+// Tour sobre los elementos REALES de la pantalla: guía en contexto, no pantallas
+// previas que se leen y se olvidan.
+//
+// Los pasos entran por PROP. Nació con los del alumno adentro, pero la administración
+// necesita los suyos —y son otro momento, otra pantalla y otro vocabulario—, así que el
+// componente quedó genérico y cada pantalla trae su guion.
 
 const CARD_W = 300
 
 export function Tour({
+  pasos,
   onClose,
   onMark,
 }: {
+  /** El guion de esta pantalla. */
+  pasos: Step[]
   onClose: () => void
-  /** Aceptó el empujón final. `directo`: tocó la materia (el clic ya abre su selector). */
-  onMark: (directo?: boolean) => void
+  /** Aceptó el empujón final. `directo`: tocó el elemento (su clic ya hace lo suyo). */
+  onMark?: (directo?: boolean) => void
 }) {
   const [i, setI] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
-  const step = STEPS[i]
-  const last = i === STEPS.length - 1
+  const step = pasos[i]
+  const last = i === pasos.length - 1
 
   useLayoutEffect(() => {
     const el = document.querySelector<HTMLElement>(step.sel)
@@ -97,12 +67,12 @@ export function Tour({
     const onDocClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null
       if (!t || t.closest('.tour-card')) return
-      if (t.closest('.mat')) onMark(true)
+      if (step.ctaSel && t.closest(step.ctaSel)) onMark?.(true)
       else onClose()
     }
     document.addEventListener('click', onDocClick, true)
     return () => document.removeEventListener('click', onDocClick, true)
-  }, [step.cta, onMark, onClose])
+  }, [step.cta, step.ctaSel, onMark, onClose])
 
   if (!rect) return null
 
@@ -127,7 +97,7 @@ export function Tour({
       />
       <div className="tour-card" style={cardStyle}>
         <div className="tour-step">
-          {i + 1} / {STEPS.length}
+          {i + 1} / {pasos.length}
         </div>
         <div className="tour-title">{step.titulo}</div>
         <p className="tour-text">{step.texto}</p>
@@ -142,8 +112,12 @@ export function Tour({
               </button>
             )}
             {step.cta ? (
-              <button className="tour-next tour-cta" type="button" onClick={() => onMark()}>
-                Marcar una materia
+              <button
+                className="tour-next tour-cta"
+                type="button"
+                onClick={() => (onMark ? onMark() : onClose())}
+              >
+                {step.ctaTexto ?? 'Empezar'}
               </button>
             ) : (
               <button

@@ -61,7 +61,7 @@ export function useSession(): Session | null {
  * Dispara el flujo OAuth de Google. Vuelve a la misma URL de origen, conservando la
  * ruta de la app (el hash): si entrás desde `#admin`, volvés a `#admin`.
  */
-export async function entrarConGoogle(): Promise<void> {
+async function entrar(): Promise<void> {
   if (!supabase) return
   await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -70,7 +70,29 @@ export async function entrarConGoogle(): Promise<void> {
 }
 
 /** Cierra la sesión. Los datos locales quedan intactos. */
-export async function salir(): Promise<void> {
+async function cerrarSesion(): Promise<void> {
   if (!supabase) return
   await supabase.auth.signOut()
+}
+
+/**
+ * La sesión del usuario contra Supabase.
+ *
+ * `useSession` queda como función suelta y no como método: es un HOOK de React, y React
+ * exige que los hooks se llamen desde el cuerpo de un componente y se llamen `use*`.
+ * Ese límite lo pone el framework, no el diseño.
+ */
+export class Auth {
+  /** Abre el login de Google (PKCE), conservando el hash actual al volver. */
+  static entrarConGoogle(): Promise<void> {
+    return entrar()
+  }
+
+  /**
+   * Cierra la sesión. Deja el avance en localStorage a propósito: sirve de caché
+   * offline y volver a entrar lo reconcilia por merge.
+   */
+  static salir(): Promise<void> {
+    return cerrarSesion()
+  }
 }

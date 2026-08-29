@@ -1,10 +1,10 @@
 import { Fragment, useState } from 'react'
 import type { DB } from '../types'
 import { plan } from '../domain/Plan'
-import { avance, decidirAnio, disponible, nombreDe } from '../domain/selectors'
+import { avanceDe } from '../domain/Avance'
 import { store } from '../state/store'
 import { toast } from '../lib/toast'
-import { track, trackActivacion } from '../lib/analytics'
+import { Analytics } from '../lib/analytics'
 import { MateriaRow } from './MateriaRow'
 import { CorrPanel } from './CorrPanel'
 
@@ -64,11 +64,11 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
    *  porque pisa lo que hubiera marcado. */
   const toggleAnio = (year: number) => {
     const cods = plan.codsDelAnio(year)
-    const destino = decidirAnio(db, cods)
+    const destino = avanceDe(db).decidirAnio(cods)
     const inverso = store.setEstados(Object.fromEntries(cods.map((c) => [c, destino])))
-    const av = avance(store.getSnapshot())
-    trackActivacion(av.aprobadas + av.final + av.cursando) // suele ser LA activación
-    track('anio_marcado')
+    const av = avanceDe(store.getSnapshot()).conteos
+    Analytics.activacion(av.aprobadas + av.final + av.cursando) // suele ser LA activación
+    Analytics.evento('anio_marcado')
     const opts = plan.materias().filter((m) => m.year === year).length - cods.length
     const cola = opts > 0 ? ' Las optativas quedan como estaban.' : ''
     toast.show(
@@ -87,10 +87,12 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
     window.setTimeout(() => setFlash((f) => (f === cod ? null : f)), 1100)
   }
 
+  const av0 = avanceDe(db)
+
   return (
     <div id="plan">
       {plan.anios.map((anio) => {
-        const completo = decidirAnio(db, plan.codsDelAnio(anio.year)) === 'pendiente'
+        const completo = av0.decidirAnio(plan.codsDelAnio(anio.year)) === 'pendiente'
         return (
         <section className="year" key={anio.year}>
           <div className="yhead">
@@ -115,9 +117,9 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
                     <MateriaRow
                       id={rowId(m.cod)}
                       cod={m.cod}
-                      nom={nombreDe(db, m.cod)}
+                      nom={av0.nombreDe(m.cod)}
                       estado={db.states[m.cod] ?? 'pendiente'}
-                      disponible={disponible(db, m.cod)}
+                      disponible={av0.disponible(m.cod)}
                       abierto={openCod === m.cod}
                       flash={flash === m.cod}
                       corrAbierto={corr.has(m.cod)}

@@ -1,6 +1,6 @@
 import type { DB } from '../types'
 import { plan } from '../domain/Plan'
-import { nombreDe } from '../domain/selectors'
+import { avanceDe } from '../domain/Avance'
 
 interface Props {
   cod: string
@@ -11,6 +11,7 @@ interface Props {
 
 /** Panel inline de correlativas: dos bloques (Necesitás / Habilita) + atajo al árbol de correlativas. */
 export function CorrPanel({ cod, db, onGoTo, onVerArbol }: Props) {
+  const av = avanceDe(db)
   const antes = plan.antes(cod)
   const despues = plan.despues(cod)
   const vacio = antes.length === 0 && despues.length === 0
@@ -27,7 +28,7 @@ export function CorrPanel({ cod, db, onGoTo, onVerArbol }: Props) {
               <div className="cb-chips">
                 {antes.map((c) => (
                   <button key={c} className="chip need" type="button" onClick={() => onGoTo(c)}>
-                    {nombreDe(db, c)}
+                    {av.nombreDe(c)}
                   </button>
                 ))}
               </div>
@@ -41,7 +42,7 @@ export function CorrPanel({ cod, db, onGoTo, onVerArbol }: Props) {
               <div className="cb-chips">
                 {despues.map((c) => (
                   <button key={c} className="chip unlock" type="button" onClick={() => onGoTo(c)}>
-                    {nombreDe(db, c)}
+                    {av.nombreDe(c)}
                   </button>
                 ))}
               </div>

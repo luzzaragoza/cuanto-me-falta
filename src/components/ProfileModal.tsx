@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Perfil } from '../types'
-import { iniciales } from '../domain/selectors'
-import { resizePhoto } from '../lib/image'
+import { Perfil } from '../types'
+import { Foto } from '../lib/image'
 import { store } from '../state/store'
 import { AccountBox } from './AccountBox'
 
@@ -27,20 +26,20 @@ export function ProfileModal({ welcome, perfil, onClose }: Props) {
   const pick = async (file: File | undefined) => {
     if (!file) return
     try {
-      setPhoto(await resizePhoto(file))
+      setPhoto(await Foto.desdeArchivo(file))
     } catch {
       /* imagen inválida: la ignoramos */
     }
   }
 
   const save = () => {
-    store.setPerfil({ name: name.trim(), photo })
+    store.setPerfil(new Perfil(name.trim(), photo))
     onClose()
   }
 
   // al saltear la bienvenida marcamos el perfil como "visto" (vacío) para no re-preguntar
   const skip = () => {
-    if (welcome) store.setPerfil({ name: '', photo: '' })
+    if (welcome) store.setPerfil(new Perfil('', ''))
     onClose()
   }
 
@@ -59,7 +58,7 @@ export function ProfileModal({ welcome, perfil, onClose }: Props) {
 
         <div className="ppick">
           <div className="pprev">
-            {photo ? <img src={photo} alt="" /> : <span>{iniciales(name) || '·'}</span>}
+            {photo ? <img src={photo} alt="" /> : <span>{new Perfil(name).iniciales || '·'}</span>}
           </div>
           <div className="ppick-side">
             <div className="ppick-btns">

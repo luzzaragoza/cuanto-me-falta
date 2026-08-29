@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import type { DB, Estado } from '../types'
 import { plan } from '../domain/Plan'
-import { avance, nombreDe, previasParaEstado } from '../domain/selectors'
+import { avanceDe } from '../domain/Avance'
 import { store } from '../state/store'
 import { toast } from '../lib/toast'
-import { trackActivacion } from '../lib/analytics'
+import { Analytics } from '../lib/analytics'
 
 const OPTS: { k: Estado; label: string; desc: string }[] = [
   { k: 'pendiente', label: 'Pendiente', desc: 'Todavía no la empecé' },
@@ -31,7 +31,8 @@ interface Props {
 
 export function StatePopover({ cod, anchor, db, onClose, onVerArbol }: Props) {
   const ref = useRef<HTMLDivElement>(null)
-  const estado: Estado = db.states[cod] ?? 'pendiente'
+  const avDb = avanceDe(db)
+  const estado: Estado = db.estado(cod)
   const special = plan.isSpecial(cod)
   const isOpt = plan.isOpt(cod)
 
@@ -77,18 +78,18 @@ export function StatePopover({ cod, anchor, db, onClose, onVerArbol }: Props) {
   const select = (k: Estado) => {
     store.setEstado(cod, k)
     // activación: 1ª materia marcada / llegó a 5 (métrica del Gate A)
-    const av = avance(store.getSnapshot())
-    trackActivacion(av.aprobadas + av.final + av.cursando)
+    const av = avanceDe(store.getSnapshot()).conteos
+    Analytics.activacion(av.aprobadas + av.final + av.cursando)
     // El aviso de previas ahora es un toast flotante: no atamos el popover a mostrarlo.
     // Optativas y especiales quedan exentas del chequeo (RN-05): se habilitan por otro
     // requisito (oferta anual / año o % de carrera), no por correlativas.
     if (!special && !isOpt) {
-      const faltan = previasParaEstado(store.getSnapshot(), cod, k)
+      const faltan = avanceDe(store.getSnapshot()).previasParaEstado(cod, k)
       if (faltan.length > 0) {
-        const nombres = faltan.map((p) => nombreDe(db, p)).join(', ')
+        const nombres = faltan.map((p) => avDb.nombreDe(p)).join(', ')
         const verbo = k === 'aprobada' ? 'aprobar' : 'cursar'
         const falta = faltan.length > 1 ? 'te faltan' : 'te falta'
-        toast.show(`Para ${verbo} ${nombreDe(db, cod)} ${falta}: ${nombres}.`, 'warn', {
+        toast.show(`Para ${verbo} ${avDb.nombreDe(cod)} ${falta}: ${nombres}.`, 'warn', {
           label: 'Ver árbol de correlativas',
           run: () => onVerArbol(cod),
         })

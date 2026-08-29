@@ -1,17 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { PLANES } from '../data/planes'
-import {
-  cadenaDe,
-  invariantes,
-  layoutGrafo,
-  layoutMalla,
-  subgrafoRama,
-  reduccionTransitiva,
-  DIST_CORTA,
-  NODEX,
-  PADX,
-  type GrafoPlan,
-} from './arbolLayout'
+import type { Correlativa } from '../data/model'
+import { Grafo, DIST_CORTA, NODEX, PADX } from './arbolLayout'
 
 // Los invariantes geométricos del árbol, verificados contra el layout REAL de
 // cada plan (y de cada rama). Esto es lo que convierte "el árbol quedó mal" en
@@ -20,15 +10,12 @@ import {
 
 const CERO = { cruces: 0, pegados: 0, haciaArriba: 0, filasDesordenadas: 0 }
 
-const grafoDe = (p: (typeof PLANES)[number]): GrafoPlan => ({
-  materias: p.materias,
-  correlativas: p.correlativas,
-})
+const grafoDe = (p: (typeof PLANES)[number]): Grafo => Grafo.dePlan(p)
 
 for (const plan of PLANES) {
   describe(`arbolLayout · ${plan.carrera}`, () => {
     it('la malla es una grilla exacta y limpia (invariantes en cero)', async () => {
-      const lay = await layoutMalla(grafoDe(plan))
+      const lay = await grafoDe(plan).malla()
       expect(Object.keys(lay.pos)).toHaveLength(plan.materias.length)
       // columnas perfectamente alineadas (slots enteros) y sin dos materias en el mismo lugar
       const lugares = new Set<string>()
@@ -39,11 +26,11 @@ for (const plan of PLANES) {
         lugares.add(lugar)
       }
       // ninguna flecha cruza una tarjeta ajena, ninguna va para arriba, filas en orden
-      expect(invariantes(lay)).toEqual(CERO)
+      expect(lay.invariantes).toEqual(CERO)
     })
 
     it('en reposo dibuja las correlativas cortas no redundantes, y SOLO esas', async () => {
-      const lay = await layoutMalla(grafoDe(plan))
+      const lay = await grafoDe(plan).malla()
       const q = new Map(plan.materias.map((m) => [m.cod, (m.anio - 1) * 2 + (m.cuatri - 1)]))
       const salto = (id: string) => {
         const [src, tgt] = id.split('->')
@@ -57,7 +44,7 @@ for (const plan of PLANES) {
         expect(salto(id), id).toBeLessThanOrEqual(DIST_CORTA)
       }
       // y no se pierde ninguna que sí corresponda (el ruteo encuentra paso para todas)
-      const esperadas = reduccionTransitiva(plan.correlativas).filter((c) => {
+      const esperadas = grafoDe(plan).reducido().correlativas.filter((c) => {
         const d = q.get(c.cod)! - q.get(c.requiere)!
         return d >= 1 && d <= DIST_CORTA
       })
@@ -67,8 +54,8 @@ for (const plan of PLANES) {
     })
 
     it('la reducción transitiva no cambia lo que se alcanza desde cada materia', () => {
-      const reducidas = reduccionTransitiva(plan.correlativas)
-      const alcanzables = (cs: typeof plan.correlativas, desde: string) => {
+      const reducidas = grafoDe(plan).reducido().correlativas
+      const alcanzables = (cs: readonly Correlativa[], desde: string) => {
         const sig = new Map<string, string[]>()
         for (const c of cs) (sig.get(c.requiere) ?? sig.set(c.requiere, []).get(c.requiere)!).push(c.cod)
         const vistos = new Set<string>()
@@ -94,9 +81,9 @@ for (const plan of PLANES) {
       // por el foco. Se verifica para CADA materia con cadena.
       const grafo = grafoDe(plan)
       for (const m of plan.materias) {
-        const { up, down } = cadenaDe(plan.correlativas, m.cod)
+        const { up, down } = grafoDe(plan).cadenaDe(m.cod)
         if (up.size === 0 || down.size === 0) continue
-        for (const c of subgrafoRama(grafo, m.cod).correlativas)
+        for (const c of grafo.rama(m.cod).correlativas)
           expect(
             up.has(c.requiere) && down.has(c.cod),
             `${c.requiere}->${c.cod} en la rama de ${m.cod}`,
@@ -111,16 +98,16 @@ for (const plan of PLANES) {
       )
       expect(conCadena.length).toBeGreaterThan(0)
       for (const m of conCadena) {
-        const sub = subgrafoRama(grafo, m.cod)
-        const lay = await layoutGrafo(sub)
-        expect(invariantes(lay), `rama de ${m.cod} ${m.nom}`).toEqual(CERO)
+        const sub = grafo.rama(m.cod)
+        const lay = await sub.layout()
+        expect(lay.invariantes, `rama de ${m.cod} ${m.nom}`).toEqual(CERO)
       }
     }, 30000)
 
     it('el subgrafo de la rama es exactamente la cadena (up + down + foco)', () => {
       const m = plan.correlativas[0]
-      const sub = subgrafoRama(grafoDe(plan), m.cod)
-      const { up, down } = cadenaDe(plan.correlativas, m.cod)
+      const sub = grafoDe(plan).rama(m.cod)
+      const { up, down } = grafoDe(plan).cadenaDe(m.cod)
       expect(new Set(sub.materias.map((x) => x.cod))).toEqual(new Set([m.cod, ...up, ...down]))
       // ninguna correlativa del subgrafo apunta afuera
       const cods = new Set(sub.materias.map((x) => x.cod))

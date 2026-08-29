@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { store } from '../state/store'
-import { download, printSummary, slug } from '../lib/io'
-import { track } from '../lib/analytics'
+import { Archivo } from '../lib/io'
+import { Analytics } from '../lib/analytics'
 
 // URL del formulario de feedback (Tally). Si no está configurada, no se muestra el botón.
 const feedbackUrl = (import.meta.env as Record<string, string | undefined>).VITE_FEEDBACK_URL
@@ -40,15 +40,15 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
   }, [open])
 
   const exportBackup = () => {
-    track('backup_exportado')
+    Analytics.evento('backup_exportado')
     const name = store.getSnapshot().profile?.name
-    download(`plan-uade-${slug(name)}.json`, store.exportar())
+    Archivo.descargar(`plan-uade-${Archivo.slug(name)}.json`, store.exportar())
     setOpen(false)
   }
 
   const openFeedback = () => {
     setOpen(false)
-    track('feedback_abierto')
+    Analytics.evento('feedback_abierto')
     if (feedbackUrl) window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
   }
 
@@ -90,8 +90,8 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
             role="menuitem"
             onClick={() => {
               setOpen(false)
-              track('pdf_exportado')
-              printSummary()
+              Analytics.evento('pdf_exportado')
+              Archivo.imprimirResumen()
             }}
           >
             Exportar resumen (PDF)

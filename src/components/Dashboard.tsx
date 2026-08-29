@@ -1,5 +1,5 @@
 import type { DB } from '../types'
-import { avance } from '../domain/selectors'
+import { avanceDe } from '../domain/Avance'
 
 interface Props {
   db: DB
@@ -24,7 +24,7 @@ const NotesIcon = () => (
 )
 
 export function Dashboard({ db, onOpenTree, onOpenNotas }: Props) {
-  const a = avance(db)
+  const a = avanceDe(db).conteos
   const seg = (n: number) => ({ width: a.total ? `${(n / a.total) * 100}%` : '0%' })
 
   return (

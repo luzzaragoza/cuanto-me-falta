@@ -1,4 +1,4 @@
-import { aceptarConsentimiento, rechazarConsentimiento } from '../state/sync'
+import { Sync } from '../state/sync'
 
 const base = import.meta.env.BASE_URL
 
@@ -30,10 +30,10 @@ export function ConsentModal() {
         </p>
 
         <div className="m-actions">
-          <button className="lnk" onClick={rechazarConsentimiento}>
+          <button className="lnk" onClick={() => Sync.rechazarConsentimiento()}>
             Salir de la cuenta
           </button>
-          <button className="btn" onClick={aceptarConsentimiento}>
+          <button className="btn" onClick={() => Sync.aceptarConsentimiento()}>
             Acepto y sincronizo
           </button>
         </div>

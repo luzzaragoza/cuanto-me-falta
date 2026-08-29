@@ -20,7 +20,7 @@ type Listener = () => void
  * Bus de avisos flotantes (toasts): observable + auto-descarte.
  * Cualquier módulo llama `toast.show(...)`; el <Toaster/> se suscribe y los pinta.
  */
-class ToastBus {
+export class ToastBus {
   private items: Toast[] = []
   private listeners = new Set<Listener>()
   private seq = 0

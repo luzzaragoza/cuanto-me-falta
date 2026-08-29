@@ -1,21 +1,14 @@
 import { useDB } from '../state/store'
-import {
-  avance,
-  avancePorAnio,
-  hitos,
-  iniciales,
-  materiasEnEstado,
-  nombreDe,
-  promedio,
-} from '../domain/selectors'
+import { avanceDe } from '../domain/Avance'
 import { plan } from '../domain/Plan'
 import { nombreUniversidad } from '../data/planes'
 
 /** Resumen de una carilla para exportar a PDF (visible solo al imprimir). */
 export function PrintSummary() {
   const db = useDB()
-  const a = avance(db)
-  const prom = promedio(db)
+  const av = avanceDe(db)
+  const a = av.conteos
+  const prom = av.promedio
   const perfil = db.profile
   const nombre = perfil?.name?.trim() || 'Mi plan de carrera'
   const seg = (n: number) => ({ width: a.total ? `${(n / a.total) * 100}%` : '0%' })
@@ -24,14 +17,14 @@ export function PrintSummary() {
     month: 'long',
     year: 'numeric',
   })
-  const cursando = materiasEnEstado(db, 'cursando')
-  const final = materiasEnEstado(db, 'final')
+  const cursando = av.materiasEn('cursando')
+  const final = av.materiasEn('final')
 
   return (
     <div id="print-summary">
       <header className="ps-head">
         <div className="ps-av">
-          {perfil?.photo ? <img src={perfil.photo} alt="" /> : <span>{iniciales(perfil?.name) || '·'}</span>}
+          {perfil?.photo ? <img src={perfil.photo} alt="" /> : <span>{perfil?.iniciales || '·'}</span>}
         </div>
         <div className="ps-id">
           <div className="ps-name">{nombre}</div>
@@ -89,7 +82,7 @@ export function PrintSummary() {
       <div className="ps-grid">
         <section className="ps-sec">
           <h4 className="ps-h">Títulos</h4>
-          {hitos(db).map((h) => (
+          {av.hitos.map((h) => (
             <div className={`ps-mile ${h.ok ? 'ok' : ''}`} key={h.titulo}>
               <span className="m-mark">{h.ok ? '✓' : '○'}</span>
               <span className="m-name">{h.titulo}</span>
@@ -99,7 +92,7 @@ export function PrintSummary() {
         </section>
         <section className="ps-sec">
           <h4 className="ps-h">Avance por año</h4>
-          {avancePorAnio(db).map((y) => (
+          {av.porAnio.map((y) => (
             <div className="ps-year" key={y.year}>
               <span className="yl">{y.year}° año</span>
               <span className="yt">
@@ -118,7 +111,7 @@ export function PrintSummary() {
           <h4 className="ps-h">Cursando ahora</h4>
           <ul className="ps-list cu">
             {cursando.length ? (
-              cursando.map((m) => <li key={m.cod}>{nombreDe(db, m.cod)}</li>)
+              cursando.map((m) => <li key={m.cod}>{av.nombreDe(m.cod)}</li>)
             ) : (
               <li className="mut">Ninguna por ahora</li>
             )}
@@ -128,7 +121,7 @@ export function PrintSummary() {
           <h4 className="ps-h">Pendientes de final</h4>
           <ul className="ps-list fi">
             {final.length ? (
-              final.map((m) => <li key={m.cod}>{nombreDe(db, m.cod)}</li>)
+              final.map((m) => <li key={m.cod}>{av.nombreDe(m.cod)}</li>)
             ) : (
               <li className="mut">Ninguna por ahora</li>
             )}

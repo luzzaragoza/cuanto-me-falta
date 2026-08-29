@@ -12,20 +12,12 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Plan, plan as planAlumno } from '../../domain/Plan'
-import { nombreDe } from '../../domain/selectors'
+import { avanceDe } from '../../domain/Avance'
 import { useDB } from '../../state/store'
 import type { Estado } from '../../types'
 import { useExitAnimation } from '../../hooks/useExitAnimation'
-import { track } from '../../lib/analytics'
-import {
-  layoutGrafo,
-  layoutMalla,
-  subgrafoRama,
-  NODEW,
-  type ArbolLayout,
-  type GrafoPlan,
-  type Punto,
-} from '../../lib/arbolLayout'
+import { Analytics } from '../../lib/analytics'
+import { Grafo, Layout, NODEW, type Punto } from '../../lib/arbolLayout'
 import { MateriaNode, type NodeRole } from './MateriaNode'
 import { BandNode } from './BandNode'
 import { TreeEdge, type TreeEdgeData } from './TreeEdge'
@@ -68,7 +60,7 @@ interface Rama {
   minX: number
 }
 
-function centrarRama(lay: ArbolLayout, malla: ArbolLayout): { dx: number; dy: number } {
+function centrarRama(lay: Layout, malla: Layout): { dx: number; dy: number } {
   const cods = Object.keys(lay.pos)
   const prom = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(xs.length, 1)
   const dx = prom(cods.map((c) => malla.pos[c]?.x ?? 0)) - prom(cods.map((c) => lay.pos[c].x))
@@ -92,6 +84,16 @@ export interface ModoEdicion {
   elegibles: Set<string>
   yaConectadas: Set<string>
   onAlternar: (cod: string) => void
+  /**
+   * Clickear una materia que NO se puede conectar la vuelve el nuevo objetivo.
+   *
+   * Antes ese clic no hacía nada y había que encontrar un enlace chiquito en la barra
+   * para cambiar de materia. El gesto natural es tocar la que te interesa: ahora eso
+   * funciona, y la barra dejó de ser el único camino.
+   */
+  onElegirObjetivo: (cod: string) => void
+  /** Por qué esa materia no se puede conectar (para el tooltip). */
+  porQueNo?: (cod: string) => string | null
 }
 
 export function TreeView({
@@ -114,7 +116,7 @@ export function TreeView({
   // memoizado: sin esto `db` sería un objeto nuevo en cada render y el useMemo de los
   // nodos se recalcularía siempre (y las advertencias de exhaustive-deps tendrían razón)
   const db = useMemo(
-    () => (estadosExternos ? { ...dbAlumno, states: estadosExternos } : dbAlumno),
+    () => (estadosExternos ? dbAlumno.conVistaDeEstados(estadosExternos) : dbAlumno),
     [dbAlumno, estadosExternos],
   )
   const [sel, setSel] = useState<string | null>(focus)
@@ -126,6 +128,8 @@ export function TreeView({
     if (enEdicion) setSel(focus)
   }, [focus, enEdicion])
   const flowRef = useRef<ReactFlowInstance | null>(null)
+  /** El lienzo, para encuadrar contra SU ancho y no contra el de la ventana. */
+  const lienzo = useRef<HTMLDivElement | null>(null)
   const [flowListo, setFlowListo] = useState(false)
 
   // Nombres del plan QUE SE DIBUJA. En el editor no se puede usar `nombreDe`: ese busca
@@ -136,17 +140,14 @@ export function TreeView({
     [plan],
   )
 
-  const grafo: GrafoPlan = useMemo(
-    () => ({ materias: plan.def.materias, correlativas: plan.def.correlativas }),
-    [plan],
-  )
+  const grafo = useMemo(() => Grafo.dePlan(plan.def), [plan])
 
   // ── layout de la MALLA (una vez; ELK es async pero tarda ms) ──
   // grilla compacta nuestra + ruteo ELK: el mapa se recorre, no se explora
-  const [malla, setMalla] = useState<ArbolLayout | null>(null)
+  const [malla, setMalla] = useState<Layout | null>(null)
   useEffect(() => {
     let vivo = true
-    void layoutMalla(grafo).then((l) => {
+    void grafo.malla().then((l) => {
       if (vivo) setMalla(l)
     })
     return () => {
@@ -162,13 +163,13 @@ export function TreeView({
       setRama(null)
       return
     }
-    const sub = subgrafoRama(grafo, sel)
+    const sub = grafo.rama(sel)
     if (sub.materias.length <= 1) {
       setRama(null) // sin cadena no hay rama que juntar: queda la malla
       return
     }
     let vivo = true
-    void layoutGrafo(sub).then((lay) => {
+    void sub.layout().then((lay) => {
       if (!vivo) return
       const { dx, dy } = centrarRama(lay, malla)
       const pos: Rama['pos'] = {}
@@ -289,8 +290,8 @@ export function TreeView({
           // Con un plan externo (el editor) el nombre es el del PLAN QUE SE DIBUJA: si
           // no, `nombreDe` lo busca en el plan del alumno y muestra el nombre de otra
           // materia con el mismo código, o solo el código si no existe allá.
-          nom: planExterno ? (nombres.get(m.cod) ?? m.cod) : nombreDe(db, m.cod),
-          estado: db.states[m.cod] ?? 'pendiente',
+          nom: planExterno ? (nombres.get(m.cod) ?? m.cod) : avanceDe(db).nombreDe(m.cod),
+          estado: db.estado(m.cod),
           role: role(m.cod),
           tint: tint(m.cod),
           edit: !edicion
@@ -303,6 +304,10 @@ export function TreeView({
                   ? 'elegible'
                   : 'apagada',
           editDir: edicion?.direccion,
+          motivo:
+            edicion && m.cod !== edicion.objetivo && !edicion.elegibles.has(m.cod)
+              ? (edicion.porQueNo?.(m.cod) ?? undefined)
+              : undefined,
         },
         className: enRama && !viaja ? 'fondo' : undefined,
         draggable: false,
@@ -383,7 +388,7 @@ export function TreeView({
   }, [db, sel, malla, rama, enRama, grafo, bandas, plan, planExterno, nombres, edicion])
 
   const hint = sel
-    ? `${nombreDe(db, sel)} · necesitás ${up.size} · habilita ${down.size}${enRama ? ' · clic afuera para volver' : ''}`
+    ? `${avanceDe(db).nombreDe(sel)} · necesitás ${up.size} · habilita ${down.size}${enRama ? ' · clic afuera para volver' : ''}`
     : 'Tocá una materia para ver qué necesita y qué habilita'
 
   return (
@@ -415,7 +420,7 @@ export function TreeView({
         </button>
       </div>
 
-      <div className={`tv-canvas${enRama ? ' rama' : ''}`}>
+      <div className={`tv-canvas${enRama ? ' rama' : ''}`} ref={lienzo}>
         {!malla ? (
           <div className="tv-cargando" aria-label="Calculando el árbol…" />
         ) : (
@@ -431,7 +436,11 @@ export function TreeView({
                 if (n.id === edicion.objetivo) return
                 if (edicion.elegibles.has(n.id) || edicion.yaConectadas.has(n.id)) {
                   edicion.onAlternar(n.id)
+                  return
                 }
+                // No se puede conectar con esta: entonces el clic quiere decir "quiero trabajar
+                // sobre ESTA otra". Es el gesto natural, y antes no hacía nada.
+                edicion.onElegirObjetivo(n.id)
                 return
               }
               // En modo rama, TODO lo que no sea una tarjeta de la rama es "afuera"
@@ -449,17 +458,24 @@ export function TreeView({
               const next = sel === n.id ? null : n.id
               // ¿descubren solos el modo rama? (el foco que llega por URL/panel no
               // cuenta: ahí la rama se la dimos nosotros)
-              if (next && subgrafoRama(grafo, next).materias.length > 1) track('arbol_rama')
+              if (next && grafo.rama(next).materias.length > 1) Analytics.evento('arbol_rama')
               setSel(next)
             }}
             onPaneClick={() => setSel(null)}
             onInit={(inst: ReactFlowInstance) => {
               flowRef.current = inst
-              // abrir "cerca" mostrando el arranque del plan, a un zoom cómodo
-              const vw = window.innerWidth
+              // Se abre "cerca": arriba de todo (1° año, que es donde empieza la carrera)
+              // y a un zoom que deje leer las tarjetas, en vez de una vista de pájaro.
+              const vw = lienzo.current?.clientWidth ?? window.innerWidth
               const cols = vw < 560 ? 2.6 : 4.6
               const zoom = Math.min(1, Math.max(0.55, vw / (cols * (NODEW + 22))))
-              inst.setViewport({ x: 24, y: 24, zoom })
+              // Y CENTRADO si el plan entra a lo ancho. Acá había un `x: 24` fijo, así que
+              // un plan más angosto que la pantalla quedaba pegado al margen izquierdo con
+              // todo el vacío a la derecha (lo vio Luz, 12-ago). Si NO entra, se sigue
+              // arrancando por la izquierda: ahí el margen no es vacío, es plan que se
+              // alcanza paneando, y empezar por el medio sería empezar por la mitad de 1°.
+              const ancho = malla.width * zoom
+              inst.setViewport({ x: ancho < vw ? (vw - ancho) / 2 : 24, y: 24, zoom })
               setFlowListo(true)
             }}
             translateExtent={translateExtent}

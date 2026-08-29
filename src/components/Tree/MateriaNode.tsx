@@ -15,6 +15,12 @@ export interface MateriaNodeData {
   tint?: CSSProperties // tinte por profundidad (need/unlock); undefined para el resto
   edit?: EditRole // solo en el editor; en la app del alumno viene undefined
   editDir?: 'anterior' | 'posterior' // el color de "ya conectada" sigue el sentido activo
+  /**
+   * Por qué esta materia no se puede conectar. Va como `title` nativo: aparece al dejar
+   * el mouse encima, sin tapar nada ni robar el foco. Intentar conectar y que "no pase
+   * nada" es la peor respuesta posible — al menos hay que decir por qué.
+   */
+  motivo?: string
   [key: string]: unknown
 }
 
@@ -27,6 +33,7 @@ export function MateriaNode({ data }: NodeProps) {
         d.editDir ? ` dir-${d.editDir}` : ''
       }`}
       style={d.tint}
+      title={d.motivo}
     >
       {/* El flujo es siempre descendente: entra por arriba, sale por abajo. Centrados,
           así una correlativa entre columnas alineadas es una vertical perfecta. */}

@@ -18,15 +18,15 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-02 | Cambio de carrera | HU-02 | CU-02 | RN-11 | E2E 9 (parcial) · Manual |
 | RF-03 | Plan por año y cuatrimestre | HU-01, HU-06 | CU-01 | — | Unit `Plan` · E2E 1 |
 | RF-04 | Estados de materia | HU-03 | CU-03 | RN-01 | Unit `Store` · E2E 2 |
-| RF-05 | Aviso de correlativas | HU-04 | CU-03 | RN-02 a RN-05 | Unit `selectors` · E2E 3 y 4 |
-| RF-06 | Materias disponibles | HU-05 | CU-03 | RN-06 | Unit `selectors` |
+| RF-05 | Aviso de correlativas | HU-04 | CU-03 | RN-02 a RN-05 | Unit `Avance` · E2E 3 y 4 |
+| RF-06 | Materias disponibles | HU-05 | CU-03 | RN-06 | Unit `Avance` |
 | RF-07 | Carga de notas | HU-07 | CU-04 | RN-08 | Unit `Store` · E2E 7 |
-| RF-08 | Cálculo de promedio | HU-07 | CU-04 | RN-07 | Unit `selectors` · E2E 6 y 7 |
+| RF-08 | Cálculo de promedio | HU-07 | CU-04 | RN-07 | Unit `Avance` · E2E 6 y 7 |
 | RF-09 | Panel de correlativas | HU-09 | CU-05 | — | Manual (base de datos del grafo: Unit `Plan`) |
 | RF-10 | Árbol de correlativas (malla + modo rama) | HU-10 | CU-06 | RN-14 | Unit `Plan` + `arbolLayout` (invariantes por plan, por malla y por rama) · E2E 4 y 5 |
-| RF-11 | Tablero de avance e hitos | HU-06 | (transversal) | RN-07, RN-09 | Unit `selectors` · E2E 1 y 2 |
+| RF-11 | Tablero de avance e hitos | HU-06 | (transversal) | RN-07, RN-09 | Unit `Avance` · E2E 1 y 2 |
 | RF-12 | Renombrado de optativas | HU-08 | CU-07 | RN-10 | Unit `Store` |
-| RF-13 | Perfil local | HU-15 | CU-08 | — | Unit `selectors` (iniciales) · Manual (foto) |
+| RF-13 | Perfil local | HU-15 | CU-08 | — | Unit `Avance` (iniciales) · Manual (foto) |
 | RF-14 | Backup: exportar e importar | HU-11, HU-12 | CU-09, CU-10 | — | Manual |
 | RF-15 | Resumen imprimible / PDF | HU-13 | CU-11 | — | E2E 10 |
 | RF-16 | Tutorial de primera visita | HU-01, HU-16 | CU-01, CU-12 | — | E2E 11 |
@@ -34,26 +34,26 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-18 | Instalación como PWA | HU-17 | CU-14 | — | Manual |
 | RF-19 | Login con Google + consentimiento | HU-18 | CU-15, CU-16 | RN-12 | Unit `sync` (consentimiento) · Manual (OAuth real) |
 | RF-20 | Sincronización multi-dispositivo | HU-18, HU-19 | CU-15 | RN-12 | Unit `sync` (merge/conteos/ida-y-vuelta) · Manual (2 dispositivos + RLS con 2 cuentas) |
-| RF-21 | Interruptor de año (aprobar / desmarcar todo el año) | HU-04 | CU-03 | RN-15 | Unit `selectors` (decidirAnio) + `Store` (setEstados e inverso) · E2E 13 |
+| RF-21 | Interruptor de año (aprobar / desmarcar todo el año) | HU-04 | CU-03 | RN-15 | Unit `Avance` (decidirAnio) + `Store` (setEstados e inverso) · E2E 13 |
 
 ## D.3 Reglas de negocio: definición → implementación → verificación
 
 | RN | Regla (resumen) | Dónde se implementa | Cómo se verifica |
 |---|---|---|---|
 | RN-01 | Cuatro estados por materia | Tipo `Estado` (`types.ts`) · `Store` | Unit `Store` |
-| RN-02 | Para cursar: previas al menos en curso | `selectors.previasParaEstado` | Unit `selectors` · E2E 3 |
-| RN-03 | Para aprobar: previas aprobadas | `selectors.previasParaEstado` | Unit `selectors` |
+| RN-02 | Para cursar: previas al menos en curso | `Avance.previasParaEstado` | Unit `Avance` · E2E 3 |
+| RN-03 | Para aprobar: previas aprobadas | `Avance.previasParaEstado` | Unit `Avance` |
 | RN-04 | El aviso informa, no bloquea | `StatePopover` + toast con acción | E2E 3 y 4 |
-| RN-05 | Optativas y especiales exentas del chequeo | `isSpecial`/`isOpt` (`Plan`) · `StatePopover` | Unit `selectors` · Integridad (optativas sin correlativas) |
-| RN-06 | Definición de «disponible» | `selectors.disponibles` | Unit `selectors` |
-| RN-07 | Promedio solo con aprobadas con nota | `selectors.promedio` | Unit `selectors` · E2E 7 |
+| RN-05 | Optativas y especiales exentas del chequeo | `isSpecial`/`isOpt` (`Plan`) · `StatePopover` | Unit `Avance` · Integridad (optativas sin correlativas) |
+| RN-06 | Definición de «disponible» | `Avance.disponible` | Unit `Avance` |
+| RN-07 | Promedio solo con aprobadas con nota | `Avance.promedio` | Unit `Avance` · E2E 7 |
 | RN-08 | Nota entera entre 1 y 10 | `Store.setNota` (ajuste al rango) | Unit `Store` |
-| RN-09 | Títulos como hitos por año (con corte opcional por cuatrimestre) | `selectors.hitos` + `Plan.materiasHasta` (`hastaAnio`/`hastaCuatri`) | Unit `selectors` y `Plan` · Integridad (títulos → años/cuatrimestres válidos) |
+| RN-09 | Títulos como hitos por año (con corte opcional por cuatrimestre) | `Avance.hitos` + `Plan.materiasHasta` (`hastaAnio`/`hastaCuatri`) | Unit `Avance` y `Plan` · Integridad (títulos → años/cuatrimestres válidos) |
 | RN-10 | Optativa renombrable, hasta 48 caracteres | `Store.setOptName` | Unit `Store` |
 | RN-11 | Progreso independiente por plan | Claves de storage por plan (`src/state`) | Unit `Store` (persistencia) · Manual |
 | RN-12 | Server solo con cuenta + consentimiento; dispositivo sincronizado no re-pregunta (base de última sincronización); conflicto real lo decide el usuario; cambios sin subir prevalecen | `lib/sync` (decidirMerge, base/huella, consentimiento, marca dirty) · `state/sync` (gate) · `ConsentModal`/`SyncConflicto` | Unit `sync` · Manual |
 | RN-14 | En reposo el árbol dibuja solo las correlativas cortas (1-2 cuatrimestres) y solo si se rutean sin cruzar tarjetas | `lib/arbolLayout` (DIST_CORTA, planearCortas, reduccionTransitiva, invariantes) · `components/Tree/TreeView` (aristas de malla) | Unit `arbolLayout`: invariantes en cero + “las cortas no redundantes y solo esas” + la reducción conserva el alcance + ninguna rama salta de necesitás a habilita, por cada plan |
-| RN-15 | El interruptor de año pisa estados, excluye optativas, no toca notas y siempre se puede deshacer | `domain/selectors` (decidirAnio) · `domain/Plan` (codsDelAnio) · `domain/Store` (setEstados → inverso) · `components/PlanView` | Unit `selectors` + `Store` · E2E 13 (marcar → deshacer) |
+| RN-15 | El interruptor de año pisa estados, excluye optativas, no toca notas y siempre se puede deshacer | `domain/Avance` (decidirAnio) · `domain/Plan` (codsDelAnio) · `domain/Store` (setEstados → inverso) · `components/PlanView` | Unit `Avance` + `Store` · E2E 13 (marcar → deshacer) |
 | RN-13 | Materias compartidas entre carreras (misma universidad): vista derivada, la marca propia prevalece, optativas afuera | `lib/espejo` (espejoDe) · `domain/Store` (vista con espejo) · `state/store` (espejo del plan activo) | Unit `espejo` + `Store` · E2E compartida |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación

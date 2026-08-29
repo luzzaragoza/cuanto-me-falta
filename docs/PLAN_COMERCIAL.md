@@ -32,9 +32,9 @@ de conversión daría ~USD 17 al año y, encima, le pondría un peaje a lo únic
 
 | Área | Estado |
 |---|---|
-| Stack | Vite + React 19 + TS, dominio POO puro (`Plan`/`Store`/selectors) |
+| Stack | Vite + React 19 + TS, dominio POO puro (41 clases; ver ADR-13) |
 | Deploy | GitHub Actions → GitHub Pages, dominio propio `cuantomefalta.app`, gate de CI |
-| Calidad | **179 tests** (166 vitest + 13 e2e), integridad de datos por plan, invariantes geométricos del árbol |
+| Calidad | **281 tests** (266 vitest + 15 e2e), integridad de datos por plan, invariantes geométricos del árbol |
 | Datos | **4 carreras** de UADE (152 materias, 89 correlativas), modelo normalizado en `src/data/model.ts` |
 | Cuentas | Login con Google (PKCE) + sync multi-dispositivo con Supabase, RLS, consentimiento Ley 25.326 |
 | Features | Estados, notas y promedio, correlativas (panel + árbol v2 con modo rama), títulos, PDF, backup, PWA instalable, tour de onboarding |
@@ -168,7 +168,7 @@ Agosto 2026, 6–8 sesiones, costo fijo $0. Cuatro pasos, en este orden:
 
 1. **Tablas, migración y loader** (2 sesiones) — las 5 tablas académicas, migración de los 4
    planes, `validarPlan()` extraído, loader con snapshot + refresco.
-   *Criterio: los 179 tests verdes leyendo desde la base; la app abre sin red.*
+   *Criterio: los 281 tests verdes leyendo desde la base; la app abre sin red.*
 2. **Perfiles, RLS y tests de seguridad** (1–2 sesiones) — con 3 sesiones reales intentando lo
    que no les corresponde, incluido pasar el id de otra universidad a mano.
 3. **Editor de planes** (2–3 sesiones) — las 5 pantallas + E2E del camino completo + manual.

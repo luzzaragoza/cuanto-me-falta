@@ -1,4 +1,4 @@
-import type { ArbolLayout } from '../../lib/arbolLayout'
+import type { Layout } from '../../lib/arbolLayout'
 
 // Bandas de fondo por año (con la franja de cada cuatrimestre), derivadas de las
 // filas REALES del layout: el motor decide las alturas, esto solo las viste.
@@ -21,7 +21,7 @@ export interface Banda {
 
 const LBL_H = 26 // franja del rótulo "n° cuatrimestre" arriba de cada fila
 
-export function bandasDe(lay: ArbolLayout): Banda[] {
+export function bandasDe(lay: Layout): Banda[] {
   const porAnio = new Map<number, typeof lay.filas>()
   for (const f of lay.filas) {
     const year = Math.floor(f.cuatri / 2) + 1

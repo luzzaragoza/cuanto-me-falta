@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Perfil } from '../types'
 import { store } from '../state/store'
-import { cambiarAPlan, planActivoId } from '../state/planActivo'
+import { PlanActivo } from '../state/planActivo'
 import { authHabilitado } from '../lib/supabase'
-import { photoFromUrl } from '../lib/image'
+import { Foto } from '../lib/image'
 import { useSession } from '../state/auth'
 import { AccountBox } from './AccountBox'
 import { CarreraSelect } from './CarreraSelect'
@@ -65,7 +66,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
   const session = useSession()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [name, setName] = useState('')
-  const [planId, setPlanId] = useState(planActivoId())
+  const [planId, setPlanId] = useState(PlanActivo.id())
   const [entrando, setEntrando] = useState(false)
 
   // volvió del redirect de Google ya logueado → directo al paso de carrera
@@ -81,22 +82,22 @@ export function Welcome({ onClose }: { onClose: () => void }) {
   const start = async () => {
     setEntrando(true)
     const perfil = session
-      ? {
-          name: nombreGoogle,
-          photo: metaGoogle?.avatar_url ? await photoFromUrl(metaGoogle.avatar_url) : '',
-        }
-      : { name: name.trim(), photo: '' }
-    if (planId === planActivoId()) {
+      ? new Perfil(
+          nombreGoogle,
+          metaGoogle?.avatar_url ? await Foto.desdeUrl(metaGoogle.avatar_url) : '',
+        )
+      : new Perfil(name.trim(), '')
+    if (planId === PlanActivo.id()) {
       store.setPerfil(perfil)
       onClose()
     } else {
       // eligió otra carrera: recargamos en ese plan con este perfil
-      cambiarAPlan(planId, perfil, true)
+      PlanActivo.cambiarA(planId, perfil, true)
     }
   }
   // "entrar sin nombre": marcamos el perfil como visto (vacío) para no re-preguntar
   const skip = () => {
-    store.setPerfil({ name: '', photo: '' })
+    store.setPerfil(new Perfil('', ''))
     onClose()
   }
 

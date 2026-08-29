@@ -1,15 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { PlanDef, Universidad } from './model'
-import {
-  borrarCache,
-  filaAPlan,
-  guardarCache,
-  igualRegistro,
-  leerCache,
-  registroInicial,
-  sanear,
-  type Registro,
-} from './registro'
+import { PlanDef, Universidad } from './model'
+import type { PlanJSON } from './json'
+import { Registro } from './registro'
 
 // localStorage de mentira, en memoria (mismo helper que Store.test / sync.test).
 function fakeLocalStorage(): Storage {
@@ -26,9 +18,9 @@ function fakeLocalStorage(): Storage {
   } as Storage
 }
 
-const UNI: Universidad[] = [{ id: 'uade', nombre: 'UADE' }]
+const UNI: Universidad[] = [new Universidad('uade', 'UADE')]
 
-function plan(over: Partial<PlanDef> = {}): PlanDef {
+function planJSON(over: Partial<PlanJSON> = {}): PlanJSON {
   return {
     id: 'p1',
     universidad: 'uade',
@@ -45,7 +37,9 @@ function plan(over: Partial<PlanDef> = {}): PlanDef {
   }
 }
 
-const bundle = (): Registro => ({ universidades: UNI, planes: [plan()] })
+const plan = (over: Partial<PlanJSON> = {}): PlanDef => PlanDef.exigir(planJSON(over))
+
+const bundle = (): Registro => new Registro(UNI, [plan()])
 
 /** Fila tal como la devuelve la vista `plan_publicado`. */
 function fila(over: Record<string, unknown> = {}): Record<string, unknown> {
@@ -71,33 +65,33 @@ beforeEach(() => {
 
 describe('registro · de dónde salen los planes al arrancar', () => {
   it('sin caché usa el bundle', () => {
-    expect(registroInicial(bundle()).planes).toHaveLength(1)
-    expect(registroInicial(bundle()).planes[0].id).toBe('p1')
+    expect(Registro.inicial(bundle()).planes).toHaveLength(1)
+    expect(Registro.inicial(bundle()).planes[0].id).toBe('p1')
   })
 
   it('con caché válido, el caché gana', () => {
-    guardarCache({ universidades: UNI, planes: [plan({ id: 'nuevo', carrera: 'Del backend' })] })
-    const reg = registroInicial(bundle())
+    new Registro(UNI, [plan({ id: 'nuevo', carrera: 'Del backend' })]).guardarEnCache()
+    const reg = Registro.inicial(bundle())
     expect(reg.planes.map((p) => p.id)).toEqual(['nuevo'])
   })
 
   it('el caché puede traer MÁS planes que el bundle', () => {
-    guardarCache({ universidades: UNI, planes: [plan(), plan({ id: 'p2' })] })
-    expect(registroInicial(bundle()).planes).toHaveLength(2)
+    new Registro(UNI, [plan(), plan({ id: 'p2' })]).guardarEnCache()
+    expect(Registro.inicial(bundle()).planes).toHaveLength(2)
   })
 
   it('descarta del caché los planes que no pasan el validador', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const roto = plan({ id: 'roto', correlativas: [{ cod: 'A', requiere: 'NO_EXISTE' }] })
-    guardarCache({ universidades: UNI, planes: [plan({ id: 'sano' }), roto] })
-    expect(registroInicial(bundle()).planes.map((p) => p.id)).toEqual(['sano'])
+    new Registro(UNI, [plan({ id: 'sano' }), roto]).guardarEnCache()
+    expect(Registro.inicial(bundle()).planes.map((p) => p.id)).toEqual(['sano'])
     warn.mockRestore()
   })
 
   it('si el caché queda sin planes válidos, cae al bundle', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    guardarCache({ universidades: UNI, planes: [plan({ materias: [], correlativas: [] })] })
-    expect(registroInicial(bundle()).planes[0].id).toBe('p1')
+    new Registro(UNI, [plan({ materias: [], correlativas: [] })]).guardarEnCache()
+    expect(Registro.inicial(bundle()).planes[0].id).toBe('p1')
     warn.mockRestore()
   })
 
@@ -106,42 +100,39 @@ describe('registro · de dónde salen los planes al arrancar', () => {
       'cmf-planes-cache',
       JSON.stringify({ v: 0, at: 'x', universidades: UNI, planes: [plan({ id: 'viejo' })] }),
     )
-    expect(registroInicial(bundle()).planes[0].id).toBe('p1')
+    expect(Registro.inicial(bundle()).planes[0].id).toBe('p1')
   })
 
   it('ignora un caché ilegible', () => {
     localStorage.setItem('cmf-planes-cache', 'no soy json {{{')
-    expect(leerCache()).toBeNull()
-    expect(registroInicial(bundle()).planes[0].id).toBe('p1')
+    expect(Registro.leerCache()).toBeNull()
+    expect(Registro.inicial(bundle()).planes[0].id).toBe('p1')
   })
 
   it('si el caché no trae universidades, usa los nombres del bundle', () => {
-    guardarCache({ universidades: [], planes: [plan({ id: 'x' })] })
-    const reg = registroInicial(bundle())
+    new Registro([], [plan({ id: 'x' })]).guardarEnCache()
+    const reg = Registro.inicial(bundle())
     expect(reg.planes[0].id).toBe('x')
     expect(reg.universidades).toEqual(UNI)
   })
 
   it('borrarCache vuelve al bundle', () => {
-    guardarCache({ universidades: UNI, planes: [plan({ id: 'x' })] })
-    borrarCache()
-    expect(leerCache()).toBeNull()
+    new Registro(UNI, [plan({ id: 'x' })]).guardarEnCache()
+    Registro.borrarCache()
+    expect(Registro.leerCache()).toBeNull()
   })
 
   it('sin localStorage (SSR, tests, modo privado) no explota y usa el bundle', () => {
     Reflect.deleteProperty(globalThis, 'localStorage')
-    expect(() => guardarCache(bundle())).not.toThrow()
-    expect(leerCache()).toBeNull()
-    expect(registroInicial(bundle()).planes[0].id).toBe('p1')
+    expect(() => bundle().guardarEnCache()).not.toThrow()
+    expect(Registro.leerCache()).toBeNull()
+    expect(Registro.inicial(bundle()).planes[0].id).toBe('p1')
   })
 })
 
 describe('registro · sanear', () => {
   it('deja pasar lo válido y filtra universidades incompletas', () => {
-    const reg = sanear({
-      universidades: [{ id: 'uade', nombre: 'UADE' }, { id: '', nombre: 'Sin id' }],
-      planes: [plan()],
-    })
+    const reg = new Registro([new Universidad('uade', 'UADE'), new Universidad('', 'Sin id')], [plan()]).saneado()
     expect(reg.universidades).toHaveLength(1)
     expect(reg.planes).toHaveLength(1)
   })
@@ -149,54 +140,48 @@ describe('registro · sanear', () => {
 
 describe('registro · comparación estable', () => {
   it('el orden de las CLAVES no cuenta (bundle TS vs JSON del backend)', () => {
-    const a: Registro = { universidades: UNI, planes: [plan()] }
+    const a: Registro = new Registro(UNI, [plan()])
     // mismo plan, claves en otro orden (como lo escribiría otro archivo)
-    const p = plan()
-    const b: Registro = {
-      planes: [
-        {
-          titulos: p.titulos,
-          carrera: p.carrera,
-          materias: p.materias,
-          id: p.id,
-          anio: p.anio,
-          codigo: p.codigo,
-          correlativas: p.correlativas,
-          universidad: p.universidad,
-        },
-      ],
-      universidades: UNI,
-    }
-    expect(igualRegistro(a, b)).toBe(true)
+    const j = planJSON()
+    const b: Registro = new Registro(UNI, [
+      PlanDef.exigir({
+          titulos: j.titulos,
+          carrera: j.carrera,
+          materias: j.materias,
+          id: j.id,
+          anio: j.anio,
+          codigo: j.codigo,
+          correlativas: j.correlativas,
+        universidad: j.universidad,
+      }),
+    ])
+    expect(a.igualA(b)).toBe(true)
   })
 
   it('el orden de los ARRAYS sí cuenta (así se dibuja el plan)', () => {
-    const a: Registro = { universidades: UNI, planes: [plan()] }
-    const b: Registro = {
-      universidades: UNI,
-      planes: [plan({ materias: [...plan().materias].reverse() })],
-    }
-    expect(igualRegistro(a, b)).toBe(false)
+    const a: Registro = new Registro(UNI, [plan()])
+    const b: Registro = new Registro(UNI, [plan({ materias: [...planJSON().materias].reverse() })])
+    expect(a.igualA(b)).toBe(false)
   })
 
   it('un cambio real se detecta', () => {
-    const b: Registro = { universidades: UNI, planes: [plan({ carrera: 'Otra cosa' })] }
-    expect(igualRegistro(bundle(), b)).toBe(false)
+    const b: Registro = new Registro(UNI, [plan({ carrera: 'Otra cosa' })])
+    expect(bundle().igualA(b)).toBe(false)
   })
 })
 
-describe('registro · filaAPlan (dato que llega de la red)', () => {
+describe('registro · PlanDef.desde (dato que llega de la red)', () => {
   it('convierte una fila bien formada', () => {
-    const p = filaAPlan(fila())
+    const p = PlanDef.desde(fila())
     expect(p).not.toBeNull()
     expect(p!.id).toBe('p2')
     expect(p!.materias).toHaveLength(2)
-    expect(p!.correlativas).toEqual([{ cod: 'Y', requiere: 'X' }])
-    expect(p!.titulos).toEqual([{ nombre: 'Título Dos', hastaAnio: 1 }])
+    expect(p!.correlativas.map((c) => c.aJSON())).toEqual([{ cod: 'Y', requiere: 'X' }])
+    expect(p!.titulos.map((t) => t.aJSON())).toEqual([{ nombre: 'Título Dos', hastaAnio: 1 }])
   })
 
   it('no inventa claves: opt y especial solo viajan cuando son true', () => {
-    const p = filaAPlan(
+    const p = PlanDef.desde(
       fila({
         materias: [
           { cod: 'X', nom: 'Equis', anio: 1, cuatri: 1, opt: false, especial: false },
@@ -204,8 +189,8 @@ describe('registro · filaAPlan (dato que llega de la red)', () => {
         ],
       }),
     )
-    expect(p!.materias[0]).toEqual({ cod: 'X', nom: 'Equis', anio: 1, cuatri: 1 })
-    expect(p!.materias[1]).toEqual({
+    expect(p!.materias[0].aJSON()).toEqual({ cod: 'X', nom: 'Equis', anio: 1, cuatri: 1 })
+    expect(p!.materias[1].aJSON()).toEqual({
       cod: 'Y',
       nom: 'Ye',
       anio: 1,
@@ -216,26 +201,38 @@ describe('registro · filaAPlan (dato que llega de la red)', () => {
   })
 
   it('conserva hastaCuatri cuando el título cae a mitad de año', () => {
-    const p = filaAPlan(fila({ titulos: [{ nombre: 'T', hastaAnio: 1, hastaCuatri: 1 }] }))
-    expect(p!.titulos[0]).toEqual({ nombre: 'T', hastaAnio: 1, hastaCuatri: 1 })
+    const p = PlanDef.desde(fila({ titulos: [{ nombre: 'T', hastaAnio: 1, hastaCuatri: 1 }] }))
+    expect(p!.titulos[0].aJSON()).toEqual({ nombre: 'T', hastaAnio: 1, hastaCuatri: 1 })
   })
 
   it('rechaza filas incompletas o con tipos raros', () => {
-    expect(filaAPlan(null)).toBeNull()
-    expect(filaAPlan('un string')).toBeNull()
-    expect(filaAPlan(fila({ carrera: '' }))).toBeNull()
-    expect(filaAPlan(fila({ anio: '2026' }))).toBeNull()
-    expect(filaAPlan(fila({ materias: 'nope' }))).toBeNull()
-    expect(filaAPlan(fila({ materias: [{ cod: 'X', nom: 'X', anio: '1', cuatri: 1 }] }))).toBeNull()
-    expect(filaAPlan(fila({ correlativas: [{ cod: 'Y' }] }))).toBeNull()
-    expect(filaAPlan(fila({ titulos: [{ nombre: 'T' }] }))).toBeNull()
+    expect(PlanDef.desde(null)).toBeNull()
+    expect(PlanDef.desde('un string')).toBeNull()
+    expect(PlanDef.desde(fila({ anio: '2026' }))).toBeNull()
+    expect(PlanDef.desde(fila({ materias: 'nope' }))).toBeNull()
+    expect(PlanDef.desde(fila({ materias: [{ cod: 'X', nom: 'X', anio: '1', cuatri: 1 }] }))).toBeNull()
+    expect(PlanDef.desde(fila({ correlativas: [{ cod: 'Y' }] }))).toBeNull()
+    expect(PlanDef.desde(fila({ titulos: [{ nombre: 'T' }] }))).toBeNull()
+  })
+
+  // Contrato que CAMBIÓ a propósito con el modelo en clases. Antes `filaAPlan` rechazaba
+  // una carrera vacía en el parseo; ahora la factory solo mira la FORMA ("es un string")
+  // y el vacío es una REGLA que reporta el validador. El plan malo no llega a la pantalla
+  // igual: lo descarta `sanear()`. Sin esta separación, un plan con una materia sin
+  // nombre no se podría ni construir, y el validador nunca podría explicar qué tiene mal.
+  it('una carrera vacía ya no la rechaza la factory: la agarra el validador', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const p = PlanDef.desde(fila({ carrera: '' }))
+    expect(p).not.toBeNull()
+    expect(new Registro(UNI, [p!]).saneado().planes).toEqual([])
+    warn.mockRestore()
   })
 
   it('un plan del backend que no valida se descarta al sanear', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const p = filaAPlan(fila({ correlativas: [{ cod: 'X', requiere: 'Y' }] })) // al revés en el tiempo
+    const p = PlanDef.desde(fila({ correlativas: [{ cod: 'X', requiere: 'Y' }] })) // al revés en el tiempo
     expect(p).not.toBeNull()
-    expect(sanear({ universidades: UNI, planes: [p!] }).planes).toEqual([])
+    expect(new Registro(UNI, [p!]).saneado().planes).toEqual([])
     warn.mockRestore()
   })
 })

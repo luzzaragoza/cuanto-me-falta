@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
-import { entrarConGoogle, salir, useSession } from '../state/auth'
+import { Auth, useSession } from '../state/auth'
 import { useSyncEstado } from '../state/sync'
 
 const SYNC_LABEL: Record<string, string> = {
@@ -48,7 +48,7 @@ export function AccountBox() {
             <small className={sync === 'error' ? 'sync-err' : undefined}>{SYNC_LABEL[sync]}</small>
           </div>
         </div>
-        <button className="lnk" onClick={() => void salir()}>
+        <button className="lnk" onClick={() => void Auth.salir()}>
           Cerrar sesión
         </button>
       </div>
@@ -62,7 +62,7 @@ export function AccountBox() {
         disabled={cargando}
         onClick={() => {
           setCargando(true)
-          void entrarConGoogle()
+          void Auth.entrarConGoogle()
         }}
       >
         <GoogleG />

@@ -1,9 +1,9 @@
-import type { PlanDef } from '../model'
+import type { PlanJSON } from '../json'
 
 // UADE · Plan 13121 (2021) · Licenciatura en Gestión de Tecnología de la Información.
 // Cargado a mano desde el plan oficial, puede tener errores. 4 años × 2 cuatrimestres.
 // Título: Licenciado en Gestión de Tecnología de la Información (al terminar 4°).
-export const gestionTecnologia: PlanDef = {
+export const gestionTecnologia: PlanJSON = {
   id: 'uade-lic-gestion-ti',
   universidad: 'uade',
   codigo: '13121',

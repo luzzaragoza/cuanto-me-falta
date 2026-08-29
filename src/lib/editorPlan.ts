@@ -1,250 +1,411 @@
-// El borrador de un plan mientras se edita — la parte PURA del editor.
+// El borrador de un plan mientras se edita.
 //
-// La UI tiene un `Borrador` en memoria y lo transforma con estas funciones; el guardado
-// va aparte (`state/admin.ts`), acción por acción, para no mandar el plan entero en cada
-// tecla. Todo acá es inmutable: entra un borrador, sale otro. Así se testea sin backend
-// y la UI no tiene lógica de dominio escondida entre los componentes.
+// La UI tiene un `Borrador` en memoria y lo transforma llamando a sus métodos; el
+// guardado va aparte (`state/admin.ts`), acción por acción, para no mandar el plan
+// entero en cada tecla.
 //
-// La conversión a `PlanDef` (`aPlanDef`) es la bisagra: con ella el mismo borrador
-// alimenta el validador que ya existe Y el árbol de correlativas, sin código nuevo.
+// **Todo acá es inmutable**: cada método devuelve un `Borrador` nuevo. Así se testea sin
+// backend y la UI no tiene lógica de dominio escondida entre los componentes.
+//
+// POR QUÉ ES UNA CLASE Y NO UN PUÑADO DE FUNCIONES: hay una invariante que sostener —
+// *toda correlativa apunta a materias que existen en el borrador* — y antes vivía
+// repartida en tres lugares que había que acordarse de llamar: `quitarMateria` la
+// limpiaba en los dos sentidos, `renombrarCodigo` arrastraba el grafo, y `aPlanDef`
+// filtraba las colgadas. Nada impedía agregar una función número diecisiete que se
+// olvidara de alguna. Ahora el único camino para construir el borrador siguiente pasa
+// por acá adentro.
+//
+// `aPlan()` es la bisagra: con ella el mismo borrador alimenta al validador Y al árbol
+// de correlativas, sin código nuevo.
 
-import type { MateriaPlan, PlanDef, TituloPlan } from '../data/model'
-import { indiceCuatri } from './validarPlan'
+import { Correlativa, MateriaPlan, PlanDef, type TituloPlan } from '../data/model'
 
-/** Una materia en edición. `nueva` = todavía no existe en la base. */
-export interface MateriaEdit {
-  cod: string
-  nom: string
-  anio: number
-  cuatri: number
-  opt: boolean
-  especial: boolean
-  orden: number
-  nueva?: boolean
+/** Una materia en edición: la del plan, más lo que hace falta para editarla. */
+export class MateriaEdit {
+  readonly cod: string
+  readonly nom: string
+  readonly anio: number
+  readonly cuatri: number
+  readonly opt: boolean
+  readonly especial: boolean
+  /** Identidad estable de la fila: no cambia aunque se corrija el código. */
+  readonly orden: number
+  /** Todavía no existe en la base. */
+  readonly nueva: boolean
   /** Código con el que está guardada en la base (para poder renombrar el código). */
-  codOriginal?: string
-}
+  readonly codOriginal?: string
 
-export interface Correlativa {
-  cod: string
-  requiere: string
-}
+  constructor(campos: {
+    cod: string
+    nom: string
+    anio: number
+    cuatri: number
+    opt?: boolean
+    especial?: boolean
+    orden: number
+    nueva?: boolean
+    codOriginal?: string
+  }) {
+    this.cod = campos.cod
+    this.nom = campos.nom
+    this.anio = campos.anio
+    this.cuatri = campos.cuatri
+    this.opt = campos.opt ?? false
+    this.especial = campos.especial ?? false
+    this.orden = campos.orden
+    this.nueva = campos.nueva ?? false
+    this.codOriginal = campos.codOriginal
+  }
 
-export interface Borrador {
-  id: string
-  universidad: string
-  codigo: string
-  anio: number
-  carrera: string
-  materias: MateriaEdit[]
-  correlativas: Correlativa[]
-  titulos: TituloPlan[]
-}
+  /** Copia con algunos campos cambiados. Reemplaza al viejo `{ ...m, campo: x }`. */
+  con(campos: Partial<Omit<ConstructorParameters<typeof MateriaEdit>[0], 'orden'>>): MateriaEdit {
+    return new MateriaEdit({
+      cod: this.cod,
+      nom: this.nom,
+      anio: this.anio,
+      cuatri: this.cuatri,
+      opt: this.opt,
+      especial: this.especial,
+      nueva: this.nueva,
+      codOriginal: this.codOriginal,
+      ...campos,
+      orden: this.orden,
+    })
+  }
 
-/** Orden de lectura: por año, cuatrimestre y el orden dentro del cuatrimestre. */
-export function ordenar(materias: MateriaEdit[]): MateriaEdit[] {
-  return [...materias].sort(
-    (a, b) => a.anio - b.anio || a.cuatri - b.cuatri || a.orden - b.orden || a.cod.localeCompare(b.cod),
-  )
-}
+  get codLimpio(): string {
+    return this.cod.trim()
+  }
 
-/**
- * El borrador como `PlanDef`: lo que come el validador y el árbol. Las materias sin
- * código quedan afuera (son filas recién agregadas que todavía no se pueden guardar) y
- * con ellas sus correlativas, para no inventar referencias colgadas.
- */
-export function aPlanDef(b: Borrador): PlanDef {
-  const materias: MateriaPlan[] = ordenar(b.materias)
-    .filter((m) => m.cod.trim() !== '')
-    .map((m) => ({
-      cod: m.cod.trim(),
-      nom: m.nom.trim(),
-      anio: m.anio,
-      cuatri: m.cuatri,
-      ...(m.opt ? { opt: true } : {}),
-      ...(m.especial ? { especial: true } : {}),
-    }))
-  const existentes = new Set(materias.map((m) => m.cod))
-  return {
-    id: b.id,
-    universidad: b.universidad,
-    codigo: b.codigo,
-    anio: b.anio,
-    carrera: b.carrera,
-    materias,
-    correlativas: b.correlativas.filter((c) => existentes.has(c.cod) && existentes.has(c.requiere)),
-    titulos: b.titulos,
+  /** Posición temporal, con la misma fórmula que usa el plan publicado. */
+  get indice(): number {
+    return MateriaPlan.indiceDe(this.anio, this.cuatri)
+  }
+
+  /**
+   * ¿Alcanza para guardarla? Solo hace falta el NOMBRE.
+   *
+   * El código dejó de ser obligatorio para quien carga: no todas las universidades
+   * numeran sus materias, y pedirle un código a alguien que no tiene ninguno lo obliga a
+   * inventarlo. En la base sigue siendo la identidad de la materia —parte de la PK, lo
+   * que referencian las correlativas y lo que ancla el progreso del alumno—, así que
+   * cuando falta se asigna uno solo (`Borrador.codigoLibre`).
+   */
+  get guardable(): boolean {
+    return this.nom.trim() !== ''
+  }
+
+  /** Una fila recién agregada, sin código todavía, no es parte del plan aún. */
+  get cargada(): boolean {
+    return this.codLimpio !== ''
+  }
+
+  aMateriaPlan(): MateriaPlan {
+    return new MateriaPlan(
+      this.codLimpio,
+      this.nom.trim(),
+      this.anio,
+      this.cuatri,
+      this.opt,
+      this.especial,
+    )
   }
 }
 
-/** Materias que PUEDEN ser previa de `cod`: cuatrimestre anterior y no optativas. */
-export function elegiblesComoPrevia(b: Borrador, cod: string): MateriaEdit[] {
-  const yo = b.materias.find((m) => m.cod === cod)
-  if (!yo) return []
-  const miIndice = indiceCuatri(yo.anio, yo.cuatri)
-  return ordenar(
-    b.materias.filter(
-      (m) =>
-        m.cod !== cod &&
-        m.cod.trim() !== '' &&
-        !m.opt &&
-        indiceCuatri(m.anio, m.cuatri) < miIndice,
-    ),
-  )
+/** Qué correlativas rompería un movimiento (para avisar ANTES de guardar). */
+export interface Movimiento {
+  borrador: Borrador
+  rotas: Correlativa[]
 }
 
-/**
- * Materias que pueden tener a `cod` COMO previa: cuatrimestre posterior y no optativas.
- * Es la dirección inversa de `elegiblesComoPrevia`, y existe porque cargar un plan se lee
- * en los dos sentidos: "esta necesita…" o "esta habilita…".
- */
-export function elegiblesComoPosterior(b: Borrador, cod: string): MateriaEdit[] {
-  const yo = b.materias.find((m) => m.cod === cod)
-  if (!yo || yo.opt) return [] // una optativa no habilita nada (RN-05)
-  const miIndice = indiceCuatri(yo.anio, yo.cuatri)
-  return ordenar(
-    b.materias.filter(
-      (m) =>
-        m.cod !== cod && m.cod.trim() !== '' && !m.opt && indiceCuatri(m.anio, m.cuatri) > miIndice,
-    ),
-  )
-}
+export class Borrador {
+  readonly id: string
+  readonly universidad: string
+  readonly codigo: string
+  readonly anio: number
+  readonly carrera: string
+  readonly materias: readonly MateriaEdit[]
+  readonly correlativas: readonly Correlativa[]
+  readonly titulos: readonly TituloPlan[]
 
-/** Códigos que `cod` requiere hoy. */
-export function previasDe(b: Borrador, cod: string): string[] {
-  return b.correlativas.filter((c) => c.cod === cod).map((c) => c.requiere)
-}
-
-/** Materias que se habilitan con `cod` (para avisar antes de borrarla). */
-export function dependenDe(b: Borrador, cod: string): string[] {
-  return b.correlativas.filter((c) => c.requiere === cod).map((c) => c.cod)
-}
-
-/** Pone o saca una previa. No valida: las elegibles ya vienen filtradas. */
-export function alternarPrevia(b: Borrador, cod: string, requiere: string): Borrador {
-  const existe = b.correlativas.some((c) => c.cod === cod && c.requiere === requiere)
-  return {
-    ...b,
-    correlativas: existe
-      ? b.correlativas.filter((c) => !(c.cod === cod && c.requiere === requiere))
-      : [...b.correlativas, { cod, requiere }],
+  constructor(campos: {
+    id: string
+    universidad: string
+    codigo: string
+    anio: number
+    carrera: string
+    materias: readonly MateriaEdit[]
+    correlativas: readonly Correlativa[]
+    titulos: readonly TituloPlan[]
+  }) {
+    this.id = campos.id
+    this.universidad = campos.universidad
+    this.codigo = campos.codigo
+    this.anio = campos.anio
+    this.carrera = campos.carrera
+    this.materias = campos.materias
+    this.correlativas = campos.correlativas
+    this.titulos = campos.titulos
   }
-}
 
-/** ¿Ya existe ese código en el plan? (ignorando a la propia materia) */
-export function codigoRepetido(b: Borrador, cod: string, exceptoOrden: number): boolean {
-  const limpio = cod.trim()
-  if (!limpio) return false
-  return b.materias.some((m) => m.orden !== exceptoOrden && m.cod.trim() === limpio)
-}
-
-/** ¿La fila tiene lo mínimo para poder guardarse? */
-export function guardable(m: MateriaEdit): boolean {
-  return m.cod.trim() !== '' && m.nom.trim() !== ''
-}
-
-/** Agrega una fila vacía al final de ese cuatrimestre. Devuelve el borrador y su `orden`. */
-export function agregarMateria(
-  b: Borrador,
-  anio: number,
-  cuatri: number,
-): { borrador: Borrador; orden: number } {
-  const orden = b.materias.reduce((max, m) => Math.max(max, m.orden), -1) + 1
-  const nueva: MateriaEdit = {
-    cod: '',
-    nom: '',
-    anio,
-    cuatri,
-    opt: false,
-    especial: false,
-    orden,
-    nueva: true,
+  /** Copia con algunas partes cambiadas. Privada: el camino son los métodos de abajo. */
+  private con(campos: {
+    codigo?: string
+    anio?: number
+    carrera?: string
+    materias?: readonly MateriaEdit[]
+    correlativas?: readonly Correlativa[]
+    titulos?: readonly TituloPlan[]
+  }): Borrador {
+    return new Borrador({
+      id: this.id,
+      universidad: this.universidad,
+      codigo: campos.codigo ?? this.codigo,
+      anio: campos.anio ?? this.anio,
+      carrera: campos.carrera ?? this.carrera,
+      materias: campos.materias ?? this.materias,
+      correlativas: campos.correlativas ?? this.correlativas,
+      titulos: campos.titulos ?? this.titulos,
+    })
   }
-  return { borrador: { ...b, materias: [...b.materias, nueva] }, orden }
-}
 
-/** Cambia campos de una materia, identificada por su `orden` (estable aunque cambie el código). */
-export function editarMateria(
-  b: Borrador,
-  orden: number,
-  campos: Partial<Omit<MateriaEdit, 'orden'>>,
-): Borrador {
-  return {
-    ...b,
-    materias: b.materias.map((m) => (m.orden === orden ? { ...m, ...campos } : m)),
+  // ── consultas ───────────────────────────────────────────────────────────
+
+  /** Orden de lectura: por año, cuatrimestre y el orden dentro del cuatrimestre. */
+  get ordenadas(): MateriaEdit[] {
+    return [...this.materias].sort(
+      (a, b) =>
+        a.anio - b.anio || a.cuatri - b.cuatri || a.orden - b.orden || a.cod.localeCompare(b.cod),
+    )
   }
-}
 
-/**
- * Saca una materia y TODAS sus correlativas (en los dos sentidos). Sin esto quedarían
- * referencias a un código que ya no existe — que es justo lo que el validador rechaza.
- */
-export function quitarMateria(b: Borrador, orden: number): Borrador {
-  const m = b.materias.find((x) => x.orden === orden)
-  if (!m) return b
-  const cod = m.cod.trim()
-  return {
-    ...b,
-    materias: b.materias.filter((x) => x.orden !== orden),
-    correlativas: cod
-      ? b.correlativas.filter((c) => c.cod !== cod && c.requiere !== cod)
-      : b.correlativas,
+  materiaEn(orden: number): MateriaEdit | undefined {
+    return this.materias.find((m) => m.orden === orden)
   }
-}
 
-/**
- * Renombrar el CÓDIGO de una materia arrastra sus correlativas: si no, cambiar un código
- * mal tipeado dejaría el grafo apuntando al viejo.
- */
-export function renombrarCodigo(b: Borrador, orden: number, nuevo: string): Borrador {
-  const m = b.materias.find((x) => x.orden === orden)
-  if (!m) return b
-  const viejo = m.cod.trim()
-  const limpio = nuevo.trim()
-  const conCodigo = editarMateria(b, orden, { cod: nuevo })
-  if (!viejo || !limpio || viejo === limpio) return conCodigo
-  return {
-    ...conCodigo,
-    correlativas: conCodigo.correlativas.map((c) => ({
-      cod: c.cod === viejo ? limpio : c.cod,
-      requiere: c.requiere === viejo ? limpio : c.requiere,
-    })),
+  /** Años que el plan tiene con materias, en orden. */
+  get anios(): number[] {
+    return [...new Set(this.materias.map((m) => m.anio))].sort((a, z) => a - z)
   }
-}
 
-/**
- * Mover una materia a otro cuatrimestre puede volver imposibles algunas correlativas
- * (una previa que ahora queda en el mismo cuatrimestre o después). Devuelve el borrador
- * movido y las correlativas que quedaron mal, para avisar ANTES de guardar.
- */
-export function moverMateria(
-  b: Borrador,
-  orden: number,
-  anio: number,
-  cuatri: number,
-): { borrador: Borrador; rotas: Correlativa[] } {
-  const movido = editarMateria(b, orden, { anio, cuatri })
-  const idx = new Map(
-    movido.materias.filter((m) => m.cod.trim()).map((m) => [m.cod.trim(), indiceCuatri(m.anio, m.cuatri)]),
-  )
-  const rotas = movido.correlativas.filter((c) => {
-    const a = idx.get(c.cod)
-    const r = idx.get(c.requiere)
-    return a !== undefined && r !== undefined && r >= a
-  })
-  return { borrador: movido, rotas }
-}
+  /**
+   * Un código que no esté usado, para una materia que no trae uno: M01, M02, M03…
+   *
+   * No se recicla ni se renumera: si borrás la M02, la próxima sigue siendo M04. Un
+   * código es la identidad permanente de una materia (lo referencian las correlativas y
+   * el progreso guardado de cada alumno), así que reusarlo haría que el avance de una
+   * materia vieja apareciera en una nueva.
+   */
+  codigoLibre(): string {
+    const usados = new Set(this.materias.map((m) => m.codLimpio).filter(Boolean))
+    for (let n = 1; n < 1000; n++) {
+      const cod = `M${String(n).padStart(2, '0')}`
+      if (!usados.has(cod)) return cod
+    }
+    return `M${Date.now()}`
+  }
 
-/** Años que el plan tiene con materias, en orden. */
-export function aniosDe(b: Borrador): number[] {
-  return [...new Set(b.materias.map((m) => m.anio))].sort((a, z) => a - z)
-}
+  /** Cuenta lo que hay, para el encabezado del editor. */
+  get resumen(): { materias: number; correlativas: number; titulos: number } {
+    return {
+      materias: this.materias.filter((m) => m.cargada).length,
+      correlativas: this.correlativas.length,
+      titulos: this.titulos.length,
+    }
+  }
 
-/** Cuenta lo que hay, para el encabezado del editor. */
-export function resumen(b: Borrador): { materias: number; correlativas: number; titulos: number } {
-  return {
-    materias: b.materias.filter((m) => m.cod.trim() !== '').length,
-    correlativas: b.correlativas.length,
-    titulos: b.titulos.length,
+  /**
+   * El borrador como `PlanDef`: lo que come el validador y el árbol.
+   *
+   * Las materias sin código quedan afuera (son filas recién agregadas que todavía no se
+   * pueden guardar) y con ellas sus correlativas, para no inventar referencias colgadas.
+   * Por eso el plan sigue siendo publicable mientras alguien está tipeando una fila.
+   */
+  aPlan(): PlanDef {
+    const materias = this.ordenadas.filter((m) => m.cargada).map((m) => m.aMateriaPlan())
+    const existentes = new Set(materias.map((m) => m.cod))
+    return new PlanDef(
+      this.id,
+      this.universidad,
+      this.codigo,
+      this.anio,
+      this.carrera,
+      materias,
+      this.correlativas.filter((c) => existentes.has(c.cod) && existentes.has(c.requiere)),
+      [...this.titulos],
+    )
+  }
+
+  /** Materias que PUEDEN ser previa de `cod`: cuatrimestre anterior y no optativas. */
+  elegiblesComoPrevia(cod: string): MateriaEdit[] {
+    const yo = this.materias.find((m) => m.cod === cod)
+    if (!yo) return []
+    return this.ordenadas.filter(
+      (m) => m.cod !== cod && m.cargada && !m.opt && m.indice < yo.indice,
+    )
+  }
+
+  /**
+   * Por qué NO se puede conectar `otra` como previa/posterior de `cod`, o `null` si sí
+   * se puede. Es lo que se le muestra a quien intenta y no entiende por qué no pasa nada.
+   *
+   * Dos razones posibles: el **orden temporal** (una previa tiene que ir antes, si no la
+   * materia no se puede cursar) y las **optativas** (RN-05: se habilitan por la oferta
+   * anual del año, no por correlativas).
+   */
+  porQueNo(cod: string, otra: string, direccion: 'anterior' | 'posterior'): string | null {
+    if (cod === otra) return 'Es la misma materia.'
+    const yo = this.materias.find((m) => m.cod === cod)
+    const ella = this.materias.find((m) => m.cod === otra)
+    if (!yo || !ella) return null
+    if (!ella.cargada) return 'Esta fila todavía no tiene nombre.'
+    if (ella.opt) {
+      return 'Es una optativa: se habilita por la oferta del año, no por correlativas.'
+    }
+    if (yo.opt && direccion === 'posterior') {
+      return 'Una optativa no habilita materias: se habilita por la oferta del año.'
+    }
+    const antes = direccion === 'anterior'
+    if (antes && ella.indice >= yo.indice) {
+      return ella.indice === yo.indice
+        ? 'Está en el mismo cuatrimestre: una previa tiene que ir antes.'
+        : 'Está después: una previa tiene que ir antes.'
+    }
+    if (!antes && ella.indice <= yo.indice) {
+      return ella.indice === yo.indice
+        ? 'Está en el mismo cuatrimestre: lo que se habilita va después.'
+        : 'Está antes: lo que se habilita va después.'
+    }
+    return null
+  }
+
+  /**
+   * Materias que pueden tener a `cod` COMO previa: las de un cuatrimestre posterior.
+   * Es la dirección inversa, y existe porque cargar un plan se lee en los dos sentidos:
+   * "esta necesita…" o "esta habilita…".
+   */
+  elegiblesComoPosterior(cod: string): MateriaEdit[] {
+    const yo = this.materias.find((m) => m.cod === cod)
+    if (!yo || yo.opt) return [] // una optativa no habilita nada (RN-05)
+    return this.ordenadas.filter(
+      (m) => m.cod !== cod && m.cargada && !m.opt && m.indice > yo.indice,
+    )
+  }
+
+  /** Códigos que `cod` requiere hoy. */
+  previasDe(cod: string): string[] {
+    return this.correlativas.filter((c) => c.cod === cod).map((c) => c.requiere)
+  }
+
+  /** Materias que se habilitan con `cod` (para avisar antes de borrarla). */
+  dependenDe(cod: string): string[] {
+    return this.correlativas.filter((c) => c.requiere === cod).map((c) => c.cod)
+  }
+
+  /** ¿Ya existe ese código en el plan? (ignorando a la propia materia) */
+  codigoRepetido(cod: string, exceptoOrden: number): boolean {
+    const limpio = cod.trim()
+    if (!limpio) return false
+    return this.materias.some((m) => m.orden !== exceptoOrden && m.codLimpio === limpio)
+  }
+
+  // ── transiciones ────────────────────────────────────────────────────────
+
+  /** Pone o saca una previa. No valida: las elegibles ya vienen filtradas. */
+  alternarPrevia(cod: string, requiere: string): Borrador {
+    const existe = this.correlativas.some((c) => c.cod === cod && c.requiere === requiere)
+    return this.con({
+      correlativas: existe
+        ? this.correlativas.filter((c) => !(c.cod === cod && c.requiere === requiere))
+        : [...this.correlativas, new Correlativa(cod, requiere)],
+    })
+  }
+
+  /** Agrega una fila vacía al final de ese cuatrimestre. Devuelve el borrador y su `orden`. */
+  agregarMateria(anio: number, cuatri: number): { borrador: Borrador; orden: number } {
+    const orden = this.materias.reduce((max, m) => Math.max(max, m.orden), -1) + 1
+    const nueva = new MateriaEdit({ cod: '', nom: '', anio, cuatri, orden, nueva: true })
+    return { borrador: this.con({ materias: [...this.materias, nueva] }), orden }
+  }
+
+  /** Cambia campos de una materia, identificada por su `orden`. */
+  editarMateria(
+    orden: number,
+    campos: Partial<Omit<ConstructorParameters<typeof MateriaEdit>[0], 'orden'>>,
+  ): Borrador {
+    return this.con({
+      materias: this.materias.map((m) => (m.orden === orden ? m.con(campos) : m)),
+    })
+  }
+
+  /**
+   * Saca una materia y TODAS sus correlativas, en los dos sentidos. Sin esto quedarían
+   * referencias a un código que ya no existe — que es justo lo que el validador rechaza.
+   */
+  quitarMateria(orden: number): Borrador {
+    const m = this.materiaEn(orden)
+    if (!m) return this
+    const cod = m.codLimpio
+    return this.con({
+      materias: this.materias.filter((x) => x.orden !== orden),
+      correlativas: cod ? this.correlativas.filter((c) => !c.toca(cod)) : this.correlativas,
+    })
+  }
+
+  /**
+   * Renombrar el CÓDIGO de una materia arrastra sus correlativas: si no, corregir un
+   * código mal tipeado dejaría el grafo apuntando al viejo. (La base hace lo mismo con
+   * el `on update cascade` de la migración 005.)
+   */
+  renombrarCodigo(orden: number, nuevo: string): Borrador {
+    const m = this.materiaEn(orden)
+    if (!m) return this
+    const viejo = m.codLimpio
+    const limpio = nuevo.trim()
+    const conCodigo = this.editarMateria(orden, { cod: nuevo })
+    if (!viejo || !limpio || viejo === limpio) return conCodigo
+    return conCodigo.con({
+      correlativas: conCodigo.correlativas.map(
+        (c) =>
+          new Correlativa(
+            c.cod === viejo ? limpio : c.cod,
+            c.requiere === viejo ? limpio : c.requiere,
+          ),
+      ),
+    })
+  }
+
+  /**
+   * Mover una materia a otro cuatrimestre puede volver imposibles algunas correlativas
+   * (una previa que ahora queda en el mismo cuatrimestre o después). Devuelve el
+   * borrador movido Y las correlativas que quedaron mal, para avisar ANTES de guardar.
+   */
+  moverMateria(orden: number, anio: number, cuatri: number): Movimiento {
+    const borrador = this.editarMateria(orden, { anio, cuatri })
+    const idx = new Map(
+      borrador.materias.filter((m) => m.cargada).map((m) => [m.codLimpio, m.indice]),
+    )
+    const rotas = borrador.correlativas.filter((c) => {
+      const a = idx.get(c.cod)
+      const r = idx.get(c.requiere)
+      return a !== undefined && r !== undefined && r >= a
+    })
+    return { borrador, rotas }
+  }
+
+  conTitulos(titulos: readonly TituloPlan[]): Borrador {
+    return this.con({ titulos })
+  }
+
+  conCabecera(datos: { codigo: string; anio: number; carrera: string }): Borrador {
+    return this.con(datos)
+  }
+
+  conCorrelativas(correlativas: readonly Correlativa[]): Borrador {
+    return this.con({ correlativas })
+  }
+
+  conMaterias(materias: readonly MateriaEdit[]): Borrador {
+    return this.con({ materias })
   }
 }

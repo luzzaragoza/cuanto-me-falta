@@ -1,10 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Perfil } from './types'
 import { store, useDB } from './state/store'
 import { useSession } from './state/auth'
-import { photoFromUrl } from './lib/image'
+import { Foto } from './lib/image'
 import { plan } from './domain/Plan'
 import { PLANES, nombreUniversidad } from './data/planes'
-import { cambiarAPlan, planActivoId } from './state/planActivo'
+import { PlanActivo } from './state/planActivo'
 import { Avatar } from './components/Avatar'
 import { CarreraSelect } from './components/CarreraSelect'
 import { Dashboard } from './components/Dashboard'
@@ -18,10 +19,11 @@ import { StatePopover } from './components/StatePopover'
 import { SyncAviso } from './components/SyncAviso'
 import { SyncConflicto } from './components/SyncConflicto'
 import { ConsentModal } from './components/ConsentModal'
-import { getConflicto, useSyncEstado } from './state/sync'
+import { Sync, useSyncEstado } from './state/sync'
 import { Toaster } from './components/Toaster'
 import { Welcome } from './components/Welcome'
 import { Tour } from './components/Tour'
+import { PASOS_ALUMNO } from './components/tourPasos'
 
 // El árbol vive en un chunk aparte (elkjs + React Flow pesan ~medio MB gz y no
 // hacen falta para abrir la app). Se precalienta en idle (abajo) así la primera
@@ -29,7 +31,7 @@ import { Tour } from './components/Tour'
 const TreeView = lazy(() =>
   import('./components/Tree/TreeView').then((m) => ({ default: m.TreeView })),
 )
-import { track } from './lib/analytics'
+import { Analytics } from './lib/analytics'
 
 const TOUR_KEY = 'cmf-tour-visto'
 const tourVisto = () => {
@@ -51,7 +53,7 @@ export function App() {
   const db = useDB()
   const session = useSession()
   const syncEstado = useSyncEstado()
-  const conflicto = syncEstado === 'conflicto' ? getConflicto() : null
+  const conflicto = syncEstado === 'conflicto' ? Sync.conflicto() : null
 
   // Usuario existente que inicia sesión (desde el perfil o el aviso): si su perfil
   // local no tiene foto, adoptamos la de Google (y el nombre, si tampoco tenía).
@@ -65,10 +67,10 @@ export function App() {
     if (!session || !perfil || perfil.photo || !meta?.avatar_url) return
     if (fotoIntentada.current === session.user.id) return
     fotoIntentada.current = session.user.id
-    void photoFromUrl(meta.avatar_url).then((photo) => {
+    void Foto.desdeUrl(meta.avatar_url).then((photo) => {
       if (!photo) return
       const name = perfil.name || (meta.full_name || meta.name || '').trim()
-      store.setPerfil({ name, photo })
+      store.setPerfil(new Perfil(name, photo))
     })
   }, [session, db.profile])
 
@@ -108,11 +110,11 @@ export function App() {
 
   // aperturas instrumentadas (un solo choke point para el tracking)
   const openTree = (focus: string | null) => {
-    track('arbol_abierto')
+    Analytics.evento('arbol_abierto')
     setTree({ focus })
   }
   const openNotas = () => {
-    track('notas_abierto')
+    Analytics.evento('notas_abierto')
     setNotas(true)
   }
 
@@ -122,7 +124,7 @@ export function App() {
   // materia del plan (1° año, sin correlativas). `primera_materia` se dispara solo
   // al elegir estado; `tour_marcar` mide cuántos aceptan el empujón.
   const marcarPrimera = (directo = false) => {
-    track('tour_marcar')
+    Analytics.evento('tour_marcar')
     closeTour()
     if (directo) return
     const el = document.querySelector<HTMLElement>('#plan .mat')
@@ -141,8 +143,8 @@ export function App() {
                 {PLANES.length > 1 ? (
                   <CarreraSelect
                     variant="inline"
-                    value={planActivoId()}
-                    onChange={(id) => cambiarAPlan(id, db.profile)}
+                    value={PlanActivo.id()}
+                    onChange={(id) => PlanActivo.cambiarA(id, db.profile)}
                   />
                 ) : (
                   <>
@@ -185,7 +187,7 @@ export function App() {
           </Suspense>
         )}
 
-        {showTour && <Tour onClose={closeTour} onMark={marcarPrimera} />}
+        {showTour && <Tour pasos={PASOS_ALUMNO} onClose={closeTour} onMark={marcarPrimera} />}
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
 

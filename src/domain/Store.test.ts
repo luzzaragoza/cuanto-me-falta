@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Store } from './Store'
+import { Espejo, Perfil } from '../types'
 
 // localStorage de mentira, en memoria: deja probar la persistencia sin navegador.
 // El Store lee `localStorage` del scope global, así que lo inyectamos ahí.
@@ -89,7 +90,7 @@ describe('Store · estados y notas', () => {
 describe('Store · reset e inmutabilidad', () => {
   it('reset limpia estados y notas pero conserva el perfil', () => {
     const s = new Store('k')
-    s.setPerfil({ name: 'Luz', photo: '' })
+    s.setPerfil(new Perfil('Luz', ''))
     s.setEstado('X', 'aprobada')
     s.setNota('X', 9)
     s.reset()
@@ -140,7 +141,7 @@ describe('Store · suscripción (observable)', () => {
 })
 
 describe('Store · espejo de otras carreras', () => {
-  const espejo = { states: { COMP: 'aprobada' as const }, notas: { COMP: 9 } }
+  const espejo = new Espejo({ COMP: 'aprobada' }, { COMP: 9 })
 
   it('la materia compartida se ve con el estado y la nota de la otra carrera', () => {
     const s = new Store('k', espejo)

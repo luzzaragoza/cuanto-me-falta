@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
-import { entrarConGoogle, useSession } from '../state/auth'
+import { Auth, useSession } from '../state/auth'
 
 const DISMISS_KEY = 'cmf-aviso-sync'
 const yaDescartado = () => {
@@ -46,7 +46,7 @@ export function SyncAviso() {
         ¿La usás en varios dispositivos? Entrá con tu cuenta y tu avance se sincroniza.
       </span>
       <div className="sa-acts">
-        <button className="btn gbtn sa-btn" onClick={() => void entrarConGoogle()}>
+        <button className="btn gbtn sa-btn" onClick={() => void Auth.entrarConGoogle()}>
           <GoogleG />
           Entrar con Google
         </button>

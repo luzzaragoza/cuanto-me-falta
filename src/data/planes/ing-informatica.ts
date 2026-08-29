@@ -1,8 +1,8 @@
-import type { PlanDef } from '../model'
+import type { PlanJSON } from '../json'
 
 // UADE · Plan 1621 (2021) · Ingeniería en Informática. Cargado a mano, puede tener errores.
 // 5 años × 2 cuatrimestres. Títulos: Analista (3°) e Ingeniero (5°).
-export const ingInformatica: PlanDef = {
+export const ingInformatica: PlanJSON = {
   id: 'uade-ing-informatica',
   universidad: 'uade',
   codigo: '1621',

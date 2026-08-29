@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { PLANES, PLAN_POR_DEFECTO, existePlan } from './planes'
-import { validarPlan, erroresDe } from '../lib/validarPlan'
+import { Validacion } from '../lib/validarPlan'
 
 // Red de seguridad de los DATOS: valida CADA plan cargado (no solo el default).
 //
@@ -28,14 +28,14 @@ for (const plan of PLANES) {
   describe(`integridad · ${plan.carrera} (${plan.codigo})`, () => {
     it('no tiene errores de validación', () => {
       // el mensaje es lo que se lee cuando falla, así que se afirma sobre los textos
-      expect(erroresDe(plan).map((e) => `[${e.regla}] ${e.mensaje}`)).toEqual([])
+      expect(new Validacion(plan).errores.map((e) => `[${e.regla}] ${e.mensaje}`)).toEqual([])
     })
 
     it('sus avisos están revisados (ninguno inesperado)', () => {
       // Los avisos no bloquean, pero uno nuevo merece una mirada: si aparece algo
       // fuera de esta lista, es un dato que cambió y hay que decidir si está bien.
       const esperados = new Set(['nombre-duplicado', 'sin-titulos', 'anio-sin-materias'])
-      const raros = validarPlan(plan)
+      const raros = new Validacion(plan).hallazgos
         .filter((x) => x.severidad === 'aviso' && !esperados.has(x.regla))
         .map((x) => x.mensaje)
       expect(raros).toEqual([])

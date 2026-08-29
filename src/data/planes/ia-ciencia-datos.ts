@@ -1,10 +1,10 @@
-import type { PlanDef } from '../model'
+import type { PlanJSON } from '../json'
 
 // UADE · Plan 107425 (2025) · Licenciatura en Inteligencia Artificial y Ciencia de Datos.
 // Cargado a mano desde el plan oficial, puede tener errores. 4 años × 2 cuatrimestres.
 // Títulos: Técnico Universitario en Ciencia de Datos (a MITAD de 3° año, tras el 1°
 // cuatrimestre — por eso lleva hastaCuatri) y Licenciado al terminar 4°.
-export const iaCienciaDatos: PlanDef = {
+export const iaCienciaDatos: PlanJSON = {
   id: 'uade-lic-ia-ciencia-datos',
   universidad: 'uade',
   codigo: '107425',
