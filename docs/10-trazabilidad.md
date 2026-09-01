@@ -113,6 +113,6 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 2. **RF-14:** un e2e de ida y vuelta del backup (exportar → reiniciar → importar → verificar estado).
 3. **RF-02:** un e2e del cambio de carrera posterior al onboarding, verificando que el progreso de cada plan se conserva (RN-11).
 4. **RF-26 a RF-30:** un e2e del camino completo de la administración (crear un plan → cargar materias → conectar una correlativa → publicar), con las respuestas del backend interceptadas. Hoy cada pieza tiene tests unitarios, pero el recorrido entero se verifica a mano.
-5. **Estabilidad:** el e2e del interruptor de año es intermitente en la suite completa (§6.6). Mientras lo sea, no se puede confiar en un rojo del pipeline como señal.
+5. **Estabilidad:** los otros dos escenarios que interactúan con un aviso flotante (E2E 3 y 4) pertenecen a la misma familia que el que se corrigió congelando el reloj (§6.6): tocan el aviso enseguida, así que su ventana es chica, pero si alguno empieza a fallar de forma intermitente, la causa es esa y no otra.
 
 > La matriz se mantiene junto con el código: al agregar un requerimiento o un test, se agrega su fila o su referencia aquí.
