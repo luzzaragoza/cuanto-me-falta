@@ -233,6 +233,17 @@ test('el tutorial (coach marks) corre en la primera visita y no vuelve', async (
 })
 
 test('el interruptor de año aprueba el año entero y se puede deshacer', async ({ page }) => {
+  // ⏱ RELOJ CONGELADO, y no es capricho: este test fallaba ~1 de cada 3 corridas de
+  // la suite completa y pasaba siempre aislado. La causa no era el producto sino una
+  // CARRERA CONTRA UN RELOJ DE PARED — el aviso con acción se auto-descarta a los 6 s
+  // (`ToastBus.show`), y entre el clic que lo crea y el clic en "Deshacer" hay tres
+  // esperas. Con la suite en paralelo (fullyParallel + N workers) esas esperas se
+  // comen los 6 s, el toast se desmonta y el clic falla. Con el reloj falso los
+  // timeouts de la app no avanzan solos: el test mide lo que dice medir y no cuánto
+  // estaba cargada la máquina. Va antes de navegar, que es lo que pide la API.
+  await page.clock.install()
+  await page.goto('/')
+
   const btn = page.locator('.year').first().locator('.ybtn')
   await expect(btn).toHaveText('Aprobar todo el año')
 
