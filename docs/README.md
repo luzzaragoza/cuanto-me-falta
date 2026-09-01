@@ -12,6 +12,8 @@ Documentación completa del proyecto: presentación, requerimientos, casos de us
 | 6 | [Calidad y despliegue](06-calidad.md) | Estrategia de testing en tres niveles, CI/CD y publicación |
 | A | [Manual de usuario](07-manual-de-usuario.md) | Guía práctica de uso de la aplicación |
 | B | [Glosario](08-glosario.md) | Términos académicos y técnicos usados en el proyecto |
+| C | [Historias de usuario](09-historias-de-usuario.md) | Épicas, historias y criterios de aceptación (Gherkin) |
+| D | [Matriz de trazabilidad](10-trazabilidad.md) | RF → HU → CU → RN → cómo se verifica cada uno |
 
 **Enlaces rápidos**
 

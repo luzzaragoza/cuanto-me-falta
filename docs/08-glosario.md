@@ -27,6 +27,11 @@
 | **Árbol de correlativas** | Vista de grafo interactiva del plan completo, con foco por materia y cadenas resaltadas por nivel. |
 | **Hito** | Cada título del plan mostrado en el tablero, con la cantidad de materias que faltan para alcanzarlo. |
 | **Backup** | Archivo JSON con todo el progreso local, exportable e importable por el usuario. |
+| **Borrador** (de un plan) | El plan tal como se está editando en la administración. Existe solo para quien lo edita: el estudiante nunca lo ve. |
+| **Versión publicada** | La "foto" del plan que ven los estudiantes. Publicar guarda una versión nueva y numerada; volver atrás es apuntar a una anterior. |
+| **Administrador de universidad** | Quien mantiene los planes de su universidad desde la administración. Puede crear, editar, publicar y eliminar, solo ahí adentro y hasta el cupo. |
+| **Superadministrador** | Además de lo anterior en cualquier universidad, es el único que habilita administradores y fija cupos. |
+| **Cupo de planes** | Cuántos planes puede tener cargados una universidad. Es de la universidad, no de la persona, y lo hace cumplir la base de datos. |
 
 ## Términos técnicos
 
@@ -45,3 +50,6 @@
 | **CI/CD** | Integración y despliegue continuos: cada cambio se verifica (tests) y publica automáticamente. |
 | **Gate de calidad** | Regla del pipeline por la cual una versión no se publica si falla alguna verificación. |
 | **Test end-to-end (e2e)** | Prueba automatizada que ejercita la aplicación completa en un navegador real, como lo haría un usuario. |
+| **RLS** (*row level security*) | Reglas de la base de datos que deciden, fila por fila, qué puede leer o escribir cada usuario. Es un **límite de permisos, no un filtro**: si se espera una fila, hay que pedirla por su clave igual. |
+| **Migración** | Script que cambia la forma de la base. Las que borran algo van en dos tiempos —**expandir** y **contraer**— para no romper el código que está en producción. |
+| **Vista** (de base de datos) | Consulta guardada que se usa como si fuera una tabla. `plan_publicado` entrega el plan que ve el estudiante; `plan_editable` responde si un plan tiene cambios sin publicar. |

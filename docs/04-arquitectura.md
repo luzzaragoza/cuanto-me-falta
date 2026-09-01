@@ -17,6 +17,8 @@
 | **TypeScript** (estricto) | Lenguaje | Los datos académicos y las reglas de correlatividad son estructuras ricas; el tipado atrapa errores de carga de datos en compilación. |
 | **Vite** | Build y dev server | Arranque instantáneo en desarrollo y bundle de producción liviano para una SPA estática. |
 | **@xyflow/react** (React Flow) | Árbol de correlativas | Motor de grafos interactivo (nodos, aristas, pan/zoom); el posicionamiento por año/nivel es un layout propio. |
+| **elkjs** | Layout del modo rama | Motor de grafos por capas: acomoda y rutea la cadena de una materia con separación de aristas garantizada por construcción (ADR-10). Pesa, así que viaja en un *chunk* diferido. |
+| **Supabase** (Postgres + Auth) | Cuentas, sincronización y datos académicos | Postgres gestionado con Row Level Security: los permisos se resuelven **en la base** (ADR-09, ADR-11) y no hay servidor propio que mantener. |
 | **Vitest** | Tests unitarios y de integridad | Corre nativo sobre Vite, mismos paths y TypeScript sin configuración extra. |
 | **Playwright** | Tests end-to-end | Simula al usuario real en Chromium dentro del pipeline. |
 | **oxlint** | Lint | Linter rápido como primer gate de calidad. |
@@ -67,7 +69,137 @@ flowchart TB
 - **`src/state`** — el puente y el I/O: la instancia única del `Store`, el hook `useDB()`, y los repositorios contra Supabase (`RepositorioPlanes`, `Sync`, `Auth`, `RefrescoDePlanes`).
 - **`src/domain`** — el corazón: `Plan` (el plan como grafo, con sus índices derivados), `DB` (el avance del alumno, inmutable, dueña de sus propias transiciones), `Store` (persiste y notifica) y `Avance` (todas las métricas derivadas).
 - **`src/data`** — el modelo académico como objetos (`model.ts`), la forma del JSON que cruza la frontera (`json.ts`) y los planes curados.
-- **`src/lib`** — el resto de la lógica de negocio, también como objetos: `Borrador` y `Diff` (el editor), `Validacion` (las reglas de un plan), `SesionAdmin` y `Cupo` (permisos), `Grafo` y `Layout` (el árbol), `RemoteData` (la sincronización), `Analytics`, `Archivo`, `Foto`, `ToastBus`.
+- **`src/lib`** — el resto de la lógica de negocio, también como objetos: `Borrador` y `Diff` (el editor), `Validacion` (las reglas de un plan), `SesionAdmin` y `Cupo` (permisos), `Pasos` e `Historial` (la carga de un plan), `Grafo` y `Layout` (el árbol), `RemoteData` (la sincronización), `Analytics`, `Archivo`, `Foto`, `ToastBus`.
+- **`src/admin`** — la administración de planes (`#admin`), en un **chunk aparte** que el estudiante nunca descarga: la lista, el editor, la pantalla de crear plan, los habilitados y el panel del superadmin. No tiene lógica propia: usa el mismo `Plan`, el mismo `arbolLayout` y el mismo validador que la app del alumno.
+
+**El dominio como objetos.** El mismo corte, visto por clases (ADR-13). El rombo marca composición: la clase es dueña de las que contiene y las arma en su constructor.
+
+```mermaid
+%% svg:clases
+classDiagram
+    direction LR
+
+    class PlanDef {
+        +string id
+        +string carrera
+        +MateriaPlan[] materias
+        +Correlativa[] correlativas
+        +TituloPlan[] titulos
+        +desde(json) PlanDef$
+        +aJSON() PlanJSON
+    }
+    class MateriaPlan {
+        +string cod
+        +string nom
+        +int anio
+        +int cuatri
+        +bool opt
+        +bool especial
+        +anteriorA(otra) bool
+    }
+    class Correlativa {
+        +string cod
+        +string requiere
+        +bool esAutoCorrelativa
+    }
+    class TituloPlan {
+        +string nombre
+        +int hastaAnio
+        +int hastaCuatri
+        +incluye(anio, cuatri) bool
+    }
+    class Registro {
+        +PlanDef[] planes
+        +saneado() Registro
+        +igualA(otro) bool
+    }
+    class Plan {
+        +PlanDef def
+        +Anio[] anios
+        +antes(cod) string[]
+        +despues(cod) string[]
+        +materiasHasta(titulo) MateriaUbicada[]
+    }
+    class DB {
+        +Estado states
+        +conEstado(cod, estado) DB
+        +desde(json) DB$
+    }
+    class Store {
+        -DB db
+        +setEstado(cod, estado)
+        +setEstados(cambios) Inverso
+        -commit()
+    }
+    class Avance {
+        +conteos
+        +promedio
+        +hitos
+        +previasParaEstado(cod, estado)
+        +decidirAnio(cods) Estado
+    }
+    class Borrador {
+        +MateriaEdit[] materias
+        +aPlan() PlanDef
+        +alternarPrevia(cod, requiere) Borrador
+        +quitarMateria(orden) Borrador
+        +porQueNo(cod, otra, dir)
+    }
+    class Validacion {
+        +Hallazgo[] errores
+        +Hallazgo[] avisos
+        +bool esPublicable
+    }
+    class Diff {
+        +Cambio[] cambios
+        +deshacer(cambio)
+    }
+    class SesionAdmin {
+        +Rol rol
+        +puedeEn(uni) bool
+        +bool puedeGestionarPermisos
+        +cupoEn(uni, usados, limite) Cupo
+    }
+    class Grafo {
+        +cadenaDe(foco)
+        +reducido() Grafo
+        +malla() Layout
+    }
+    class RepositorioPlanes {
+        -SupabaseClient cliente
+        +cargarBorrador(planId) Borrador
+        +cargarPerfil(userId) SesionAdmin
+        +publicar(planId, nota)
+    }
+
+    PlanDef *-- MateriaPlan
+    PlanDef *-- Correlativa
+    PlanDef *-- TituloPlan
+    Registro *-- PlanDef
+    Registro *-- Universidad
+    Plan *-- Anio
+    Anio *-- Cuatri
+    Cuatri *-- MateriaPlan
+    DB *-- Perfil
+    DB *-- MateriaCustom
+    Borrador *-- MateriaEdit
+    SesionAdmin *-- Habilitacion
+
+    Plan ..> PlanDef : se arma con
+    Avance ..> Plan : lee
+    Avance ..> DB : lee
+    Store ..> DB : es dueño de
+    Store ..> Espejo : mezcla
+    Borrador ..> PlanDef : aPlan() — LA BISAGRA
+    Validacion ..> PlanDef : valida
+    Grafo ..> PlanDef : dibuja
+    Diff ..> Borrador : compara contra la foto
+    RepositorioPlanes ..> Borrador : devuelve
+    RepositorioPlanes ..> SesionAdmin : devuelve
+    Cupo ..> SesionAdmin : la calcula
+```
+
+Dos piezas sostienen el resto. **La frontera** es `desde()`: todo lo que llega por JSON —el bundle, la vista de Supabase, el caché, la fila del editor— entra por una factory antes de ser un objeto, y nunca por un `as` (ADR-13). **La bisagra** es `Borrador.aPlan()`: devuelve un `PlanDef`, el mismo tipo con el que se construye el `Plan` del estudiante — por eso el editor valida el plan y dibuja el árbol sin código nuevo. Las clases de servicio (`Analytics`, `ToastBus`, `Archivo`, `Foto`, `Auth`, `PlanActivo`) quedan fuera del diagrama: no participan del modelo.
 
 ## 4.4 Estructura del repositorio
 
@@ -91,7 +223,7 @@ cuanto-me-falta/
 │   ├── lib/               # Borrador · Diff · Validacion · SesionAdmin · Grafo · RemoteData …
 │   ├── styles/global.css  # Design tokens + estilos
 │   └── types.ts           # DB · Perfil · Espejo · MateriaCustom — el avance del alumno
-├── supabase/              # Migraciones SQL, en orden (001 … 007)
+├── supabase/              # Migraciones SQL, en orden (001 … 011)
 ├── e2e/                   # Tests end-to-end (Playwright)
 ├── public/                # PWA: manifest, service worker, íconos, OG
 ├── .github/workflows/     # Pipeline CI/CD
@@ -183,9 +315,6 @@ erDiagram
     ADMIN_UNI {
         uuid user_id PK "FK"
         text universidad_id PK "FK"
-        bool crear
-        bool editar
-        bool eliminar
         uuid otorgado_por FK
         timestamptz otorgado_at
     }
@@ -216,7 +345,11 @@ erDiagram
 - **Las columnas `orden`** en `plan`, `materia` y `correlativa`. Sin ellas el mismo plan podría volver en otro orden y cambiar cómo se dibuja.
 - **`plan_version.data` es una desnormalización deliberada** (ADR-12): la foto del plan publicado en JSON. Publicar es un `INSERT` + un `UPDATE` del puntero; volver atrás es mover el puntero. Lo mismo vale para `auditoria.dato` (un log tiene que ser inmutable y sobrevivir al borrado) y `progreso.data` (last-write-wins sobre un JSON por usuario). Las tres se leen íntegras y nunca se consultan por adentro.
 
-Las cinco tablas académicas están en 3FN. Una auditoría del 11-ago-2026 encontró y corrigió cinco desvíos (migraciones `006` y `007`): `limite_planes` vivía en `admin_uni` cuando depende solo de la universidad —una dependencia parcial que hacía que el cupo real dependiera de qué admin apretara el botón—, `plan.version` había quedado muerta desde ADR-12, faltaba el índice de `correlativa (plan_id, requiere)` que usan sus FKs en cascada, sobraba un índice redundante con la PK de `plan_version`, y cada edición escribía dos filas de auditoría (una sin información).
+**Dos vistas hacen el trabajo de las consultas que no pueden equivocarse:** `plan_publicado` entrega el plan que ve el estudiante con la forma exacta de `PlanDef` (ADR-11), y `plan_editable` responde si un plan **tiene cambios sin publicar** comparando el borrador contra la foto **con el mismo armador de JSON que produjo la foto** (`plan_json`) — contenido contra contenido, nunca dos relojes (ADR-15, RN-20).
+
+Las cinco tablas académicas están en 3FN. Una auditoría del 11-ago-2026 encontró y corrigió cinco desvíos (migraciones `006` y `007`): `limite_planes` vivía en `admin_uni` cuando depende solo de la universidad —una dependencia parcial que hacía que el cupo real dependiera de qué admin apretara el botón—, `plan.version` había quedado muerta desde ADR-12, faltaba el índice de `correlativa (plan_id, requiere)` que usan sus FKs en cascada, sobraba un índice redundante con la PK de `plan_version`, y cada edición escribía dos filas de auditoría (una sin información). Las migraciones `010` y `011` sacaron después las columnas `crear`/`editar`/`eliminar` de `admin_uni`, que suponían un reparto de capacidades que en la práctica no existe (ADR-14).
+
+**Las migraciones que borran algo van en dos tiempos: expandir y contraer.** El sitio se despliega de continuo y la base es una sola, así que una columna no se puede borrar mientras el código que está en producción todavía la pide. El patrón, usado dos veces sin cortar el servicio (`006`→`007` y `010`→`011`): primero una migración que **agrega lo nuevo y deja lo viejo en su lugar**, después el deploy del código que **suelta la columna vieja**, y recién entonces la migración que la **borra**. La trampa que enseñó la segunda pareja: no alcanza con dejar de *leer* la columna — `habilitar_admin` la **escribía**, así que borrarla sin tocar esa función habría roto habilitar gente. Primero se saca lo que lee y lo que escribe; el `drop column` es lo último.
 
 ### Los objetos
 
@@ -344,10 +477,28 @@ sequenceDiagram
 *Alternativa descartada:* documentar el split funcional/POO en vez de convertirlo. Se descartó al mirar módulo por módulo: las conversiones no eran un cambio de envoltorio sino mejoras de diseño reales, y varias destaparon duplicación (la lógica de "opt/especial solo si son true" vivía en **tres** lugares que tenían que coincidir con el `jsonb_strip_nulls` de la vista; `filaAPlan` eran 45 líneas que hacían a mano lo que ahora hace `PlanDef.desde`).
 *Consecuencias:* 41 clases; el bundle del alumno subió 2,4 KB gz (135,6 → 138,0). `state/admin.ts` recibe su cliente de Supabase **por constructor** y pasó de cero tests a nueve — incluida la regresión del bug de producción del 8-ago, que se había escapado justamente porque ese módulo era intestables con el singleton del módulo. Y quedó una lección con test propio: el refactor destapó dos `JSON.parse(raw) as DB` que el compilador aceptaba y que reventaban recién en el navegador; **en la frontera va la factory, nunca un cast**.
 
+**ADR-14 · Tres roles y nada en el medio.** *(Corrige el modelo de permisos que ADR-11 y ADR-12 habían dejado por acción.)*
+*Contexto:* `admin_uni` nació con tres columnas booleanas —`crear`, `editar`, `eliminar`— sobre el supuesto de que una facultad querría repartir esas capacidades entre personas distintas. Con la pantalla en manos de alguien que la usó de verdad, quedó claro que no pasa: **quien carga un plan es quien lo corrige y quien lo publica**. Lo único que las tres casillas lograban era habilitar a alguien **a medias por error** —mirando botones apagados sin saber por qué— y multiplicar los estados que había que probar.
+*Decisión:* tres roles, y nada en el medio. **Estudiante** (el rol por defecto de toda cuenta) · **admin de universidad**, que puede todo sobre los planes de las universidades donde está habilitado, hasta el cupo · **superadmin**, único que reparte habilitaciones y cupos. `Habilitacion` se quedó con una sola columna útil, `universidad_id`; `SesionAdmin.puedeEn(uni)` reemplazó a los tres permisos; y `puedeGestionarPermisos` es lo único exclusivo del superadmin. Lo que sigue siendo por universidad es **dónde**, no **qué**: un admin de una facultad no toca los planes de otra, y eso lo garantiza el RLS.
+*Alternativas descartadas:* (a) *conservar las columnas "por si acaso"* — un grado de libertad que nadie pidió cuesta permisos mal puestos hoy y ramas de código que nunca se ejercitan; (b) *un rol intermedio "puede editar pero no publicar"* — suena prudente y en la práctica deja el plan a medio corregir esperando a alguien que apruebe, que es exactamente el problema que ADR-12 evita con el borrador.
+*Consecuencias:* la matriz de permisos que había que probar se desplomó, y `habilitar_admin` pasó de cinco parámetros a dos (la versión vieja se **dropea**: con las dos vivas, PostgREST tendría dos sobrecargas y no sabría cuál llamar). El cambio se aplicó **expandiendo y contrayendo** (`010` deja las columnas vestigiales, el código las suelta, `011` las borra), y el cupo dejó de ser un permiso para ser lo que siempre fue: un número de la universidad (RN-17).
+
+**ADR-15 · "Cambios sin publicar" se responde comparando contenido, no relojes.**
+*Contexto:* la lista de planes marcaba "cambios sin publicar" comparando `plan.actualizado_at` contra `plan.publicado_at`, con dos segundos de tolerancia porque publicar toca la propia fila. Un día los cuatro planes aparecieron con cambios sin que nadie hubiera tocado nada: la migración que publicó la versión 1 de los planes ya cargados hizo `update plan set version_publicada = 1` **sin mover `publicado_at`**, pero ese UPDATE disparó el trigger que **sí** mueve `actualizado_at`. Los cuatro quedaron con un sello posterior al otro para siempre.
+*Decisión:* no emparejar los timestamps —eso arregla esos cuatro y deja viva la causa— sino **cambiar la pregunta**. La vista `plan_editable` expone `tiene_cambios` comparando el JSON del borrador contra el JSON de la foto publicada, armados los dos por la **misma** función `plan_json()`. La tolerancia de dos segundos desapareció: era el síntoma de estar comparando relojes.
+*Alternativas descartadas:* (a) *un flag `sucio` que muevan los triggers* — es otra inferencia sobre el contenido, con el mismo modo de falla; (b) *calcularlo en el cliente* — obliga a bajar el borrador entero de cada plan para dibujar una etiqueta en una lista.
+*Consecuencias:* **dos relojes son una inferencia sobre si el contenido cambió, y cualquier cosa que toque la fila la invalida.** El contenido se compara con el contenido. Queda una diferencia conocida: la comparación en SQL es más estricta que la del cliente, que normaliza los dos lados por `PlanDef.desde` — dos planes cuya foto se guardó antes de que la migración `006` cambiara la forma del JSON pueden avisar de más. Es el lado seguro del error, y se cierra comparando las dos formas clave por clave.
+
+**ADR-16 · Toda la paleta como tokens, porque acá el color *es* el significado.**
+*Contexto:* la aplicación declaraba 22 tokens de color y, al mismo tiempo, **104 colores literales** en el cuerpo del CSS (58 distintos) y 37 más en TypeScript. Cambiar la paleta era recorrer cuatro mil líneas, y algunas piezas no se podían cambiar en absoluto sin tocar código: las dos rampas de cuatro pasos del árbol vivían como 24 literales dentro de `TreeView.tsx`.
+*Decisión:* **83 tokens y cero literales en el cuerpo**, sin cambiar un solo color. La conversión destapó lo que estaba escondido: `#fff` aparecía 33 veces con **dos significados distintos** —superficie de tarjeta y tinta sobre un fondo saturado—, que ahora son `--card` y `--sobre-color` (es la diferencia que hace o rompe un tema oscuro: la superficie se oscurece, la tinta no); los `rgba()` eran tokens re-tipeados a mano, así que cambiar el token no los alcanzaba, y ahora hay un `--*-rgb` por color porque `rgba()` no acepta un `var()` de color; y `--gold-soft` directamente no existía —se usaba como `var(--gold-soft, rgba(…))` en tres lugares y lo que renderizaba era el *fallback*, encima con dos opacidades distintas—.
+*Consecuencias:* la paleta se cambia editando un bloque. Quedan tres literales **a propósito y comentados**: los colores del logo de Google (marca ajena) y el dorado de la insignia de bienvenida, que tiene que coincidir con el favicon y la imagen de Open Graph — imágenes generadas aparte, que no siguen a la paleta. Y queda escrita en el CSS la **restricción de diseño** que cualquier paleta futura tiene que sostener: acá el color no decora, codifica (violeta = necesitás antes · teal = habilita después), así que hacen falta **seis distinciones semánticas y dos rampas de cuatro pasos** que se lean ordenadas y no se confundan entre sí — con cuidado especial con verde y naranja, que son *aprobada* y *cursando* y se confunden con daltonismo (§5.4).
+
 ## 4.11 Evolución futura (técnica)
 
 La arquitectura deja preparado el camino sin hipotecar el presente:
 
 - **Backend y sincronización:** ✅ primera etapa hecha (ADR-09): auth con Google y sync del progreso vía Supabase. ✅ segunda etapa hecha (ADR-11): el modelo académico normalizado (§4.5) vive en tablas y la app lo lee con snapshot + refresco.
-- **Rol administrador:** la carga de planes que hoy se hace por código pasa a una interfaz de administración que escribe las mismas entidades. Pendiente: los tres perfiles (superadmin · admin de universidad con límite de planes · estudiante) con sus políticas de escritura, y el editor en `/admin`.
+- **Rol administrador:** ✅ hecho. Los tres perfiles (ADR-14) con sus políticas de escritura, y la administración en `#admin` —lista de planes, editor de estructura, correlativas sobre el árbol, títulos, revisar y publicar con versiones (ADR-12), y el panel del superadmin para habilitar administradores y fijar cupos—. **Cargar una carrera ya no necesita ni código ni deploy.** Lo que queda abierto no es técnico: la prueba de que lo puede hacer alguien más, con una universidad ajena y cronometrado (Gate C).
 - **Más planes y universidades:** ya soportado por datos; el selector de carrera y el registro de planes están diseñados para N planes de M universidades.
+- **Panel agregado para la institución:** diseñado y **deliberadamente no construido** todavía. Cuando llegue, lee **vistas agregadas** con un mínimo de 5 estudiantes por corte y no toca `progreso`: si el camino a un dato individual no existe, no puede abrirse por error (RN-21).

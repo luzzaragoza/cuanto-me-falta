@@ -1,7 +1,8 @@
 # Plan comercial y workflow de producto — ¿Cuánto me falta?
 
-> Documento de trabajo. **Rev. 8-ago-2026 — giro a B2B.** Reemplaza a la versión de jul-2026,
-> que planificaba un freemium B2C antes del B2B.
+> Documento de trabajo. **Rev. 1-sep-2026 — el Sprint 1 está en producción.** La estrategia
+> es la misma del giro a B2B del 8-ago; lo que cambió es que la plataforma dejó de ser un
+> plan y pasó a ser algo que funciona.
 >
 > Versión viva (con bitácora, métricas y diseño técnico):
 > https://claude.ai/code/artifact/40183c26-91a0-47ed-ac23-5d9ee92cfc26
@@ -26,16 +27,17 @@ de conversión daría ~USD 17 al año y, encima, le pondría un peaje a lo únic
 
 ---
 
-## 1. Dónde está el proyecto (al 8-ago-2026)
+## 1. Dónde está el proyecto (al 1-sep-2026)
 
 ### 1.1 Lo que hay, en producción
 
 | Área | Estado |
 |---|---|
 | Stack | Vite + React 19 + TS, dominio POO puro (41 clases; ver ADR-13) |
-| Deploy | GitHub Actions → GitHub Pages, dominio propio `cuantomefalta.app`, gate de CI |
-| Calidad | **281 tests** (266 vitest + 15 e2e), integridad de datos por plan, invariantes geométricos del árbol |
-| Datos | **4 carreras** de UADE (152 materias, 89 correlativas), modelo normalizado en `src/data/model.ts` |
+| Deploy | GitHub Actions → GitHub Pages, dominio propio `cuantomefalta.app`, gate de CI en `main` **y en ramas** |
+| Calidad | **319 tests** (304 vitest + 15 e2e), integridad de datos por plan, invariantes geométricos del árbol |
+| Datos | **4 carreras** de UADE (152 materias, 89 correlativas), **en tablas del backend**, con el bundle como snapshot de arranque |
+| **Plataforma** | **La administración de planes, funcionando** (`#admin`): tres roles, cupo por universidad, carga sobre la grilla, correlativas sobre el árbol, validación, publicación por versiones y vuelta atrás. **11 migraciones corridas.** Cargar una carrera ya no necesita código ni deploy |
 | Cuentas | Login con Google (PKCE) + sync multi-dispositivo con Supabase, RLS, consentimiento Ley 25.326 |
 | Features | Estados, notas y promedio, correlativas (panel + árbol v2 con modo rama), títulos, PDF, backup, PWA instalable, tour de onboarding |
 | Medición | Umami + eventos de embudo (`primera_materia`, `activado`, `dia_activo`, `regreso`, `arbol_rama`, `anio_marcado`) |
@@ -56,11 +58,18 @@ comparar a través de esa fecha); la retención se mide **por cohorte y completi
 
 ### 1.3 Lo que falta
 
-1. **Canilla.** El producto convierte y retiene; nadie nuevo llega. Es el problema #1 y no se
-   arregla con código.
-2. **Los planes son código.** Cargar una carrera requiere un archivo TS y un deploy → el moat
-   depende de que Luz esté disponible. Es lo que resuelve el Sprint 1.
-3. **No hay perfiles.** No existe forma de que un tercero cargue o mantenga datos.
+1. **Canilla.** El producto convierte y retiene; nadie nuevo llega. Sigue siendo el problema
+   #1, sigue sin arreglarse con código, y **la ventana de agosto ya se fue**: el LinkedIn con
+   UTM estaba escrito y aprobado desde el 6-ago y no se publicó. En septiembre vale menos, pero
+   vale; el próximo momento con demanda natural es diciembre (finales).
+2. **El Gate C, que es la prueba del moat.** La plataforma existe, pero todavía **no la usó
+   nadie que no sea Luz**. Hasta que una persona ajena cargue una carrera de una universidad
+   ajena en menos de dos horas siguiendo un manual, "mantenemos sus planes al día" es una
+   promesa sin evidencia. Falta el manual y falta correr la prueba.
+3. **El rediseño visual en curso.** Colores y árbol de correlativas están siendo rediseñados;
+   hasta que eso cierre, la pestaña de correlativas del editor y todo lo visual quedan
+   congelados. Es lo que hoy bloquea al punto 2, porque el manual no se escribe sobre un
+   blanco móvil.
 4. **Legales para B2B:** los borradores de privacidad y términos son propios; el panel agregado
    necesita una cláusula explícita, y el contrato necesita abogado.
 
@@ -74,7 +83,7 @@ comparar a través de esa fecha); la retención se mide **por cohorte y completi
 | Gratis + donaciones | Cafecito/MP, sin límites ni promesas | Muy bajos | **Se queda** — es el motor de adopción |
 | Freemium B2C | Cobrarle al alumno por sync/planner/export | ~USD 17/año a escala actual | **DESCARTADO** — ver §0 |
 | Centro de estudiantes | Difusión oficial a cambio de acceso | Cero | **Canal, no cliente** — es la adquisición que falta |
-| Planes al día como datos | Licenciar el moat vía API | Medios, recurrentes | **Plan B guardado** — el Sprint 1 lo habilita gratis |
+| Planes al día como datos | Licenciar el moat vía API | Medios, recurrentes | **Plan B guardado** — la plataforma ya lo habilita gratis |
 | Sponsors / publicidad display | — | Miseria | **No** |
 
 **La trampa a evitar:** venderle "analítica" a quien ya tiene los datos. La secretaría académica
@@ -83,33 +92,41 @@ abren por gusto**, el árbol de correlativas, y los planes al día sin trabajo i
 
 ---
 
-## 3. Arquitectura del Sprint 1 (backend, perfiles, carga de planes)
+## 3. Arquitectura de la plataforma (construida)
 
-`src/data/model.ts` ya está normalizado y mapea 1:1 a tablas → esto es **migración de datos y
-permisos**, no rediseño de dominio. Se queda en el mismo proyecto de Supabase.
+`src/data/model.ts` ya estaba normalizado y mapeaba 1:1 a tablas → esto fue **migración de datos
+y permisos**, no rediseño de dominio. Quedó en el mismo proyecto de Supabase.
 
 ### 3.1 Tablas
 
 ```
-datos académicos   universidad · plan (estado borrador|publicado, version) · materia
-                   correlativa · titulo
+datos académicos   universidad (nombre, activa, limite_planes) · plan (estado, version_publicada)
+                   materia · correlativa · titulo · plan_version (la foto publicada, JSON)
 perfiles           perfil (rol: superadmin|admin_uni|estudiante)
-                   admin_uni (universidad, crear/editar/eliminar, limite_planes)
+                   admin_uni (quién administra qué universidad — y nada más)
                    auditoria (quién, qué, cuándo)
-progreso           YA EXISTE — 1 fila JSON por usuario, RLS user_id = auth.uid(), no se toca
+progreso           YA EXISTÍA — 1 fila JSON por usuario, RLS user_id = auth.uid(), no se tocó
 ```
 
-### 3.2 Permisos
+Dos correcciones que salieron de auditar el esquema con el editor ya escrito: **el cupo es de
+la universidad, no del admin** (cuando vivía en `admin_uni`, con dos admins de límites distintos
+el cupo real dependía de quién apretaba el botón), y **las columnas de permiso por acción se
+borraron** — ver §3.2. Las dos se aplicaron *expandiendo y contrayendo*, sin cortar el servicio.
+
+### 3.2 Permisos — tres roles y nada en el medio
+
+La versión de agosto tenía un permiso por acción (`crear`/`editar`/`eliminar`). Se eliminó: en
+la práctica **quien carga un plan es quien lo corrige y quien lo publica**, y lo único que
+lograban las tres casillas era habilitar a alguien *a medias por error*.
 
 | Acción | Estudiante | Admin de universidad | Superadmin |
 |---|---|---|---|
 | Ver planes publicados | ✓ | ✓ | ✓ |
 | Su propio avance | ✓ | — | — |
-| Crear plan | — | ✓ solo su universidad, con permiso y bajo `limite_planes` | ✓ |
-| Editar / eliminar plan | — | ✓ ídem | ✓ |
-| Publicar borrador | — | ✓ si validó | ✓ |
-| Habilitar admins y fijar límites | — | — | ✓ |
-| Panel agregado | — | ✓ solo su universidad | ✓ |
+| Crear plan | — | ✓ en SU universidad, bajo el cupo de esa universidad | ✓ |
+| Editar / eliminar / publicar | — | ✓ ídem — es **una** habilitación, no tres | ✓ |
+| Habilitar admins y fijar cupos | — | — | ✓ |
+| Panel agregado *(Fase 4)* | — | ✓ solo su universidad | ✓ |
 | **Avance de UN alumno** | **✕** | **✕** | **✕ no existe la consulta** |
 
 ### 3.3 Seis decisiones de diseño
@@ -126,15 +143,25 @@ progreso           YA EXISTE — 1 fila JSON por usuario, RLS user_id = auth.uid
    (los custom claims quedan cacheados hasta el refresh).
 6. **El límite se hace cumplir en la policy** del `INSERT`, no en el formulario, con test propio.
 
-### 3.4 Editor de planes (`/admin`, chunk lazy)
+### 3.4 Editor de planes (`#admin`, chunk lazy) — construido
 
-Cinco pantallas: mis planes · estructura (la grilla del alumno, editable) · correlativas con el
-**árbol redibujándose en vivo** · títulos · revisar y publicar. Reusa `PlanDef`, `arbolLayout` y
-el validador que ya existen.
+Cinco pantallas: mis planes · estructura (la grilla del alumno, editable) · correlativas
+**marcadas sobre el árbol** · títulos · revisar y publicar. Reusa `PlanDef`, `arbolLayout` y el
+validador que ya existían. Más un panel aparte para el superadmin (permisos y cupos) y dos
+tutoriales cortos en contexto.
 
-**Criterio de terminado (= Gate C):** una carrera nueva de ~40 materias y ~25 correlativas
-cargada **en menos de 2 horas**, sin código y sin deploy, con los invariantes del árbol en verde
-y **cargada por alguien que no sea Luz**, siguiendo el manual. Si no, el moat no existe.
+Lo que enseñó ponerlo en manos de alguien: la primera versión eran **formularios**, y fracasó
+por completo —"ni yo entiendo bien cómo ni qué hacer"—. La idea que lo salvó fue de Luz:
+**cargar las correlativas tocando el árbol**, eligiendo primero la dirección. Reusa el lenguaje
+de color que el usuario ya aprendió y hace imposible dibujar una flecha inválida. Segunda
+lección, más cara: **verificar una pantalla de lista con datos de juguete no verifica nada** —
+el defecto era de escala y con 8 materias no existía.
+
+**Criterio de terminado (= Gate C, todavía pendiente):** una carrera nueva de ~40 materias y
+~25 correlativas cargada **en menos de 2 horas**, sin código y sin deploy, con los invariantes
+del árbol en verde y **cargada por alguien que no sea Luz**, siguiendo el manual. Si no, el moat
+no existe. Falta escribir el manual —a propósito: no se documenta un blanco móvil— y falta
+correr la prueba.
 
 ### 3.5 Panel agregado (Fase 4, no ahora)
 
@@ -162,19 +189,25 @@ Supabase, RLS, merge de a tres, consentimiento, 4 carreras, materias compartidas
 **🚦 GATE B — ¿El valor nuevo se usa? → SÍ.** 47 cuentas sin pedirlas, 45 con progreso, los que
 vuelven vuelven a *editar*. **Nadie pidió pagar por nada** — media prueba del giro.
 
-### FASE 3 — Plataforma: backend, perfiles y carga de planes ⟵ ARRANCA AHORA
-*(reemplaza a la vieja "Fase 3 — Monetización piloto", descartada el 8-ago)*
-Agosto 2026, 6–8 sesiones, costo fijo $0. Cuatro pasos, en este orden:
+### FASE 3 — Plataforma: backend, perfiles y carga de planes ✅ (8-ago → 29-ago)
+*(reemplazó a la vieja "Fase 3 — Monetización piloto", descartada el 8-ago)*
+Agosto 2026, costo fijo $0. Los cuatro pasos, hechos y en producción:
 
-1. **Tablas, migración y loader** (2 sesiones) — las 5 tablas académicas, migración de los 4
-   planes, `validarPlan()` extraído, loader con snapshot + refresco.
-   *Criterio: los 281 tests verdes leyendo desde la base; la app abre sin red.*
-2. **Perfiles, RLS y tests de seguridad** (1–2 sesiones) — con 3 sesiones reales intentando lo
-   que no les corresponde, incluido pasar el id de otra universidad a mano.
-3. **Editor de planes** (2–3 sesiones) — las 5 pantallas + E2E del camino completo + manual.
-4. **Habilitar admins con límite** (1 sesión) — pantalla de superadmin, tests del límite, docs.
+1. ✅ **Tablas, migración y loader** — las 5 tablas académicas, los 4 planes migrados,
+   `validarPlan()` extraído y compartido por CI, editor y arranque, loader con snapshot +
+   refresco. *La app sigue abriendo sin red y sin backend.*
+2. ✅ **Perfiles, RLS y tests de seguridad** — 17 chequeos con sesiones reales intentando lo que
+   no les corresponde, incluido pasar el id de otra universidad a mano. Corre en SQL, fuera de
+   CI: es el precio de probar permisos de verdad.
+3. ✅ **Editor de planes** — rediseñado entero después del primer intento fallido (§3.4).
+4. ✅ **Habilitar admins con cupo** — panel del superadmin, y el modelo de permisos simplificado
+   a tres roles (§3.2).
 
-**Fuera del sprint a propósito:** panel agregado, white-label, importador de planes, SSO.
+**Fuera de la fase a propósito, y sigue afuera:** panel agregado, white-label, importador de
+planes, SSO.
+
+**Lo que queda de deuda, dicho sin maquillaje:** el manual de carga, el Gate C, el rediseño
+visual en curso, y un test intermitente que bloquea merges al azar.
 
 **🚦 GATE C — ¿El moat se sostiene sin vos?** La prueba cronometrada de §3.4, con una
 universidad **ajena a UADE**. Si no pasa, **no se sale a vender**: prometer "sus planes al día"
@@ -223,7 +256,9 @@ abre la reunión) · cuello de botella por materia · avance por cohorte · cons
 
 **La consecuencia dura del giro:** sin freemium no hay ningún ingreso hasta que una institución
 firme. El riesgo financiero sigue siendo casi nulo (~USD 15/año); el riesgo de **tiempo** subió.
-Por eso el Sprint 1 se eligió así: es la única parte que vale la pena aunque nadie firme nunca.
+Por eso la plataforma se eligió así: es la única parte que vale la pena aunque nadie firme nunca.
+Ese criterio ya se cobró: está construida, y sirve para mantener los planes de UADE al día
+aunque ninguna institución firme jamás.
 
 ---
 
@@ -244,11 +279,23 @@ Por eso el Sprint 1 se eligió así: es la única parte que vale la pena aunque 
 
 ---
 
-## 8. Esta semana (8–15 ago)
+## 8. Lo próximo (septiembre)
 
-1. **Push** de los commits del árbol y deploy en verde.
-2. **🔥 LinkedIn con UTM — hoy** (`?utm_source=linkedin&utm_campaign=ago26`). Es lo único urgente.
-3. **Sprint 1, paso 1** con Claude: tablas + migración + `validarPlan()`.
-4. **~15-ago:** leer `arbol_rama` y `anio_marcado`.
-5. Cambiar el flag `cmf-ev-pwa` → `cmf-ev-pwa2` para volver a medir instalaciones.
-6. Elegir la universidad ajena a UADE para la prueba del Gate C.
+Con la plataforma en producción, el orden lo manda una sola pregunta: **¿qué hace falta para
+poder mostrarla?**
+
+1. **🔥 El LinkedIn con UTM.** Está escrito y aprobado desde el 6-ago y sigue sin publicarse
+   (`?utm_source=linkedin&utm_campaign=sep26`). La adquisición sigue en **cero** y es el único
+   número que no mejora solo. La ventana de inscripción ya pasó: publicarlo igual, y volver a
+   empujar en diciembre.
+2. **Cerrar el rediseño visual** (colores + árbol de correlativas). Es lo que hoy bloquea el
+   manual, y por lo tanto el Gate C.
+3. **Manual de carga + 🚦 Gate C**, en ese orden y con la universidad ajena ya elegida. Es la
+   prueba de fuego del moat: si no pasa, no se sale a vender.
+4. **Arreglar el test intermitente** del interruptor de año: falla ~1 de cada 3 corridas
+   completas. Un rojo que a veces miente enseña a ignorar los rojos.
+5. **Deuda chica que sigue abierta:** el flag `cmf-ev-pwa` → `cmf-ev-pwa2` para volver a medir
+   instalaciones, y dos planes cuya foto avisa "cambios sin publicar" de más (el lado seguro
+   del error, ya diagnosticado).
+6. **Diciembre 2026** es el próximo test real de retención (finales) — y el número de cohorte
+   que se lleva a la primera reunión institucional.

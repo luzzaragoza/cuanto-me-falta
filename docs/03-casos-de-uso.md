@@ -2,7 +2,9 @@
 
 ## 3.1 Actores
 
-- **Estudiante:** usuario de la aplicación. Todos los casos de uso de la versión actual le pertenecen (los datos académicos los mantiene la autora por código, ver §2.2).
+- **Estudiante:** usuario de la aplicación (CU-01 a CU-16, y CU-25). No necesita cuenta; con una, además sincroniza.
+- **Administrador de universidad:** carga y mantiene los planes de su universidad desde `#admin` (CU-17 a CU-23).
+- **Superadministrador:** además de lo anterior en cualquier universidad, habilita administradores y fija cupos (CU-24). Ver §2.2.
 
 ## 3.2 Diagrama general
 
@@ -28,6 +30,15 @@
 | CU-14 | Instalar la aplicación (PWA) | RF-18 |
 | CU-15 | Iniciar sesión y sincronizar | RF-19, RF-20 |
 | CU-16 | Cerrar sesión | RF-19 |
+| CU-17 | Entrar a la administración | RF-23, RF-24, RF-32 |
+| CU-18 | Crear un plan nuevo | RF-25 |
+| CU-19 | Cargar y corregir la estructura del plan | RF-26 |
+| CU-20 | Marcar las correlativas sobre el árbol | RF-27 |
+| CU-21 | Definir los títulos del plan | RF-28 |
+| CU-22 | Revisar y publicar una versión | RF-29, RF-30 |
+| CU-23 | Volver a una versión anterior | RF-30 |
+| CU-24 | Habilitar a un administrador y fijar el cupo | RF-31 |
+| CU-25 | Actualizar el plan cuando hay una versión nueva | RF-22 |
 
 ## 3.4 Especificación
 
@@ -277,3 +288,189 @@ Desde el navegador, el estudiante usa "Agregar a pantalla de inicio" (o el aviso
 **Actor:** Estudiante · **Disparador:** tocar **"Cerrar sesión"** en el perfil (avatar → editar).
 
 La sesión se cierra; el progreso local queda intacto y la aplicación vuelve al modo 100 % local. Los datos ya sincronizados permanecen en la cuenta para el próximo inicio de sesión.
+
+---
+
+### CU-17 · Entrar a la administración
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Administrador de universidad · Superadministrador |
+| **Precondiciones** | La cuenta tiene rol `admin_uni` con al menos una habilitación, o rol `superadmin`. |
+| **Disparador** | El administrador abre `#admin`. |
+
+**Flujo principal**
+
+1. La aplicación carga la pantalla de administración **en su propio chunk** (no viaja en el bundle del estudiante) y resuelve el acceso contra el servidor: rol y habilitaciones.
+2. Muestra el encabezado con la cuenta y el rol, y la **lista de planes que administra**, agrupada por universidad. De cada plan se ve su **identificador permanente**, **qué versión están viendo los alumnos**, si tiene **cambios sin publicar** y, por universidad, el **cupo** ("3 de 5 · podés crear 2 más").
+3. La primera vez corre el **tutorial de la lista** (3 pasos), que no vuelve a aparecer solo.
+4. El administrador elige un plan para editar (CU-19) o crea uno nuevo (CU-18).
+
+**Flujos alternativos**
+
+- **1a. Sin sesión:** la pantalla ofrece entrar con Google y vuelve a `#admin` al terminar.
+- **1b. Sesión válida sin habilitaciones:** se informa que esa cuenta no administra ninguna universidad. **Tener el rol no alcanza** (RN-16).
+- **1c. Sin backend configurado** (desarrollo, CI): la pantalla lo dice explícitamente en lugar de fallar.
+- **1d. Error al leer los datos:** se muestra el error con un botón **Reintentar**; la pantalla nunca queda en "Cargando…".
+- **2a. Superadministrador:** ve además un botón hacia **su propio panel** (CU-24), que el administrador de universidad no ve.
+
+**Postcondiciones**
+
+- Ninguna: es la puerta de entrada. Lo que se puede hacer desde acá lo delimitan el rol y las habilitaciones (RN-16), y **la que decide es la base** (RNF-12).
+
+---
+
+### CU-18 · Crear un plan nuevo
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Administrador de universidad · Superadministrador |
+| **Precondiciones** | La universidad tiene **cupo disponible** (RN-17). |
+| **Disparador** | El administrador toca **"+ Plan"** en su universidad. |
+
+**Flujo principal**
+
+1. El administrador completa la carrera, el código de la facultad y el año de vigencia.
+2. La aplicación **propone un identificador** derivado del nombre y avisa si ya existe.
+3. Se crea el plan vacío, en estado borrador, y se abre el editor (CU-19).
+
+**Flujos alternativos**
+
+- **1a. Cupo agotado:** la acción no se ofrece y la leyenda dice por qué. Aunque se forzara, **la política de inserción de la base la rechaza** (RN-17).
+- **1b. Universidad nueva (solo superadministrador):** primero se da de alta la universidad y después el plan. Es el primer paso de una carga en una universidad ajena.
+
+**Postcondiciones**
+
+- Existe un plan en borrador, **todavía invisible para los estudiantes**: hasta que no se publique una versión, no hay foto que mostrar (RN-18).
+
+> El **identificador del plan es permanente** y se muestra siempre en la lista: es la clave con la que cada estudiante tiene guardado su progreso, así que renombrarlo dejaría huérfano el avance de todos. El editor no lo ofrece.
+
+---
+
+### CU-19 · Cargar y corregir la estructura del plan
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Administrador de universidad · Superadministrador |
+| **Precondiciones** | El plan existe y la cuenta está habilitada en su universidad. |
+| **Disparador** | El administrador abre un plan desde la lista (CU-17). |
+
+**Flujo principal**
+
+1. La aplicación muestra el plan en la **misma grilla que ve el estudiante**, pero editable, con una **franja de tres pasos** arriba —*cargá las materias · marcá qué necesita cada una · revisá y publicá*— que dice en cuál se está y qué falta. La primera vez corre el **tutorial del editor** (4 pasos).
+2. El administrador escribe **directamente sobre la fila**: código, nombre, año y cuatrimestre, y las marcas de *optativa* y *especial*. Tabulando pasa a la siguiente.
+3. Agrega materias por cuatrimestre y años nuevos; **puede mandar una materia a un año que todavía no existe** (se carga primero todo y se acomoda después).
+4. La aplicación **guarda sola**: al salir del campo, y con un retardo corto mientras se escribe. El estado se ve en la barra ("Borrador guardado").
+
+**Flujos alternativos**
+
+- **2a. Sin código:** el código puede dejarse vacío y la aplicación asigna uno (`M01`, `M02`…). No todas las universidades numeran sus materias; en la base sigue siendo la identidad, así que no puede faltar — lo que cambió es que no se pide.
+- **2b. Código repetido:** se avisa en el momento.
+- **3a. Mover una materia:** antes de guardar, la aplicación dice **qué correlativas rompe** el movimiento, nombrando las materias por **nombre y código** ("Programación I (3.4.069) pasaría a estar en el mismo cuatrimestre").
+- **3b. Borrar una materia:** se confirma mostrando **la lista de las materias que la tenían como previa**.
+- **3c. Año salteado:** no es un error, es un **aviso** que aparece al revisar (CU-22) y no bloquea la publicación (RN-19).
+- **4a. Deshacer (Ctrl+Z):** revierte las últimas acciones de la sesión de carga.
+
+**Postcondiciones**
+
+- El **borrador** quedó guardado. Los estudiantes siguen viendo la última versión publicada (RN-18).
+
+---
+
+### CU-20 · Marcar las correlativas sobre el árbol
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Administrador de universidad · Superadministrador |
+| **Precondiciones** | El plan tiene materias cargadas (CU-19). |
+| **Disparador** | El administrador entra a la pestaña **Correlativas**. |
+
+**Flujo principal**
+
+1. La aplicación muestra el **resumen de carga**: cada materia con su cantidad de previas, y un filtro para ver solo las que faltan.
+2. El administrador elige una materia; se abre el **árbol del plan** enfocado en ella.
+3. Elige la dirección: **necesita…** (violeta) o **habilita…** (teal) — los mismos colores que el estudiante ya aprendió a leer.
+4. La aplicación **ilumina las materias conectables** en ese sentido y **apaga las demás**. Cada toque **conecta o desconecta**, sin mover el foco, y **guarda solo**.
+5. El administrador cambia de materia objetivo tocando cualquier otra, o cierra el árbol.
+
+**Flujos alternativos**
+
+- **4a. Materia apagada:** se puede consultar **por qué no** se puede conectar — está en el mismo cuatrimestre, está después, o es optativa (RN-05: las optativas quedan fuera del grafo, porque del lado del estudiante están exentas del aviso de previas y una regla cumplida a medias es peor que una dura).
+
+**Postcondiciones**
+
+- Las correlativas quedaron guardadas en el borrador. Por construcción **no se puede cargar una correlativa inválida**: solo se ofrece lo que apunta a un cuatrimestre anterior, lo cual hace **imposible un ciclo**.
+
+---
+
+### CU-21 · Definir los títulos del plan
+
+**Actor:** Administrador de universidad · Superadministrador · **Disparador:** pestaña **Títulos**.
+
+El administrador carga el nombre de cada título y hasta dónde se otorga: **año completo** o **hasta el 1.º / 2.º cuatrimestre** de ese año, para los títulos intermedios que caen a mitad de año (RN-09). Si un título apunta a un año o cuatrimestre que el plan no tiene, la validación lo marca como **error** y bloquea la publicación (RN-19).
+
+---
+
+### CU-22 · Revisar y publicar una versión
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Administrador de universidad · Superadministrador |
+| **Precondiciones** | El plan tiene cambios en el borrador. |
+| **Disparador** | El administrador abre **"Revisar y publicar"**, disponible desde cualquier pestaña con el contador de cambios sin publicar. |
+
+**Flujo principal**
+
+1. La aplicación abre el panel y muestra **qué va a cambiar para los alumnos**: la comparación del borrador contra la versión publicada, redactada en castellano y con un signo por tipo (agrega · quita · modifica) — por ejemplo, `nombre: "Fundamentos de Informatica" → "Fundamentos de Informática"`.
+2. Muestra los **hallazgos de la validación**: los **errores bloquean** la publicación, los **avisos no** (RN-19).
+3. El administrador escribe unas **observaciones opcionales**, que quedan en el historial.
+4. Publica. La aplicación pide confirmación, guarda la **foto** del plan entero como una versión nueva, mueve el puntero de la versión publicada y **vuelve a la lista** con el aviso "Publicado como versión N" — que es donde se verifica que quedó.
+
+**Flujos alternativos**
+
+- **1a. Deshacer un cambio puntual:** cada cambio de la lista se puede revertir por separado; también se pueden **descartar todos** y volver a lo publicado.
+- **2a. Hay errores:** el botón de publicar queda deshabilitado y la lista dice cuáles son, nombrando las materias por nombre y código.
+- **1b. Sin cambios:** el borrador es idéntico a la foto publicada y publicar no haría nada; la acción queda apagada.
+
+**Postcondiciones**
+
+- Existe una versión nueva y es la que ven los estudiantes. Quien tenga la app abierta **recibe el aviso** de CU-25. La pila de deshacer de la sesión se vacía: lo publicado ya no es un borrador.
+
+---
+
+### CU-23 · Volver a una versión anterior
+
+**Actor:** Administrador de universidad · Superadministrador · **Disparador:** el **historial** de versiones, en el panel de publicar.
+
+El historial lista cada versión con su fecha, quién la publicó y sus observaciones. **"Volver a esta"** mueve el puntero de la versión publicada a esa foto: los estudiantes vuelven a verla de inmediato. **No restaura ni borra el borrador**, que queda donde estaba — deshacer una publicación no deshace el trabajo de carga (RN-18).
+
+---
+
+### CU-24 · Habilitar a un administrador y fijar el cupo
+
+| Campo | Detalle |
+|---|---|
+| **Actor** | Superadministrador (exclusivo) |
+| **Precondiciones** | La persona a habilitar ya tiene cuenta en la aplicación. |
+| **Disparador** | El superadministrador abre **su panel** desde el encabezado. |
+
+**Flujo principal**
+
+1. El panel lista las universidades con **cuántos planes** y **cuántos administradores** tiene cada una.
+2. El superadministrador elige una universidad y ve quién está habilitado.
+3. **Habilita** a una cuenta por su correo, o **revoca** una habilitación existente (con confirmación, porque es destructivo).
+4. Ajusta el **cupo de planes** de la universidad.
+
+**Postcondiciones**
+
+- El cambio tiene **efecto inmediato**: los permisos se resuelven en la base en cada consulta, no en el token de sesión (RNF-12).
+
+> Esta pantalla existe aparte por una razón de producto: los permisos y los cupos son un trabajo distinto de "¿cómo van mis planes?", y colgados de la lista de planes eran **espacio muerto en el 90 % de las sesiones** — invisible, además, para el administrador de universidad, que no los tiene.
+
+---
+
+### CU-25 · Actualizar el plan cuando hay una versión nueva
+
+**Actor:** Estudiante · **Disparador:** automático, cuando el refresco en segundo plano encuentra una versión nueva **de la carrera que el estudiante tiene abierta**.
+
+La aplicación **avisa** que hay una versión nueva del plan de estudios y ofrece actualizarlo; el estudiante decide cuándo. Nada cambia debajo de una sesión en curso (RN-18). Si lo que cambió es el plan de **otra** carrera, no se avisa: sería ruido. El avance del estudiante no se toca — está guardado por código de materia, que es lo único que une los dos mundos.

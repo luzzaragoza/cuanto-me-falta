@@ -16,6 +16,10 @@ Estas historias son la **vista ágil del mismo alcance** definido en los requeri
 | E4 · Mis datos, míos | Respaldar, restaurar, exportar y borrar el progreso propio | HU-11 a HU-14 |
 | E5 · Una app cómoda | Perfil, ayuda e instalación como app | HU-15 a HU-17 |
 | E6 · Mi avance en todos lados | Cuenta opcional y sincronización entre dispositivos | HU-18, HU-19 |
+| E7 · Planes que se mantienen | Que el plan se corrija sin que el estudiante pierda nada | HU-20 |
+| E8 · Cargar y mantener un plan | Que una universidad mantenga sus propios planes, sin código ni deploy | HU-21 a HU-25 |
+
+Las épicas **E7 y E8** tienen otro protagonista: no el estudiante, sino quien mantiene los datos académicos (§2.2). Se incorporaron cuando la carga de planes dejó de ser código y pasó a ser una pantalla.
 
 ## C.3 Épica E1 · Empezar a usar la app
 
@@ -263,3 +267,97 @@ Estas historias son la **vista ágil del mismo alcance** definido en los requeri
 1. **Dado** que mi cuenta y este dispositivo tienen progreso distinto, **cuando** inicio sesión, **entonces** veo las dos opciones con la cantidad de materias con carga de cada lado.
 2. **Dado** el conflicto en pantalla, **cuando** todavía no elegí, **entonces** no se sube ni se baja nada.
 3. **Dado** que elijo una opción, **cuando** confirmo, **entonces** ese avance queda tanto en la cuenta como en el dispositivo, y el otro se reemplaza.
+
+## C.9 Épica E7 · Planes que se mantienen
+
+### HU-20 · Enterarme cuando corrigen mi plan
+
+> **Como** estudiante con la app abierta, **quiero** que me avisen si corrigieron el plan de mi carrera, **para** estar mirando información al día sin que nada me cambie por sorpresa mientras la estoy usando.
+
+**Prioridad:** Alta · **Refs:** RF-22 · CU-25 · RN-18
+
+**Criterios de aceptación**
+
+1. **Dado** que se publicó una versión nueva del plan de **mi** carrera, **cuando** la aplicación lo detecta en segundo plano, **entonces** me avisa y me deja actualizar **cuando yo quiera**.
+2. **Dado** que estoy en medio de algo, **cuando** aparece el aviso, **entonces** el plan **no** cambia hasta que yo lo acepto.
+3. **Dado** que lo que cambió es el plan de **otra** carrera, **cuando** la aplicación lo detecta, **entonces** no me interrumpe.
+4. **Dado** que actualizo, **cuando** vuelve a dibujarse el plan, **entonces** **mi avance sigue intacto**: lo que tenía marcado se conserva materia por materia.
+5. **Dado** que no tengo conexión, **cuando** abro la aplicación, **entonces** sigo viendo la última versión que bajé, completa.
+
+## C.10 Épica E8 · Cargar y mantener un plan
+
+> El actor de estas historias es la persona que mantiene los datos académicos de una universidad —una coordinadora de carrera, por ejemplo—, no el estudiante. HU-25 es exclusiva del superadministrador.
+
+### HU-21 · Entrar a administrar mis planes
+
+> **Como** responsable académica de mi universidad, **quiero** entrar a una pantalla que me muestre solo mis planes y en qué estado están, **para** saber de un vistazo qué falta publicar.
+
+**Prioridad:** Alta · **Refs:** RF-23, RF-24, RF-32 · CU-17 · RN-16
+
+**Criterios de aceptación**
+
+1. **Dado** que tengo permiso en mi universidad, **cuando** entro a la administración, **entonces** veo **solo** los planes que administro, agrupados por universidad.
+2. **Dado** un plan de la lista, **cuando** lo miro, **entonces** veo su **identificador**, **qué versión están viendo los alumnos** y si tiene **cambios sin publicar**.
+3. **Dado** que mi universidad tiene un cupo, **cuando** miro la lista, **entonces** dice cuántos planes tengo, cuántos permite y cuántos puedo crear todavía.
+4. **Dado** que tengo el rol pero **ninguna** habilitación, **cuando** entro, **entonces** la aplicación me dice que no administro ninguna universidad, en vez de mostrarme una pantalla vacía.
+5. **Dado** que es mi primera vez, **cuando** entro, **entonces** un recorrido corto me explica la pantalla, y no vuelve a aparecer solo.
+
+### HU-22 · Cargar una carrera sin escribir código
+
+> **Como** responsable académica, **quiero** cargar las materias de una carrera escribiendo directamente sobre la grilla, **para** tener el plan completo en un par de horas y sin depender de un programador.
+
+**Prioridad:** Alta · **Refs:** RF-25, RF-26, RF-28 · CU-18, CU-19, CU-21 · RN-17, RN-19
+
+**Criterios de aceptación**
+
+1. **Dado** un plan nuevo, **cuando** escribo sobre una fila, **entonces** cargo código, nombre, año y cuatrimestre sin abrir ningún formulario, y con `Tab` paso a la siguiente.
+2. **Dado** que mi universidad no numera sus materias, **cuando** dejo el código vacío, **entonces** la aplicación le asigna uno y me deja seguir.
+3. **Dado** que prefiero escribir todas las materias y **después** acomodarlas, **cuando** mando una a un año que todavía no existe, **entonces** puedo hacerlo, y el hueco aparece como **aviso** al revisar, no como error.
+4. **Dado** que muevo o borro una materia, **cuando** confirmo, **entonces** la aplicación me dice **antes** qué correlativas rompe y qué materias la tenían como previa, nombrándolas por nombre y código.
+5. **Dado** que estoy cargando hace una hora, **cuando** se me cierra la pestaña, **entonces** no pierdo nada: el borrador se guarda solo.
+6. **Dado** que la universidad llegó a su cupo de planes, **cuando** intento crear otro, **entonces** no puedo, y la pantalla dice por qué.
+
+### HU-23 · Marcar las correlativas sin equivocarme
+
+> **Como** responsable académica, **quiero** marcar las correlativas tocando el árbol, **para** ver la carrera como la va a ver el alumno y no poder cargar una dependencia imposible.
+
+**Prioridad:** Alta · **Refs:** RF-27 · CU-20 · RN-05, RN-19
+
+**Criterios de aceptación**
+
+1. **Dado** que elegí una materia y una dirección (*necesita* / *habilita*), **cuando** miro el árbol, **entonces** las materias que puedo conectar se **iluminan** y el resto se **apaga**.
+2. **Dado** que toco una materia iluminada, **cuando** la toco, **entonces** la correlativa queda conectada o desconectada y se guarda sola, sin sacarme de donde estoy.
+3. **Dado** que una materia está apagada, **cuando** quiero saber por qué, **entonces** la aplicación me lo dice: está en el mismo cuatrimestre, está después, o es optativa.
+4. **Dado** que quiero saber qué me falta, **cuando** miro el resumen, **entonces** veo cuántas previas tiene cada materia y puedo filtrar las que todavía no cargué.
+5. **Dado** cualquier conjunto de correlativas cargado desde esta pantalla, **cuando** se valida el plan, **entonces** **no puede haber un ciclo**: solo se ofrecen materias de cuatrimestres anteriores.
+
+### HU-24 · Ver qué va a cambiar antes de publicar
+
+> **Como** responsable académica, **quiero** ver exactamente qué van a ver distinto los alumnos antes de publicar, **para** no romperle la carrera a nadie con una corrección apurada.
+
+**Prioridad:** Alta · **Refs:** RF-29, RF-30 · CU-22, CU-23 · RN-18, RN-19, RN-20
+
+**Criterios de aceptación**
+
+1. **Dado** que tengo cambios en el borrador, **cuando** abro «Revisar y publicar», **entonces** veo la lista de **qué va a cambiar**, redactada en castellano y comparada contra lo que hoy ven los alumnos.
+2. **Dado** un cambio de la lista, **cuando** me arrepiento, **entonces** puedo deshacerlo **solo a él**, o descartarlos todos y volver a lo publicado.
+3. **Dado** que el plan tiene **errores** de validación, **cuando** intento publicar, **entonces** no puedo, y la lista me dice cuáles son y en qué materias.
+4. **Dado** que el plan tiene **avisos** (un año salteado, un plan sin títulos), **cuando** publico, **entonces** puedo hacerlo igual: el aviso informa, no bloquea.
+5. **Dado** que publico, **cuando** confirmo, **entonces** queda una **versión numerada** con mis observaciones y vuelvo a la lista, donde veo que quedó.
+6. **Dado** que publiqué algo mal, **cuando** vuelvo a una versión anterior desde el historial, **entonces** los alumnos vuelven a verla de inmediato y **mi borrador queda donde estaba**.
+7. **Dado** que no toqué nada, **cuando** miro la lista de planes, **entonces** **no** dice que tengo cambios sin publicar.
+
+### HU-25 · Dar acceso a otra persona
+
+> **Como** superadministradora, **quiero** habilitar a alguien en su universidad y fijarle un cupo de planes, **para** que la facultad mantenga sus carreras sola sin que yo tenga que tocar nada.
+
+**Prioridad:** Alta · **Refs:** RF-31 · CU-24 · RN-16, RN-17
+
+**Criterios de aceptación**
+
+1. **Dado** que alguien ya tiene cuenta en la aplicación, **cuando** la habilito en una universidad, **entonces** puede entrar a administrar **esa** universidad y ninguna otra.
+2. **Dado** que habilito a alguien, **cuando** entra, **entonces** puede **todo** sobre los planes de esa universidad —crear, editar, publicar y eliminar—: no existe habilitar a medias.
+3. **Dado** que revoco un acceso, **cuando** la persona intenta editar, **entonces** ya no puede, **sin esperar a que cierre sesión**.
+4. **Dado** que fijo el cupo de una universidad, **cuando** sus administradores crean planes, **entonces** el límite es el mismo para todos, sin importar quién lo cree.
+5. **Dado** que soy administradora de universidad y no superadministradora, **cuando** entro, **entonces** **no veo** esta pantalla ni ninguna forma de repartir permisos.
+6. **Dado** cualquier rol, incluido el mío, **cuando** busco el avance de un estudiante, **entonces** **no existe** ninguna consulta que me lo muestre.

@@ -13,6 +13,8 @@
 
 La aplicación nació como herramienta personal para la carrera de Ingeniería en Informática de UADE (Plan 1621) y hoy cubre cuatro carreras de esa universidad, con un modelo de datos pensado para escalar a más planes y universidades. El progreso del usuario se guarda **en su dispositivo** y, si el usuario lo elige, se **sincroniza entre sus dispositivos con su cuenta de Google** — la cuenta es opcional: sin ella, la app funciona completa y nada sale del navegador.
 
+Desde agosto de 2026 los planes de estudio ya no viven en el código: se cargan y se mantienen desde una **administración propia** (`#admin`), con roles por universidad, borradores y versiones publicadas. Incorporar una carrera nueva dejó de ser una tarea de programación.
+
 ![Pantalla principal de la aplicación](captura-app.png)
 
 ## 1.2 El problema
@@ -64,7 +66,7 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 2. Permitir la **gestión del estado** de cada materia entre cuatro estados, con validación informativa de correlativas al momento del cambio.
 3. Calcular automáticamente las **métricas de avance**: porcentaje general, conteos por estado, avance por año, promedio y distancia a cada título.
 4. Ofrecer **dos vistas de correlatividades** complementarias: la consulta puntual por materia (panel) y el grafo completo (árbol interactivo).
-5. Garantizar la **privacidad**: persistencia 100 % local, sin registro de usuarios, con respaldo (backup) portable en formato abierto.
+5. Garantizar la **privacidad**: persistencia local por defecto, cuenta **opcional** para sincronizar (con consentimiento explícito) y respaldo (backup) portable en formato abierto. Ningún rol de la plataforma puede leer el avance de un estudiante.
 6. Funcionar como **PWA**: instalable en el teléfono y utilizable sin conexión.
 7. Asegurar la **calidad** mediante tres niveles de tests automatizados y un pipeline de integración y despliegue continuos con gate de calidad.
 
@@ -78,12 +80,14 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 - Perfil local (nombre y foto), tutorial de primera visita, resumen imprimible/exportable a PDF y backup en JSON (exportar e importar).
 - Instalación como PWA con funcionamiento offline.
 - **Cuenta opcional con Google** para sincronizar el avance entre dispositivos (con consentimiento explícito y resolución de conflictos a cargo del usuario); sin cuenta, la app funciona completa y 100 % local.
+- **Administración de planes de estudio** (`#admin`) para universidades: carga de materias sobre la grilla, correlativas marcadas sobre el árbol, títulos, validación, y publicación por versiones con vuelta atrás; con tres roles y cupo de planes por universidad.
 
 **Fuera de alcance (por diseño, en esta versión)**
 
 - Registro con email y contraseña (el único proveedor de identidad es Google).
 - Servidor propio: la sincronización usa Supabase como backend gestionado; no hay API ni lógica de dominio del lado del servidor.
-- Edición de planes y correlativas por parte del usuario final (los planes se cargan curados en el código; el usuario solo renombra sus optativas).
+- Edición de planes y correlativas por parte del **estudiante**: los planes los mantiene la administración de cada universidad; el estudiante solo renombra sus optativas.
+- **Panel de estadísticas para la institución:** diseñado, no construido. Cuando exista, mostrará únicamente agregados anónimos, con un mínimo de estudiantes por corte.
 - Aplicaciones nativas (iOS/Android): la distribución móvil es vía PWA.
 
 ## 1.9 Público objetivo
@@ -100,6 +104,7 @@ Desarrollar una aplicación web instalable que permita a estudiantes universitar
 | Stack | React 19 · TypeScript · Vite |
 | Visualización de grafos | @xyflow/react (React Flow) con layout propio |
 | Persistencia | `localStorage` del navegador, con backup JSON portable · sync opcional vía Supabase (login con Google, RLS) |
+| Datos académicos | Tablas normalizadas en Supabase, con administración propia (`#admin`): borrador, validación y publicación por versiones |
 | Testing | Vitest (unitario + integridad de datos) · Playwright (end-to-end) |
 | CI/CD | GitHub Actions → GitHub Pages, con gate de calidad |
 | Dominio | [cuantomefalta.app](https://cuantomefalta.app) |

@@ -81,6 +81,12 @@ Tocá tu carrera en el encabezado y elegí otra. Cada carrera guarda su propio p
 
 Si tus carreras **comparten materias** (mismo código en la misma universidad), lo que aprobaste en una figura automáticamente en la otra, con su nota. No hace falta marcarla dos veces — y si en una carrera le cambiás el estado a mano, en esa carrera vale lo que marcaste vos.
 
+## Cuando corrigen tu plan
+
+Los planes de estudio los mantiene cada universidad desde la administración de la aplicación, así que a veces se corrigen: una materia que cambió de cuatrimestre, una correlativa que faltaba, un nombre mal escrito.
+
+Si eso pasa **con la carrera que tenés abierta**, la app te avisa y vos decidís cuándo actualizar: nada cambia solo mientras la estás usando. **Tu avance no se toca** — lo que marcaste sigue exactamente igual, materia por materia. Y si no tenés conexión, seguís viendo la última versión que bajaste, completa.
+
 ## Empezar de cero
 
 Opciones → **Reiniciar** (el botón rojo). Te pide confirmación porque borra todo el progreso de esa carrera. Si tenés dudas, exportá un backup antes.
@@ -91,7 +97,7 @@ Opciones → **Reiniciar** (el botón rojo). Te pide confirmación porque borra 
 
 **¿Quién ve mi progreso?** Nadie. Sin cuenta queda en tu dispositivo; con cuenta se guarda cifrado en tránsito y solo tu cuenta puede leerlo — ni otras cuentas ni el público.
 
-**¿Los datos del plan son oficiales?** No — es un proyecto independiente, sin afiliación con UADE. Las materias y correlativas se cargaron a mano y pueden tener errores: ante cualquier decisión importante, verificá con la información oficial de la facultad.
+**¿Los datos del plan son oficiales?** No — es un proyecto independiente, sin afiliación con UADE. Las materias y correlativas se cargan a mano —hoy, desde la administración de cada universidad— y pueden tener errores: ante cualquier decisión importante, verificá con la información oficial de la facultad.
 
 **Encontré un error o tengo una idea.** ¡Genial! Opciones → **Enviar feedback**. Si podés, contá también la **versión** que dice al pie del menú de Opciones (algo como `v2026.08.08·85803d8`): con eso sé exactamente qué estás viendo.
 

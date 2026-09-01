@@ -35,6 +35,22 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RF-19 | Login con Google + consentimiento | HU-18 | CU-15, CU-16 | RN-12 | Unit `sync` (consentimiento) · Manual (OAuth real) |
 | RF-20 | Sincronización multi-dispositivo | HU-18, HU-19 | CU-15 | RN-12 | Unit `sync` (merge/conteos/ida-y-vuelta) · Manual (2 dispositivos + RLS con 2 cuentas) |
 | RF-21 | Interruptor de año (aprobar / desmarcar todo el año) | HU-04 | CU-03 | RN-15 | Unit `Avance` (decidirAnio) + `Store` (setEstados e inverso) · E2E 13 |
+| RF-22 | Aviso de versión nueva del plan | HU-20 | CU-25 | RN-18 | Unit `Registro` (comparación estable) · Manual |
+
+**Administración de planes** (§2.3). El *actor* de estas filas es el administrador de universidad, salvo RF-31, que es exclusivo del superadministrador.
+
+| RF | Requerimiento | HU | CU | RN | Verificación |
+|---|---|---|---|---|---|
+| RF-23 | Acceso a la administración por rol y habilitaciones | HU-21 | CU-17 | RN-16 | Unit `SesionAdmin` (los 5 estados de acceso) · E2E 14 · SQL `003` |
+| RF-24 | Lista de planes con versión, cambios sin publicar y cupo | HU-21 | CU-17 | RN-17, RN-20 | Unit `PlanAdmin` + `Cupo` + `RepositorioPlanes` (la consulta) |
+| RF-25 | Crear un plan (y una universidad, el superadmin) | HU-22 | CU-18 | RN-17 | Unit `PlanNuevo` + `UniversidadNueva` · SQL (`limite_ok`) |
+| RF-26 | Editar la estructura sobre la grilla | HU-22 | CU-19 | RN-19 | Unit `Borrador` (mover avisa qué rompe · quitar limpia los dos sentidos · renombrar arrastra el grafo) |
+| RF-27 | Correlativas sobre el árbol | HU-23 | CU-20 | RN-05, RN-19 | Unit `Borrador` (elegibles en los dos sentidos, por qué no se puede conectar) |
+| RF-28 | Títulos del plan | HU-22 | CU-21 | RN-09 | Unit `Borrador` · `Validacion` (título a un año inexistente = error) |
+| RF-29 | Revisar antes de publicar (qué cambia + validación + deshacer) | HU-24 | CU-22 | RN-19, RN-20 | Unit `Diff` (round-trip: deshacer todo deja el borrador idéntico a lo publicado) + `Validacion` + `Historial` |
+| RF-30 | Publicar como versión numerada y volver atrás | HU-24 | CU-22, CU-23 | RN-18 | SQL (`publicar_plan` / `revertir_plan`, con su validación estructural) · Manual |
+| RF-31 | Habilitar administradores y fijar cupos | HU-25 | CU-24 | RN-16, RN-17 | Unit `AdminHabilitado` + `Cupo` · SQL `003` (17 chequeos) |
+| RF-32 | Tutorial de la administración | HU-21 | CU-17, CU-19 | — | Manual |
 
 ## D.3 Reglas de negocio: definición → implementación → verificación
 
@@ -55,6 +71,12 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RN-14 | En reposo el árbol dibuja solo las correlativas cortas (1-2 cuatrimestres) y solo si se rutean sin cruzar tarjetas | `lib/arbolLayout` (DIST_CORTA, planearCortas, reduccionTransitiva, invariantes) · `components/Tree/TreeView` (aristas de malla) | Unit `arbolLayout`: invariantes en cero + “las cortas no redundantes y solo esas” + la reducción conserva el alcance + ninguna rama salta de necesitás a habilita, por cada plan |
 | RN-15 | El interruptor de año pisa estados, excluye optativas, no toca notas y siempre se puede deshacer | `domain/Avance` (decidirAnio) · `domain/Plan` (codsDelAnio) · `domain/Store` (setEstados → inverso) · `components/PlanView` | Unit `Avance` + `Store` · E2E 13 (marcar → deshacer) |
 | RN-13 | Materias compartidas entre carreras (misma universidad): vista derivada, la marca propia prevalece, optativas afuera | `lib/espejo` (espejoDe) · `domain/Store` (vista con espejo) · `state/store` (espejo del plan activo) | Unit `espejo` + `Store` · E2E compartida |
+| RN-16 | Tres roles y nada en el medio; estar habilitado en una universidad es una sola pregunta, no un permiso por acción | `SesionAdmin.puedeEn` / `puedeGestionarPermisos` (`lib/admin`) · `supabase/010` y `011` (ADR-14) | Unit `SesionAdmin` · SQL `003` (un admin con el id de otra universidad) |
+| RN-17 | El cupo de planes es de la universidad, no del admin; se hace cumplir en la política de inserción | `Cupo` (`lib/admin`, la leyenda para la UI) · `limite_ok()` y la policy de INSERT · `supabase/006` y `007` | Unit `Cupo` (incluido el límite bajado por debajo de lo cargado) · SQL |
+| RN-18 | Las filas son el borrador; el alumno ve la foto publicada; volver atrás mueve el puntero | `publicar_plan()` / `revertir_plan()` · vista `plan_publicado` · `plan_version` (ADR-12) | SQL (validación estructural al publicar) · Manual · E2E 15 (el plan que llega del backend) |
+| RN-19 | Los errores de validación bloquean la publicación; los avisos no | `Validacion.esPublicable` (`lib/validarPlan`) · el chequeo en `publicar_plan` · el descarte del arranque | Unit `Validacion` (23, con planes roto a propósito) · Integridad (10) |
+| RN-20 | «Cambios sin publicar» se decide comparando contenido contra contenido, nunca dos relojes | Vista `plan_editable` con `plan_json` (`supabase/009`) · `PlanAdmin.tieneCambios` (ADR-15) | Unit `PlanAdmin` (regresión con la fila exacta que mentía) |
+| RN-21 | Ningún rol puede leer el avance de un estudiante | `progreso` sin FK a las tablas académicas, RLS `user_id = auth.uid()` | SQL `003`: el chequeo que sostiene la promesa del producto (ni el superadmin lo ve) |
 
 ## D.4 Requerimientos no funcionales: mecanismo → verificación
 
@@ -65,26 +87,32 @@ La trazabilidad conecta cada requerimiento con su historia de usuario, sus casos
 | RNF-03 | Funcionamiento offline | Service worker + manifest (PWA) | Manual |
 | RNF-04 | Carga rápida y uso fluido | SPA estática (Vite), sin servidor | Manual |
 | RNF-05 | Interfaz responsive, uso móvil | CSS mobile-first, encabezado compacto | Manual |
-| RNF-06 | Integridad de datos académicos | `integrity.test.ts` sobre el registro completo | Automatizada (23 tests) |
+| RNF-06 | Integridad de datos académicos | `integrity.test.ts` sobre el registro completo | Automatizada (10 tests, §6.3) |
 | RNF-07 | Escrituras inmutables persistidas al instante | `Store` inmutable + persistencia inmediata | Unit `Store` |
 | RNF-08 | Mantenibilidad | TypeScript estricto · dominio puro (ADR-03) | `tsc -b` en CI · Unit |
-| RNF-09 | Gate de calidad en CI/CD | `deploy.yml`: lint → unit → e2e → build | Automatizada (pipeline) |
+| RNF-09 | Gate de calidad en CI/CD | `deploy.yml` en `main` (lint → unit → e2e → build → deploy) y `ci.yml` con el mismo gate en ramas y PRs, sin desplegar | Automatizada (pipeline) |
 | RNF-10 | Transparencia (proyecto independiente) | Aviso visible en la interfaz | Manual |
+| RNF-11 | Auditoría de las escrituras académicas | Tabla `auditoria` + trigger `auditar()`; `user_id` con `set null` para que el registro sobreviva a la cuenta | SQL · Revisión de código |
+| RNF-12 | Los permisos se resuelven en la base, no en el cliente ni en el token | Funciones `security definer` (`mi_rol`, `permiso_uni`, `limite_ok`, `puede_editar_plan`) + políticas RLS; el cliente solo anticipa (ADR-11 pto. 5) | SQL `003` (17 chequeos) · Unit `SesionAdmin` (lo que decide la interfaz) |
 
 ## D.5 Resumen de cobertura y brechas
 
-**Cobertura de los 20 RF:**
+**Cobertura de los 32 RF:**
 
-- **13 con verificación automatizada** (unitaria y/o end-to-end): RF-01, RF-03 a RF-08, RF-10, RF-11, RF-12, RF-15, RF-16 y RF-21.
-- **4 con cobertura parcial:** RF-02 (el e2e cubre la elección de carrera en la bienvenida, no el cambio posterior), RF-13 (las iniciales del avatar tienen test; la carga de foto es manual), y RF-19/RF-20 (la lógica de merge y consentimiento tiene tests unitarios; el flujo OAuth real y el sync entre dispositivos se verifican manualmente — el e2e no puede loguearse en Google).
-- **4 con verificación manual:** RF-09, RF-14, RF-17 y RF-18.
+- **22 con verificación automatizada** (unitaria y/o end-to-end): RF-01, RF-03 a RF-08, RF-10, RF-11, RF-12, RF-15, RF-16, RF-21 y, en la administración, RF-23 a RF-29 y RF-31.
+- **6 con cobertura parcial:** RF-02 (el e2e cubre la elección de carrera en la bienvenida, no el cambio posterior), RF-13 (las iniciales del avatar tienen test; la carga de foto es manual), RF-19/RF-20 (la lógica de merge y consentimiento tiene tests unitarios; el flujo OAuth real y el sync entre dispositivos se verifican manualmente — el e2e no puede loguearse en Google), RF-22 (la comparación estable tiene tests; el aviso en pantalla es manual) y RF-30 (la validación estructural al publicar corre en SQL, fuera del pipeline).
+- **4 con verificación manual:** RF-09, RF-14, RF-17, RF-18 y RF-32.
 
-**Cobertura de las 15 RN:** 14 verificadas de forma automatizada; RN-11 combina test de persistencia con verificación manual del cambio de plan.
+**Cobertura de las 21 RN:** 18 verificadas de forma automatizada en el pipeline; RN-11 combina test de persistencia con verificación manual del cambio de plan, y **RN-18 y RN-21 se verifican en SQL** (`supabase/003-verificar-permisos.sql`), fuera de CI (§6.6).
+
+**El límite estructural, dicho de frente:** todo lo que depende de una **sesión real** —el flujo de OAuth, las políticas de RLS respondiendo a un usuario concreto, el I/O de la administración con datos verdaderos— no puede correr en el pipeline, porque CI no tiene con qué loguearse. La mitigación es doble: en el cliente se testea **qué consulta se arma** (con el cliente de Supabase inyectado por constructor), y del lado de la base se corre el script de los 17 chequeos. Lo que queda afuera de las dos redes se verifica a mano, y así está marcado en la matriz.
 
 **Brechas conocidas y próximos tests candidatos** (mejoras honestas, no defectos):
 
 1. **RF-09:** un e2e que abra el panel de una materia y verifique los grupos «Necesitás» y «Habilita».
 2. **RF-14:** un e2e de ida y vuelta del backup (exportar → reiniciar → importar → verificar estado).
 3. **RF-02:** un e2e del cambio de carrera posterior al onboarding, verificando que el progreso de cada plan se conserva (RN-11).
+4. **RF-26 a RF-30:** un e2e del camino completo de la administración (crear un plan → cargar materias → conectar una correlativa → publicar), con las respuestas del backend interceptadas. Hoy cada pieza tiene tests unitarios, pero el recorrido entero se verifica a mano.
+5. **Estabilidad:** el e2e del interruptor de año es intermitente en la suite completa (§6.6). Mientras lo sea, no se puede confiar en un rojo del pipeline como señal.
 
 > La matriz se mantiene junto con el código: al agregar un requerimiento o un test, se agrega su fila o su referencia aquí.
