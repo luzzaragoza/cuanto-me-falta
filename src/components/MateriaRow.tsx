@@ -1,9 +1,12 @@
 import type { Estado } from '../types'
 
+// El glifo de cada estado.  no lleva carácter a propósito: su tick es un
+// círculo MEDIO RELLENO (la cursada está, falta rendir), y esa es una diferencia de
+// FORMA — se lee en escala de grises y no depende de cómo rasterice un glifo.
 const TICK: Record<Estado, string> = {
   pendiente: '',
   cursando: '•',
-  final: '◐',
+  final: '',
   aprobada: '✓',
 }
 

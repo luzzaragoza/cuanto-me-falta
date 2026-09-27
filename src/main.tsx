@@ -5,6 +5,7 @@ import { Root } from './Root.tsx'
 import { Analytics } from './lib/analytics'
 import { Sync } from './state/sync'
 import { RefrescoDePlanes } from './state/planesRemoto'
+import { store } from './state/store'
 import { toast } from './lib/toast'
 
 Analytics.iniciar() // inyecta el proveedor (registra el flush de la cola en su load)
@@ -14,6 +15,14 @@ Sync.iniciar() // no-op sin backend configurado (dev/CI sin credenciales)
 // Planes del backend al caché, en idle. No reemplaza nada en caliente: si el plan que
 // estás mirando cambió, se avisa y decidís vos cuándo — nada se mueve debajo del mouse.
 RefrescoDePlanes.programar(() => {
+  // …pero SOLO si hay algo que se le pueda mover. A quien todavía no marcó ninguna
+  // materia no hay nada que preguntarle: el plan nuevo ya quedó en el caché y entra
+  // solo en la próxima visita. Avisarle "hay una versión nueva de tu plan" al que
+  // acaba de entrar es contarle de un cambio en algo que nunca vio — y encima el
+  // aviso le caía encima de la bienvenida.
+  const db = store.getSnapshot()
+  const marcóAlgo = Object.values(db.states).some((e) => e !== 'pendiente')
+  if (!marcóAlgo) return
   toast.show(
     'Hay una versión nueva de tu plan de estudios.',
     'info',

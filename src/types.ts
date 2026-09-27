@@ -323,15 +323,6 @@ export class DB {
     return this.copia({ profile })
   }
 
-  /**
-   * La misma DB pero con OTRO mapa de estados. Lo usa el árbol cuando lo abre el
-   * editor: ahí se dibuja un plan ajeno, y los estados no son los del alumno sino los
-   * del modo edición. No se persiste nunca — igual que el espejo, es una vista.
-   */
-  conVistaDeEstados(states: Record<string, Estado>): DB {
-    return new DB({ ...states }, { ...this.notas }, { ...this.optNames }, this.custom, this.profile)
-  }
-
   /** Borra el avance pero deja el perfil: "reiniciar" no es "olvidar quién sos". */
   sinProgreso(): DB {
     return new DB({}, {}, {}, [], this.profile)

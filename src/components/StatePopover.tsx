@@ -13,7 +13,8 @@ const OPTS: { k: Estado; label: string; desc: string }[] = [
   { k: 'aprobada', label: 'Aprobada', desc: 'Final aprobado' },
 ]
 
-const TICK: Record<Estado, string> = { pendiente: '', cursando: '•', final: '◐', aprobada: '✓' }
+// Ver MateriaRow: 'final' no lleva glifo, lo dice el medio relleno del círculo.
+const TICK: Record<Estado, string> = { pendiente: '', cursando: '•', final: '', aprobada: '✓' }
 
 const Check = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">

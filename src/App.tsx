@@ -14,7 +14,7 @@ import { OptionsMenu } from './components/OptionsMenu'
 import { PlanView } from './components/PlanView'
 import { PrintSummary } from './components/PrintSummary'
 import { ProfileModal } from './components/ProfileModal'
-import { InstallAviso } from './components/InstallAviso'
+import { InstalarSheet } from './components/InstalarSheet'
 import { StatePopover } from './components/StatePopover'
 import { SyncAviso } from './components/SyncAviso'
 import { SyncConflicto } from './components/SyncConflicto'
@@ -25,22 +25,30 @@ import { Welcome } from './components/Welcome'
 import { Tour } from './components/Tour'
 import { PASOS_ALUMNO } from './components/tourPasos'
 
-// El árbol vive en un chunk aparte (elkjs + React Flow pesan ~medio MB gz y no
-// hacen falta para abrir la app). Se precalienta en idle (abajo) así la primera
-// apertura es instantánea y el service worker lo deja cacheado para offline.
+// El árbol vive en un chunk aparte. Con el rediseño (2-sep) dejó de ser pesado
+// —murieron elkjs y React Flow, ~506 KB gz— pero el split se queda: no hace falta
+// para abrir la app, y el precalentado en idle (abajo) mantiene la primera
+// apertura instantánea y el chunk cacheado por el service worker para offline.
 const TreeView = lazy(() =>
   import('./components/Tree/TreeView').then((m) => ({ default: m.TreeView })),
 )
 import { Analytics } from './lib/analytics'
+import { Instalar } from './lib/instalar'
 
 const TOUR_KEY = 'cmf-tour-visto'
-const tourVisto = () => {
+// Cuánto espera la invitación a instalar cuando la app abre de nuevo. No es estética:
+// `beforeinstallprompt` llega DESPUÉS de la carga, así que preguntar antes daría
+// siempre que no. Y de paso deja que la pantalla se termine de armar.
+const INSTALAR_MS = 3500
+const flag = (k: string) => {
   try {
-    return !!localStorage.getItem(TOUR_KEY)
+    return !!localStorage.getItem(k)
   } catch {
+    // modo incógnito con storage bloqueado: se asume visto, para no repetir avisos
     return true
   }
 }
+const tourVisto = () => flag(TOUR_KEY)
 
 interface PopState {
   cod: string
@@ -85,6 +93,12 @@ export function App() {
   const [notas, setNotas] = useState(false)
   const [modal, setModal] = useState<Modal>(() => (db.profile === undefined ? 'welcome' : 'closed'))
   const [tourSeen, setTourSeen] = useState(tourVisto)
+  const [instalarSheet, setInstalarSheet] = useState(false)
+  // "Ofrecer instalar en cuanto se libere la pantalla". El tutorial puede terminar
+  // DEJANDO algo abierto (el paso final abre el selector de estado de la primera
+  // materia), y ahí la hoja se superponía con el selector: dos cosas pidiendo
+  // atención sobre la misma acción.
+  const [instalarPendiente, setInstalarPendiente] = useState(false)
   const nombre = db.profile?.name?.trim() || 'Mi plan de carrera'
 
   // el tour corre una sola vez, ya con un perfil y sin modales abiertos
@@ -102,7 +116,40 @@ export function App() {
       /* modo incógnito, etc. */
     }
     setTourSeen(true)
+    // El cierre del tutorial es el momento de ofrecer instalar: recién ahí la
+    // persona sabe para qué sirve la app. Solo si el navegador tiene algo que
+    // ofrecer y si no dijo que no. Queda PENDIENTE, no se muestra ya: el efecto
+    // de más abajo espera a que no haya nada más abierto.
+    if (Instalar.ofrecer()) setInstalarPendiente(true)
   }
+  const cerrarInstalar = (motivo: 'luego' | 'nunca') => {
+    if (motivo === 'nunca') Instalar.noOfrecerMas()
+    setInstalarSheet(false)
+  }
+
+  // Quien contestó "ahora no" vuelve a verla al abrir la app. El tutorial tiene su
+  // propio momento (`closeTour`), así que acá se sale si todavía va a correr: si no,
+  // en la primera visita se ofrecería dos veces.
+  useEffect(() => {
+    if (!tourSeen) return
+    const t = setTimeout(() => {
+      if (Instalar.ofrecer()) setInstalarPendiente(true)
+    }, INSTALAR_MS)
+    return () => clearTimeout(t)
+    // una sola vez por carga: si se ofreció y la pospuso, la próxima vez es la
+    // próxima APERTURA, no diez segundos después
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // La hoja de instalar espera su turno: aparece cuando no queda nada abierto
+  // encima. Así, si el tutorial terminó abriendo el selector de la primera materia,
+  // la invitación llega DESPUÉS de marcarla — que además es mejor momento.
+  useEffect(() => {
+    if (!instalarPendiente) return
+    if (pop || notas || tree || modal !== 'closed') return
+    setInstalarPendiente(false)
+    setInstalarSheet(true)
+  }, [instalarPendiente, pop, notas, tree, modal])
 
   // segundo toque sobre la misma materia → cierra (toggle)
   const togglePop = (cod: string, anchor: HTMLElement) =>
@@ -148,7 +195,8 @@ export function App() {
                   />
                 ) : (
                   <>
-                    {plan.carrera} · {nombreUniversidad(plan.def.universidad)}
+                    {plan.carrera} · {nombreUniversidad(plan.def.universidad)} · plan{' '}
+                    {plan.def.codigo}
                   </>
                 )}
               </div>
@@ -158,7 +206,7 @@ export function App() {
         </header>
 
         {modal === 'closed' && <SyncAviso />}
-        {modal === 'closed' && <InstallAviso />}
+
 
         <Dashboard db={db} onOpenTree={() => openTree(null)} onOpenNotas={openNotas} />
         <PlanView
@@ -190,6 +238,8 @@ export function App() {
         {showTour && <Tour pasos={PASOS_ALUMNO} onClose={closeTour} onMark={marcarPrimera} />}
 
         {notas && <NotasPanel onClose={() => setNotas(false)} />}
+
+        {instalarSheet && <InstalarSheet onClose={cerrarInstalar} />}
 
         {modal === 'welcome' && <Welcome onClose={() => setModal('closed')} />}
 

@@ -10,12 +10,15 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = join(ROOT, 'public')
 mkdirSync(OUT, { recursive: true })
 
-const GOLD = '#c39200'
-const WHITE = '#ffffff'
-const PAPER = '#f5f3ee'
-const INK = '#232019'
-const SOFT = '#6b655b'
-const SERIF = "Georgia, 'Times New Roman', serif"
+// Paleta Organic (2-sep). Estos valores son la MISMA paleta que el bloque :root de
+// global.css: si cambia allá, se actualiza acá y se vuelve a correr el script — si
+// no, el ícono de la pestaña queda de otra app que la de adentro.
+const GOLD = '#c67139'
+const WHITE = '#fff9f0'
+const PAPER = '#f5ead8'
+const INK = '#201e1d'
+const SOFT = '#645c50'
+const SERIF = "Caprasimo, Georgia, 'Times New Roman', serif"
 
 // ¿ en cuadrado dorado redondeado (transparente afuera del cuadrado).
 const badge = (px) =>
@@ -33,7 +36,10 @@ const fullbleed = (px, fontSize = 74, y = 76) =>
 const maskable = (px) => fullbleed(px, 52, 69)
 
 // OG image 1200×630 (el preview al compartir el link). Copy genérico a propósito.
-const ogHTML = `<!doctype html><html><head><meta charset="utf-8"><style>
+const ogHTML = `<!doctype html><html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&display=block">
+<style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{width:1200px;height:630px;background:${PAPER};font-family:${SERIF};
     padding:74px 84px;display:flex;flex-direction:column;justify-content:space-between}
@@ -54,10 +60,10 @@ const ogHTML = `<!doctype html><html><head><meta charset="utf-8"><style>
     <div class="head">Seguí tu carrera<br>de un vistazo.</div>
     <div class="sub">Marcá tus materias, mirá las correlativas y calculá cuánto te falta para recibirte.</div>
     <div class="bar">
-      <i style="background:#2f7d5a;width:360px"></i>
-      <i style="background:#3d6bb3;width:96px"></i>
-      <i style="background:#c2620f;width:72px"></i>
-      <i style="background:#e4dfd4;width:380px"></i>
+      <i style="background:#728157;width:360px"></i>
+      <i style="background:#c67139;width:96px"></i>
+      <i style="background:#d68a4e;width:72px"></i>
+      <i style="background:#ebddc5;width:380px"></i>
     </div>
   </div>
 </body></html>`

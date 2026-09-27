@@ -54,7 +54,7 @@ export function CarreraSelect({
       >
         <span className="cselect-val">
           {variant === 'inline'
-            ? `${actual.carrera} · ${nombreUniversidad(actual.universidad)}`
+            ? `${actual.carrera} · ${nombreUniversidad(actual.universidad)} · plan ${actual.codigo}`
             : actual.carrera}
         </span>
         <span className="cselect-chev">

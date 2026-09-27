@@ -7,12 +7,46 @@ import { Analytics } from '../lib/analytics'
 const feedbackUrl = (import.meta.env as Record<string, string | undefined>).VITE_FEEDBACK_URL
 
 const IconMenu = () => (
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <line x1="4" y1="7" x2="20" y2="7" />
-    <line x1="4" y1="12" x2="20" y2="12" />
-    <line x1="4" y1="17" x2="20" y2="17" />
+  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round">
+    <path d="M4 7h16M4 12h16M4 17h16" />
   </svg>
 )
+
+// Íconos de cada entrada. Van en un <span class="mi-ico"> para que el menú alinee
+// texto contra texto aunque alguno falte.
+const ico = (d: string, extra?: string) => () => (
+  <span className="mi-ico" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+      {extra && <path d={extra} />}
+    </svg>
+  </span>
+)
+const IcoPdf = ico('M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z', 'M14 3v5h5M9 13h6M9 17h4')
+// Exportar e importar son AFUERA y ADENTRO, y así hay que dibujarlos: la etiqueta
+// dice "Exportar" y una flecha que baja se lee al revés (reporte de Luz, 8-sep).
+// Pero darlos vuelta sin más tampoco iba: ⬆ sobre una base ES el ícono de SUBIR A
+// LA NUBE, y esta app tiene cuenta con sincronización — "Exportar backup" con esa
+// flecha invita a pensar que el archivo se guarda en la cuenta. Y la otra salida
+// habitual, el corchete con flecha horizontal, es CERRAR SESIÓN (mirado renderizado
+// al lado de los otros: se lee exactamente así, y acá hay login de Google).
+// Queda la diagonal saliendo de / entrando a una bandeja: dice afuera y adentro sin
+// pisar ninguna de las dos convenciones verticales. Los nombres tampoco hablan más
+// de arriba y abajo, para que nadie los "corrija" de vuelta.
+const BANDEJA = 'M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3'
+const IcoExportar = ico(BANDEJA, 'M8 10L16 3M11 3h5v5')
+const IcoImportar = ico(BANDEJA, 'M16 3L8 10M13 10H8V5')
+const IcoTutorial = () => (
+  <span className="mi-ico" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.2a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.7-.9 1.3v.4" />
+      <circle cx="12" cy="17" r="0.6" />
+    </svg>
+  </span>
+)
+const IcoFeedback = ico('M20 14a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z')
+const IcoReiniciar = ico('M3 12a9 9 0 1 0 3-6.7L3 8', 'M3 3v5h5')
 
 export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
   const [open, setOpen] = useState(false)
@@ -86,6 +120,10 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
 
       {open && (
         <div className="menu" role="menu">
+          {/* Dos secciones con nombre: lo que le pasa a TU PLAN (se lleva datos
+              afuera o los trae) y lo que le pasa a LA APP. Antes eran seis
+              botones seguidos separados por dos rayas mudas. */}
+          <div className="menu-kicker">Tu plan</div>
           <button
             role="menuitem"
             onClick={() => {
@@ -94,9 +132,11 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
               Archivo.imprimirResumen()
             }}
           >
+            <IcoPdf />
             Exportar resumen (PDF)
           </button>
           <button role="menuitem" onClick={exportBackup}>
+            <IcoExportar />
             Exportar backup (.json)
           </button>
           <button
@@ -106,10 +146,12 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
               fileRef.current?.click()
             }}
           >
+            <IcoImportar />
             Importar backup
           </button>
 
           <div className="menu-sep" />
+          <div className="menu-kicker">La app</div>
           <button
             role="menuitem"
             onClick={() => {
@@ -117,16 +159,19 @@ export function OptionsMenu({ onVerTutorial }: { onVerTutorial: () => void }) {
               onVerTutorial()
             }}
           >
+            <IcoTutorial />
             Ver el tutorial
           </button>
           {feedbackUrl && (
             <button role="menuitem" onClick={openFeedback}>
+              <IcoFeedback />
               Enviar feedback
             </button>
           )}
 
           <div className="menu-sep" />
           <button role="menuitem" className="danger" onClick={reset}>
+            <IcoReiniciar />
             Reiniciar todo
           </button>
 
