@@ -2360,7 +2360,15 @@ body {
    del dibujo, no flotando debajo. */
 @media (max-width: 720px) {
   .welcome {
-    padding: 170px 0 0;
+    /* La banda del árbol NO mide 210px fijos: el diseño se compuso en una pantalla
+       alta, y un iPhone con las barras de Safari deja 664px. Con 210 fijos al naipe
+       le quedaban 494 y el paso más largo mide ~600: había que scrollear para
+       encontrar "Seguir". Ahora la banda es lo que sobra después de reservarle 560
+       al naipe (600 − los 40 que se solapan), entre 64 y 210.
+       Es UNA por aparato, no una por paso: si dependiera del contenido, el naipe
+       saltaría de lugar al avanzar de paso. */
+    --w-banda: clamp(64px, calc(100vh - 560px), 210px);
+    padding: calc(var(--w-banda) - 40px) 0 0;
     /* `minmax(0, 1fr)` y no `1fr` a secas, por lo mismo que la columna de arriba: el
        mínimo automático de una fila de grid es su CONTENIDO, así que en una pantalla
        baja la fila crecía, el naipe con ella, y su `max-height: 100%` terminaba
@@ -2383,7 +2391,7 @@ body {
   }
   .w-arbol {
     bottom: auto;
-    height: 210px;
+    height: var(--w-banda);
   }
   .w-arbol svg {
     position: static;
@@ -2403,9 +2411,45 @@ body {
   }
 }
 
+/* `dvh` donde exista: es el alto que se VE, sin la barra de Safari. `vh` en iOS mide
+   la pantalla con la barra escondida, así que sobreestima ~80px. */
+@supports (height: 100dvh) {
+  @media (max-width: 720px) {
+    .welcome {
+      --w-banda: clamp(64px, calc(100dvh - 560px), 210px);
+    }
+  }
+}
+
 @media (max-width: 720px) {
   .welcome-card {
     padding: 22px 22px 26px;
+  }
+  /* Ningún hijo del naipe se encoge. El naipe es un flex en columna con tope de
+     alto: sin esto, cuando el contenido no entraba, el navegador lo APLASTABA en vez
+     de scrollear — el campo del nombre quedaba en 20px con el texto afuera del
+     borde, y los puntos de progreso del paso 3 en 0px (desaparecían). */
+  .welcome-card > * {
+    flex-shrink: 0;
+  }
+  /* El botón principal no se va nunca de la pantalla: si en un teléfono chico el
+     paso no entra, lo que queda abajo del pliegue es contenido, no la acción. El
+     halo del color del naipe tapa lo que pasa por detrás al scrollear. */
+  .welcome-card .btn.w-go {
+    position: sticky;
+    bottom: 10px;
+    z-index: 1;
+    box-shadow:
+      0 0 0 10px var(--card),
+      0 -14px 16px 4px var(--card);
+  }
+  /* El paso 2 es el más largo (cuatro carreras): unos píxeles menos por tarjeta
+     lo bajan de 638 a ~600, lo que un iPhone con Safari deja libre. */
+  .w-planes {
+    margin: 16px 0;
+  }
+  .w-plan {
+    padding: 10px 15px;
   }
 }
 

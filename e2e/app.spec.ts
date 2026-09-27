@@ -319,6 +319,66 @@ test('la bienvenida de primera visita pide el nombre y entra a la app', async ({
   await expect(page.locator('.head h1')).toHaveText('Luz')
 })
 
+// En un teléfono REAL: un iPhone con las barras de Safari deja 664px de alto, no los 844
+// de la pantalla. Ahí la bienvenida escondía "Seguir" debajo del pliegue, aplastaba el
+// campo del nombre a 20px, y el teclado se abría solo — con el "OK" del teclado entrando
+// a la app sin que se viera nunca la opción de Google.
+test.describe('en el teléfono', () => {
+  test.use({ viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true })
+
+  test('la bienvenida entra en la pantalla y el teclado no saltea Google', async ({ page }) => {
+    await page.addInitScript(() => {
+      const raw = localStorage.getItem('plan-uade-v3')
+      if (raw) {
+        const d = JSON.parse(raw)
+        delete d.profile
+        localStorage.setItem('plan-uade-v3', JSON.stringify(d))
+      }
+    })
+    await page.reload()
+    const welcome = page.locator('.welcome')
+    const alto = page.viewportSize()!.height
+
+    // el botón principal de cada paso se ve sin scrollear
+    const botonAdentro = async () => {
+      const b = await welcome.locator('.btn.w-go').boundingBox()
+      expect(b!.y + b!.height).toBeLessThanOrEqual(alto)
+    }
+    await botonAdentro()
+    await welcome.getByRole('button', { name: 'Empezar', exact: true }).click()
+    await botonAdentro()
+    await welcome.getByRole('button', { name: 'Seguir', exact: true }).click()
+    await botonAdentro()
+
+    // paso 3: el campo mide lo que tiene que medir, y no abre el teclado solo
+    const campo = page.getByPlaceholder('Tu nombre')
+    expect((await campo.boundingBox())!.height).toBe(52)
+    await expect(campo).not.toBeFocused()
+
+    // el "OK" del teclado cierra el teclado; no entra a la app
+    await campo.fill('Luz')
+    await campo.press('Enter')
+    await expect(campo).not.toBeFocused()
+    await expect(welcome).toBeVisible()
+    await expect(welcome.locator('.w-google')).toBeInViewport()
+  })
+
+  test('el naipe del tour va de borde a borde, en el mismo lugar en cada paso', async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('cmf-tour-visto'))
+    await page.reload()
+    const ancho = page.viewportSize()!.width
+    const card = page.locator('.tour-card')
+    // antes medía 304 fijos y se alineaba al elemento: saltaba de costado en cada paso
+    for (let n = 0; n < 5; n++) {
+      await expect(card).toBeVisible()
+      const b = (await card.boundingBox())!
+      expect(Math.round(b.x)).toBe(12)
+      expect(Math.round(b.x + b.width)).toBe(ancho - 12)
+      await page.locator('.tour-next').click()
+    }
+  })
+})
+
 test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => {
   await page.addInitScript(() => {
     const raw = localStorage.getItem('plan-uade-v3')

@@ -73,6 +73,14 @@ const FEATURES = [
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
 
 /**
+ * Pantalla táctil: el teclado es VIRTUAL y ocupa media pantalla. Ahí el paso del nombre
+ * no enfoca solo el campo (abrirlo tapaba la opción de Google, que queda abajo) y el
+ * Enter del teclado cierra el teclado en vez de entrar — si no, "OK" te mandaba a la
+ * app sin haber visto nunca la oferta de sincronizar.
+ */
+const tactil = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+
+/**
  * Bienvenida de primera visita, en TRES pasos (rediseño 3-sep):
  *   1. Marca + qué hace la app → "Empezar".
  *   2. Elegir carrera. Cada plan es una tarjeta, y la elegida despliega de qué
@@ -253,12 +261,14 @@ export function Welcome({ onClose }: { onClose: () => void }) {
                 placeholder="Tu nombre"
                 maxLength={40}
                 value={name}
-                autoFocus
+                autoFocus={!tactil()}
+                enterKeyHint={tactil() ? 'done' : 'go'}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    void start(true)
+                    if (tactil()) e.currentTarget.blur()
+                    else void start(true)
                   }
                 }}
               />
