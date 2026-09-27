@@ -359,8 +359,11 @@ test.describe('en el teléfono', () => {
     await campo.fill('Luz')
     await campo.press('Enter')
     await expect(campo).not.toBeFocused()
-    await expect(welcome).toBeVisible()
-    await expect(welcome.locator('.w-google')).toBeInViewport()
+    await expect(welcome.getByRole('button', { name: 'Empezá, Luz' })).toBeInViewport()
+    // Google solo existe con backend configurado (`authHabilitado`). CI corre SIN
+    // credenciales de Supabase, así que ahí el bloque no se dibuja: se chequea cuando está.
+    const google = welcome.locator('.w-google')
+    if ((await google.count()) > 0) await expect(google).toBeInViewport()
   })
 
   test('el naipe del tour va de borde a borde, en el mismo lugar en cada paso', async ({ page }) => {
