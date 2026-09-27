@@ -1715,7 +1715,9 @@ body {
   }
 }
 
-@media (max-width: 640px) {
+/* ⚠️ La MISMA consulta que `MQ_TELEFONO` en TreeView.tsx: si difieren, el TS dibuja el
+   cromo de un lado y el CSS lo acomoda como si fuera del otro. */
+@media (max-width: 640px), (max-height: 500px) {
   .tv-head {
     padding: 12px 14px 8px;
   }
@@ -1738,6 +1740,90 @@ body {
     /* el aire de abajo es lo que hace alcanzable lo que tapa el pie flotante:
        sin esto, la última fila del plan quedaría siempre debajo de la ficha */
     padding: 0 14px 148px;
+  }
+}
+
+/* ── El teléfono ACOSTADO: el cromo del teléfono, pero con 340 px de alto ──────
+   Ahí cada renglón de cromo es un 15% de la pantalla. Tres ajustes, todos para
+   devolverle alto al lienzo sin tocar el celular parado ni la PC. */
+@media (max-height: 500px) {
+  /* 1 · Cabecera y chips en UN renglón: volver · título · chips · ⓘ. `contents` hace
+     que los hijos de la cabecera sean celdas de esta grilla junto con los chips,
+     sin mover el JSX. El subtítulo (carrera · materias · años) se va: a esta altura
+     vale más un renglón de árbol que repetir lo que ya se eligió. */
+  .treeview {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 6px;
+    padding-top: 8px;
+  }
+  .tv-head {
+    display: contents;
+  }
+  .tv-volver {
+    grid-area: 1 / 1;
+    margin-left: 14px;
+  }
+  .tv-tit {
+    grid-area: 1 / 2;
+    align-self: center;
+  }
+  .tv-tit h2 {
+    font-size: 18px;
+  }
+  .tv-tit p {
+    display: none;
+  }
+  .tv-chips {
+    grid-area: 1 / 3;
+    align-self: center;
+    padding: 0;
+  }
+  .tv-ley-btn {
+    grid-area: 1 / 4;
+    margin-right: 14px;
+  }
+  .tv-marco {
+    grid-area: 2 / 1 / 3 / -1;
+  }
+  /* 2 · El zoom arriba a la derecha y ACOSTADO. Los 152 px de piso del teléfono
+     parado lo subían, en un lienzo de 236, hasta chocar con el ⓘ. Arriba no lo
+     alcanza la ficha, que vive abajo. */
+  .tv-zoom.vertical {
+    top: 8px;
+    bottom: auto;
+    flex-direction: row;
+  }
+  .tv-zoom.vertical .tv-zpct {
+    min-width: 38px;
+  }
+  /* 3 · La ficha en UN renglón y con tope de ancho: nombre | pastillas | ×. A lo
+     ancho de 844 px medía 117 de alto (la mitad del lienzo) con dos pastillas de
+     400 px cada una. `contents` en su fila de arriba pone la × al final. */
+  .tv-pie {
+    right: auto;
+    width: min(100%, 700px);
+  }
+  .tv-ficha {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .tv-ficha-top {
+    display: contents;
+  }
+  .tv-ficha-pills {
+    order: 1;
+    flex: 0 0 280px;
+    margin-top: 0;
+  }
+  .tv-ficha-x {
+    order: 2;
+  }
+  .tv-ficha-nom {
+    -webkit-line-clamp: 1;
   }
 }
 
