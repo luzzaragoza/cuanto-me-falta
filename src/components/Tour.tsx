@@ -96,8 +96,17 @@ export function Tour({
         style={{ left: hole.left, top: hole.top, width: hole.width, height: hole.height }}
       />
       <div className="tour-card" style={cardStyle}>
-        <div className="tour-step">
-          {i + 1} / {pasos.length}
+        {/* Cuántos pasos hay y en cuál vas, de dos formas: los puntos se leen de un
+            vistazo (¿falta mucho?) y el contador da el número exacto. */}
+        <div className="tour-top">
+          <span className="tour-dots" aria-hidden="true">
+            {pasos.map((_, n) => (
+              <span key={n} className={'tour-dot' + (n === i ? ' on' : n < i ? ' hecho' : '')} />
+            ))}
+          </span>
+          <span className="tour-step">
+            {i + 1} / {pasos.length}
+          </span>
         </div>
         <div className="tour-title">{step.titulo}</div>
         <p className="tour-text">{step.texto}</p>

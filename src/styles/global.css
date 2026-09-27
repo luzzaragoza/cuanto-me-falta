@@ -1,27 +1,42 @@
 :root {
-  --paper: #f5f3ee;
-  --card: #ffffff;
-  --ink: #232019;
-  --soft: #6b655b;
-  --line: #e4dfd4;
-  --gold: #c39200;
-  --ap: #2f7d5a;
-  --ap-bg: #e4efe9;
-  --ap-tx: #1e5a3f;
-  --cu: #c2620f;
-  --cu-bg: #f8e7d6;
-  --cu-tx: #8e450a;
-  --fi: #3d6bb3;
-  --fi-bg: #e2eaf6;
-  --fi-tx: #284e86;
-  --lk: #6b4fcf;
-  --lk-bg: #ece7fa;
-  --lk-tx: #4a35a0;
-  --hb: #0e8c8c;
-  --hb-bg: #dbf0ee;
-  --hb-tx: #0a5f5c;
-  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* ── ORGANIC · la paleta del rediseño (2-sep) ───────────────────────────
+     Dos familias sobre neutros cálidos: naranja terroso (el acento) y verde
+     oliva. Reemplaza a la paleta que separaba los estados por MATIZ (verde
+     aprobada · azul final · naranja cursando), y por eso hay una diferencia
+     de fondo que conviene tener presente al tocar esto:
+
+     ANTES el color solo ya distinguía los 4 estados. AHORA no: `--cu` y
+     `--fi` son la misma familia. Lo que los separa es el BORDE (ΔE ≥ 11.9
+     entre los 4, incluso simulando deuteranopia y protanopia) y el GLIFO
+     del tick (✓ aprobada · ◐ final · • cursando · vacío pendiente), que es
+     un canal no cromático. Medido, no a ojo.
+
+     ⇒ REGLA para lo que se agregue: ningún estado puede quedar distinguido
+     por el token fuerte SOLO. Siempre borde o glifo acompañando. */
+
+  --paper: #f5ead8;
+  --card: #fff9f0;
+  --ink: #201e1d;
+  --soft: #645c50;
+  --line: #e5dbc9;
+  --gold: #c67139;
+  --ap: #728157;
+  --ap-bg: #e9f1da;
+  --ap-tx: #3f4a2c;
+  --cu: #d68a4e;
+  --cu-bg: #fff3e6;
+  --cu-tx: #402310;
+  --fi: #c67139;
+  --fi-bg: #ffe9d9;
+  --fi-tx: #402310;
+  --lk: #c67139;
+  --lk-bg: #ffe1d0;
+  --lk-tx: #8c491a;
+  --hb: #728157;
+  --hb-bg: #e1eecc;
+  --hb-tx: #56633f;
+  --serif: 'Caprasimo', Georgia, 'Times New Roman', serif;
+  --sans: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* ── Derivados ──────────────────────────────────────────────────────────
@@ -30,93 +45,80 @@
      acá y no recorriendo el archivo. */
 
   /* Los `-rgb` existen porque `rgba()` no acepta un var() de color. Sin ellos cada
-     opacidad de un token se re-tipeaba a mano —`rgba(195, 146, 0, 0.4)` ES `--gold`
+     opacidad de un token se re-tipeaba a mano —`rgba(198, 113, 57, 0.4)` ES `--gold`
      con alpha— y cambiar el token no las alcanzaba. */
   --blanco-rgb: 255, 255, 255;
   --negro-rgb: 0, 0, 0;
-  --ink-rgb: 35, 32, 25;
-  --paper-rgb: 245, 243, 238;
-  --gold-rgb: 195, 146, 0;
-  /* El tinte cálido de las bandas del árbol. */
-  --tv-tinte-rgb: 93, 82, 60;
+  --ink-rgb: 32, 30, 29;
+  --paper-rgb: 245, 234, 216;
+  --gold-rgb: 198, 113, 57;
+  /* Las bandas de año del árbol (la alternancia clara/oscura del fondo). */
+  --tv-banda-rgb: 220, 211, 196;
 
-  /* Tinta sobre un fondo saturado. NO es `--card` aunque hoy sean el mismo blanco:
+  /* Tinta sobre un fondo saturado. NO es `--card` aunque los dos sean cremas:
      son dos destinos distintos —una superficie y una tinta—, y el día que el fondo
-     se oscurezca la superficie tiene que seguirlo y esta NO. */
-  --sobre-color: #fff;
+     se oscurezca la superficie tiene que seguirlo y esta NO. Con Organic dejó de
+     ser blanco puro: sobre el naranja y el oliva, el crema del papel no "brilla". */
+  --sobre-color: #f5ead8;
 
   /* Neutros de superficie */
-  --sunk: #ebe7de;
-  --line-fuerte: #d8d2c6;
-  --line-marca: #cfc9bd;
-  --pprev-bg: #eeeae1;
-  --pprev-tx: #b7b0a2;
-  --card-hover: #faf9f6;
+  --sunk: #ebddc5;
+  --line-fuerte: #c0b6a5;
+  --line-marca: #dcd3c4;
+  --pprev-bg: #eee7db;
+  --pprev-tx: #a19786;
+  --card-hover: #fdf7ee;
 
-  /* Familia del dorado */
-  --gold-tx: #9a7300;
-  --gold-bg: #fdf8ea;
-  --gold-bg-2: #faf3df;
-  --gold-bg-3: #fdfbf4;
-  --avail-tx: #8a6800;
-  --avail-bg: #f6ebc9;
-  --avail-line: #e9d9a6;
+  /* Familia del acento. El token sigue llamándose `--gold` por lo que cuesta
+     renombrarlo (67 usos), pero el acento ya NO es dorado: es el naranja
+     terroso de Organic. `--gold-tx` es la variante para TINTA — el token
+     fuerte da 3.03:1 sobre el papel, así que donde haya texto chico va esta. */
+  --gold-tx: #8c491a;
+  --gold-fuerte: #b2622d;
+  --gold-bg: #fff2eb;
+  --gold-bg-2: #ffe1d0;
+  --gold-bg-3: #fff7f1;
+  --avail-tx: #56633f;
+  --avail-bg: #e1eecc;
+  --avail-line: #b9c7a0;
 
-  /* Peligro. Es el ÚNICO rojo de la app: no confundir con `--cu` (cursando), que es
-     naranja y significa un estado, no un problema. */
-  --peligro: #a23b2c;
-  --peligro-bg: #f7e9e6;
-  --peligro-line: #eecfc9;
+  /* Peligro. Es el ÚNICO rojo de la app: no confundir con `--cu` (cursando), que
+     ahora es naranja de la MISMA familia que el acento. Por eso se eligió un rojo
+     más frío que el de antes: ΔE 23.5 contra el acento, verificado. */
+  --peligro: #9b2c22;
+  --peligro-bg: #fbe6e1;
+  --peligro-line: #f0cabf;
   --peligro-fuerte: #b3403d;
 
   /* Avisos flotantes (fondo oscuro con tinta clara: no siguen al tema del resto) */
-  --toast-bg: rgba(38, 34, 28, 0.9);
-  --toast-tx: #f5f1e8;
-  --toast-warn-bg: rgba(120, 46, 33, 0.9);
-  --toast-warn-tx: #ffe9e3;
-  --velo-tour: rgba(28, 25, 20, 0.62);
+  --toast-bg: rgba(46, 43, 37, 0.92);
+  --toast-tx: #f9f4ed;
+  --toast-warn-bg: rgba(120, 46, 33, 0.92);
+  --toast-warn-tx: #ffe1d0;
+  --velo-tour: rgba(46, 43, 37, 0.62);
 
   /* Correlativas: los tintes suaves de cada sentido. Acá el color ES el significado
-     (violeta = necesitás antes · teal = habilita después), así que estos tienen que
+     (naranja = necesitás antes · oliva = habilita después), así que estos tienen que
      seguir leyéndose como la versión pálida de `--lk` y `--hb`. */
-  --lk-bg-suave: #faf8ff;
-  --lk-line: #d8cdf3;
-  --hb-bg-suave: #f5fbfa;
-  --hb-line: #b7e2dc;
-  --tv-rail-bg: rgba(247, 244, 236, 0.96);
+  --lk-bg-suave: #fff8f3;
+  --lk-line: #ffc6a5;
+  --hb-bg-suave: #f7fbf0;
+  --hb-line: #ccdbb2;
   /* El esqueleto en reposo: las correlativas cortas, tenues. No usa `--line` porque
      tiene que leerse sobre las tarjetas, no entre ellas. */
-  --tv-arista: #b0a690;
+  --tv-arista: #c0b6a5;
 
-  /* Las DOS RAMPAS de 4 pasos del árbol: más lejos de la materia, más oscuro. Vivían
-     en TreeView.tsx como literales; están acá para que la paleta entera esté en un
-     solo lugar, y el TS las nombra con var(). Restricción de diseño: los 4 pasos de
-     cada rampa tienen que leerse ORDENADOS, y las dos rampas no pueden confundirse
-     entre sí. */
-  --need-1-bg: #ece6fb;
-  --need-1-line: #c4b2ef;
-  --need-1-tx: #4a35a0;
-  --need-2-bg: #c7b2f0;
-  --need-2-line: #a083e2;
-  --need-2-tx: #3a2880;
-  --need-3-bg: #9c79e5;
-  --need-3-line: #7e55d8;
-  --need-3-tx: #ffffff;
-  --need-4-bg: #6b4fcf;
-  --need-4-line: #543aae;
-  --need-4-tx: #ffffff;
-  --unlock-1-bg: #d6f0ed;
-  --unlock-1-line: #a2d7d0;
-  --unlock-1-tx: #0a5f5c;
-  --unlock-2-bg: #a6ddd5;
-  --unlock-2-line: #75c5bb;
-  --unlock-2-tx: #07514e;
-  --unlock-3-bg: #4fb6ac;
-  --unlock-3-line: #2e9e93;
-  --unlock-3-tx: #ffffff;
-  --unlock-4-bg: #0e8c8c;
-  --unlock-4-line: #0a6e6e;
-  --unlock-4-tx: #ffffff;
+  /* La CADENA del árbol: un color por sentido, plano. Acá vivían dos rampas de
+     4 pasos por distancia (--need-N / --unlock-N): murieron con el modo rama —
+     el diseño nuevo resalta la cadena en el lugar y la distancia ya la cuenta
+     la geometría (más lejos = más columnas). Son la versión "tarjeta" de --lk
+     y --hb, que siguen siendo los dueños del significado en chips y paneles. */
+  --cad-up-bg: #ffe1d0;
+  --cad-up-line: #d67f48;
+  --cad-up-tx: #402310;
+  --cad-down-bg: #e1eecc;
+  --cad-down-line: #8fa073;
+  --cad-down-tx: #272e1b;
 }
 
 * {
@@ -164,282 +166,442 @@ body {
 
 /* ----- header ----- */
 /* identidad (avatar + nombre + carrera) a la izquierda, Opciones a la derecha, en una fila */
+/* ── Cabecera ───────────────────────────────────────────────────────────────
+   Sin la regla negra de 2px que separaba: el hero de abajo ya es una tarjeta y
+   marca el corte solo. El avatar lleva SIEMPRE el lápiz (antes aparecía al pasar
+   el mouse, o sea: en un teléfono no aparecía nunca y no había forma de saber
+   que se podía editar el perfil). */
 .head {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 14px;
+  gap: 15px;
+  padding-bottom: 24px;
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  flex: 1;
 }
 .who-tx {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 .head .actions {
   flex: 0 0 auto;
 }
-/* en mobile, Opciones queda solo con el ícono (libera espacio para el nombre) */
-@media (max-width: 480px) {
-  .tb-label {
-    display: none;
-  }
-  .head .tool-btn {
-    padding: 8px 10px;
-  }
-  .head .sub {
-    letter-spacing: 0.02em;
-    font-size: 10.5px;
-  }
-}
 .head h1 {
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: clamp(26px, 5vw, 40px);
-  line-height: 0.98;
+  font-weight: 400;
+  font-size: clamp(22px, 4.2vw, 29px);
+  line-height: 1.08;
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
 }
 .head .sub {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 13.5px;
   color: var(--soft);
-  font-weight: 600;
+  min-width: 0;
 }
-.tool-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--sans);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 7px 13px;
+
+/* ── Avatar ─────────────────────────────────────────────────────────────── */
+.avatar {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: var(--gold-bg-2);
+  color: var(--gold-tx);
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 21px;
+  letter-spacing: 0.02em;
+  display: grid;
+  place-items: center;
   cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 0.15s ease;
+}
+.avatar:hover {
+  background: var(--gold-bg-3);
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+/* El lápiz: una insignia al borde, no un velo encima. Se ve siempre — es la
+   única pista de que el avatar abre algo. */
+.avatar-edit {
+  position: absolute;
+  inset: auto -2px -2px auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  color: var(--soft);
+  display: grid;
+  place-items: center;
+  opacity: 1;
+}
+.avatar:hover .avatar-edit {
+  color: var(--ink);
+}
+
+/* ── Botón del menú: disco, sin etiqueta ────────────────────────────────── */
+.tool-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 .tool-btn:hover {
-  border-color: var(--ink);
+  background: var(--sunk);
 }
 .tool-btn svg {
-  color: var(--soft);
+  color: currentColor;
+}
+/* La etiqueta "Opciones" se fue: el disco con las tres rayas ya se entiende, y
+   el nombre de la carrera necesita el ancho. Queda accesible por aria-label. */
+.tb-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ----- dashboard ----- */
 .dash {
   margin: 22px 0 8px;
 }
+
+/* ── El hero ────────────────────────────────────────────────────────────────
+   El anillo a la izquierda con el porcentaje ADENTRO, y a la derecha el titular
+   que contesta la pregunta que le da nombre a la app ("te faltan N") más la
+   leyenda de los cuatro estados. Reemplaza a la barra horizontal: la misma
+   información, pero el número deja de ser un dato al lado del gráfico y pasa a
+   ser su centro. */
 .hero {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 22px 24px;
-}
-.bignum {
+  border-radius: 28px;
+  padding: 28px 32px;
   display: flex;
   align-items: center;
-  gap: 20px 30px;
+  gap: 38px;
   flex-wrap: wrap;
+  box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.07);
 }
-.stat .num {
+.ring {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  flex: none;
+}
+.ring svg {
+  display: block;
+  /* el trazo tiene que arrancar a las 12, no a las 3 */
+  transform: rotate(-90deg);
+}
+.ring circle {
+  fill: none;
+  stroke-width: 20;
+}
+.ring .ring-riel {
+  stroke: var(--sunk);
+}
+.bignum {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.bignum .num {
   display: inline-flex;
   align-items: baseline;
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: clamp(40px, 9vw, 66px);
-  line-height: 0.8;
-  letter-spacing: -0.03em;
+  font-size: 48px;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: var(--ink);
 }
-.stat .num small {
-  font-size: 0.4em;
-  font-weight: 700;
-  color: var(--soft);
-  margin-left: 3px;
+.bignum .num small {
+  font-size: 22px;
 }
-.stat .cap {
-  display: block;
-  font-size: 11px;
+.bignum .cap {
+  font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   color: var(--soft);
   font-weight: 700;
-  margin-top: 9px;
 }
-.bignum .sep {
-  width: 1px;
-  align-self: stretch;
-  background: var(--line);
-  margin: 6px 0;
-}
-.bar {
-  height: 16px;
-  border-radius: 9px;
-  overflow: hidden;
-  display: flex;
-  background: var(--sunk);
-  border: 1px solid var(--line);
+.hero-tx {
   flex: 1;
-  min-width: 220px;
+  min-width: 260px;
 }
-.bar i {
-  display: block;
-  height: 100%;
+.hero-tit {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(26px, 4.4vw, 36px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0;
 }
-.bar .b-ap {
-  background: var(--ap);
-}
-.bar .b-fi {
-  background: var(--fi);
-}
-.bar .b-cu {
-  background: var(--cu);
+.hero-sub {
+  margin: 9px 0 20px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--soft);
+  max-width: 42ch;
+  text-wrap: pretty;
 }
 .counts {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px 22px;
 }
 .counts .c {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-  font-weight: 600;
+  gap: 9px;
+  font-size: 13.5px;
   color: var(--soft);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 5px 12px;
+}
+.counts .c b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 .counts .c i {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
+  flex: none;
   border-radius: 50%;
+}
+.counts .d-ap {
+  background: var(--ap);
+}
+/* Mitad llena = la cursada está, falta rendir. Es el MISMO glifo que el tick de la
+   fila, y es lo que distingue "pend. de final" de "cursando" sin depender del
+   matiz: con Organic los dos son de la familia del acento. */
+.counts .d-fi {
+  background: linear-gradient(90deg, var(--fi) 0 50%, var(--fi-bg) 50% 100%);
+  box-shadow: inset 0 0 0 1.5px var(--fi);
+}
+.counts .d-cu {
+  background: var(--cu);
+}
+.counts .d-pe {
+  box-shadow: inset 0 0 0 1.5px var(--line-fuerte);
+}
+
+@media (max-width: 620px) {
+  .hero {
+    padding: 22px;
+    gap: 22px;
+    justify-content: center;
+  }
+  .counts {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ----- plan ----- */
 .year {
-  margin-top: 30px;
+  margin-bottom: 34px;
 }
+
+/* ── Encabezado de año ──────────────────────────────────────────────────────
+   Dejó de ser un rótulo ("1° AÑO" + línea) para contestar algo: cuánto de ESE
+   año está aprobado. El número en un disco, el resumen en palabras y la barra
+   como lectura de un vistazo — tres formas del mismo dato, porque el año es la
+   unidad con la que el alumno piensa la carrera. */
 .yhead {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--ink);
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  flex-wrap: wrap;
 }
 .yhead .n {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: 30px;
+  font-weight: 400;
+  font-size: 19px;
   line-height: 1;
-  color: var(--gold);
-  letter-spacing: -0.02em;
+  background: var(--gold-bg-2);
+  color: var(--gold-tx);
+}
+/* Año completo: el disco pasa al verde de "aprobada". */
+.yhead .n.ok {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
+}
+.yhead .ytx {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .yhead .l {
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 700;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.1;
   color: var(--ink);
 }
-/* Interruptor de año: aprobar el año entero de una. No es un botón "de UI" —
-   habla la misma tipografía que el encabezado (versalitas espaciadas, como
-   "1° AÑO"), así se lee como parte del título y no como un chip pegado.
-   El color es el de la ACCIÓN: verde para aprobar, dorado para deshacer. */
+.yhead .yres {
+  font-size: 12.5px;
+  color: var(--soft);
+}
+.ybar {
+  height: 7px;
+  width: 116px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+.ybar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ap);
+  transition: width 0.22s ease;
+}
+/* Interruptor de año: aprobar el año entero de una. Va a la derecha del todo,
+   como pastilla: el encabezado ahora tiene contenido propio (resumen + barra),
+   así que el botón necesita separarse en vez de hablar la misma tipografía. */
 .ybtn {
   margin-left: auto;
-  align-self: center;
+  height: 38px;
+  padding: 0 18px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 9px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ap);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--sunk);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 13.5px;
   cursor: pointer;
   white-space: nowrap;
   transition:
     background 0.16s ease,
-    color 0.16s ease;
+    border-color 0.16s ease;
 }
 .ybtn svg {
   flex: none;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 .ybtn:hover {
-  background: var(--ap-bg);
-  color: var(--ap-tx);
+  background: var(--card-hover);
+  border-color: var(--line);
 }
+/* Deshacer no es la acción esperada: pierde el relleno y queda como contorno. */
 .ybtn.undo {
-  color: var(--gold);
+  background: transparent;
+  border-color: var(--line-fuerte);
 }
 .ybtn.undo:hover {
-  background: var(--gold-bg);
-  color: var(--gold-tx);
+  background: var(--sunk);
 }
 .ybtn:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
-@media (max-width: 480px) {
+@media (max-width: 560px) {
+  .ybar {
+    display: none; /* el resumen en palabras ya lo dice; la barra es lo primero que sobra */
+  }
   .ybtn {
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    gap: 5px;
-    padding: 5px 7px;
+    font-size: 12.5px;
+    padding: 0 13px;
   }
 }
-/* banda de hito: el título que se obtiene al completar las materias de arriba */
+
+/* ── Banda de hito ──────────────────────────────────────────────────────────
+   El título que se obtiene al completar las materias de arriba. Ahora dice
+   TAMBIÉN si ya está obtenido: era la única parte del plan que celebraba algo
+   y se veía igual estuviera conseguido o no. */
 .titulo-hito {
-  margin-top: 14px;
+  margin-top: 18px;
+  padding: 14px 20px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 14px;
-  background: var(--gold-bg-2);
-  border: 1px solid rgba(var(--gold-rgb), 0.4);
-  border-left: 3px solid var(--gold);
-  border-radius: 10px;
+  gap: 13px;
+  flex-wrap: wrap;
+  background: var(--pprev-bg);
+  border: 1px solid var(--line);
+}
+.titulo-hito.ok {
+  background: var(--hb-bg);
+  border: 1.5px solid var(--hb);
 }
 .titulo-hito svg {
-  width: 19px;
-  height: 19px;
-  fill: var(--gold);
+  width: 20px;
+  height: 20px;
   flex: none;
+  fill: var(--soft);
 }
-.titulo-hito .th-tx {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+.titulo-hito.ok svg {
+  fill: var(--hb-tx);
 }
 .titulo-hito .th-k {
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--soft);
 }
 .titulo-hito .th-n {
   font-family: var(--serif);
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1.25;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.2;
   color: var(--ink);
+  min-width: 0;
 }
+.titulo-hito .th-e {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--soft);
+}
+.titulo-hito.ok .th-k,
+.titulo-hito.ok .th-n,
+.titulo-hito.ok .th-e {
+  color: var(--hb-tx);
+}
+
 .cuatris {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -463,115 +625,137 @@ body {
   margin: 0 0 10px;
 }
 
-/* ----- materia ----- */
+/* ── Materia ────────────────────────────────────────────────────────────────
+   La fila es la unidad que más se repite (52 en Ingeniería), así que carga toda
+   la señal en poco alto: el tick dice el estado, el código va arriba del nombre
+   (se busca por nombre, se verifica por código) y el chip verde marca lo que se
+   puede cursar ya.
+
+   ⚠️ Con Organic el color solo NO alcanza para separar los estados: `cursando` y
+   `pend. de final` son la misma familia. Lo que los distingue es la FORMA del
+   tick —hueco con punto vs medio relleno— más el borde. Si se toca esto, esa
+   diferencia de forma tiene que sobrevivir. */
 .mat {
   position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
-  background: var(--card);
+  background: var(--card-hover);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--line-fuerte);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
+  border-radius: 15px;
+  padding: 10px 13px;
+  margin-bottom: 7px;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.08s, border-color 0.15s, background 0.15s;
+  transition:
+    background 0.13s ease,
+    border-color 0.13s ease,
+    box-shadow 0.13s ease;
 }
 .mat:hover {
-  transform: translateX(2px);
+  border-color: var(--line-fuerte);
+}
+.mat.open {
+  box-shadow: 0 6px 18px rgba(var(--ink-rgb), 0.16);
 }
 .mat .tick {
-  width: 20px;
-  height: 20px;
+  width: 23px;
+  height: 23px;
   border-radius: 50%;
   flex: 0 0 auto;
-  border: 2px solid var(--line-marca);
+  border: 1.5px solid var(--line-fuerte);
   display: grid;
   place-items: center;
   font-size: 12px;
+  line-height: 1;
   font-weight: 700;
-  color: transparent;
-  background: var(--paper);
+  color: var(--soft);
+  background: transparent;
 }
 .mat .info {
   min-width: 0;
   flex: 1;
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  flex-direction: column;
+  gap: 2px;
 }
 .mat .cod {
   font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--soft);
-  letter-spacing: 0.02em;
-  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--pprev-tx);
+  letter-spacing: -0.01em;
 }
 .mat .nom {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   line-height: 1.25;
+  letter-spacing: -0.005em;
   min-width: 0;
-  overflow-wrap: anywhere; /* el nombre puede cortar si hace falta → la fila nunca fuerza ancho */
+  overflow-wrap: anywhere; /* el nombre puede cortar → la fila nunca fuerza ancho */
+  text-wrap: pretty;
 }
-.mat.cursando {
-  border-left-color: var(--cu);
-  background: var(--cu-bg);
-}
-.mat.cursando .tick {
-  border-color: var(--cu);
-  background: var(--cu);
-  color: var(--sobre-color);
-}
-.mat.cursando .nom {
-  color: var(--cu-tx);
-}
-.mat.final {
-  border-left-color: var(--fi);
-  background: var(--fi-bg);
-}
-.mat.final .tick {
-  border-color: var(--fi);
-  background: var(--fi);
-  color: var(--sobre-color);
-}
-.mat.final .nom {
-  color: var(--fi-tx);
-}
+
+/* aprobada: relleno sólido + ✓ */
 .mat.aprobada {
-  border-left-color: var(--ap);
   background: var(--ap-bg);
+  border: 1.5px solid var(--avail-line);
 }
 .mat.aprobada .tick {
-  border-color: var(--ap);
   background: var(--ap);
+  border-color: var(--ap);
   color: var(--sobre-color);
 }
 .mat.aprobada .nom {
   color: var(--ap-tx);
 }
-/* disponible = borde punteado dorado (look propio, distinto del relleno cálido de "cursando") */
+
+/* pend. de final: tick MEDIO RELLENO — la cursada está, falta rendir. Es la
+   forma la que lo dice; el color lo acompaña. */
+.mat.final {
+  background: var(--fi-bg);
+  border: 1.5px solid var(--fi);
+}
+.mat.final .tick {
+  background: linear-gradient(90deg, var(--fi) 0 50%, var(--gold-bg) 50% 100%);
+  border-color: var(--fi);
+  color: var(--fi-tx);
+}
+.mat.final .nom {
+  color: var(--fi-tx);
+}
+
+/* cursando: tick HUECO con punto — empezó, no hay nada rendido todavía. */
+.mat.cursando {
+  background: var(--cu-bg);
+  border: 1.5px solid var(--cu);
+}
+.mat.cursando .tick {
+  background: transparent;
+  border: 2px solid var(--fi);
+  color: var(--fi);
+}
+.mat.cursando .nom {
+  color: var(--cu-tx);
+}
+
+/* disponible: se puede cursar ya. No es un estado — es una oportunidad, así que
+   se marca en el borde y con el chip, sin teñir la fila. */
 .mat.avail {
-  border: 1px dashed var(--gold);
-  border-left: 3px dashed var(--gold);
-  background: var(--gold-bg-3);
+  border: 1.5px solid var(--avail-line);
 }
 .mat.avail .tick {
-  border-color: var(--gold);
+  border: 1.5px dashed var(--hb);
 }
 .avail-tag {
   flex: 0 0 auto;
   font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--avail-tx);
   background: var(--avail-bg);
-  border: 1px solid var(--avail-line);
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 4px 9px;
   white-space: nowrap;
 }
 
@@ -596,13 +780,13 @@ body {
 .spop {
   position: fixed;
   z-index: 60;
-  min-width: 240px;
-  max-width: 286px;
+  width: 296px;
+  max-width: calc(100vw - 24px);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 16px 44px rgba(var(--negro-rgb), 0.2);
-  padding: 6px;
+  border-radius: 20px;
+  box-shadow: 0 18px 44px rgba(var(--ink-rgb), 0.24);
+  padding: 10px;
   transform-origin: top center;
 }
 .spop-in {
@@ -614,12 +798,12 @@ body {
   }
 }
 .sp-head {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--soft);
-  padding: 8px 10px 6px;
+  padding: 6px 10px 10px;
 }
 .sp-opt {
   display: flex;
@@ -629,15 +813,23 @@ body {
   text-align: left;
   background: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 9px 10px;
   cursor: pointer;
   font-family: var(--sans);
+  transition: background 0.13s ease;
 }
-.sp-opt:hover,
+.sp-opt:hover {
+  background: var(--pprev-bg);
+}
 .sp-opt.sel {
-  background: var(--paper);
+  background: var(--sunk);
 }
+/* Las MISMAS cuatro formas que el tick de la fila, y por el mismo motivo: con
+   Organic, `cursando` y `pend. de final` son la misma familia de color, así que
+   lo que los separa es la forma —hueco con punto vs medio relleno— y eso se lee
+   incluso en escala de grises. Acá se ve el cuarteto completo uno al lado del
+   otro, que es donde más se nota si dos se parecen. */
 .sp-dot {
   width: 24px;
   height: 24px;
@@ -646,20 +838,21 @@ body {
   display: grid;
   place-items: center;
   font-size: 13px;
+  line-height: 1;
   font-weight: 700;
-  border: 2px solid var(--line-marca);
-  color: transparent;
-  background: var(--paper);
+  border: 1.5px solid var(--line-fuerte);
+  color: var(--soft);
+  background: transparent;
 }
 .sp-dot.cursando {
-  border-color: var(--cu);
-  background: var(--cu);
-  color: var(--sobre-color);
+  border: 2px solid var(--fi);
+  background: transparent;
+  color: var(--fi);
 }
 .sp-dot.final {
   border-color: var(--fi);
-  background: var(--fi);
-  color: var(--sobre-color);
+  background: linear-gradient(90deg, var(--fi) 0 50%, var(--gold-bg) 50% 100%);
+  color: var(--fi-tx);
 }
 .sp-dot.aprobada {
   border-color: var(--ap);
@@ -694,7 +887,7 @@ body {
 .sp-sep {
   height: 1px;
   background: var(--line);
-  margin: 5px 8px;
+  margin: 6px 10px;
 }
 .sp-nota {
   display: flex;
@@ -720,9 +913,9 @@ body {
   font-size: 15px;
   font-weight: 600;
   padding: 7px 8px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--card-hover);
   color: var(--ink);
   -moz-appearance: textfield;
   appearance: textfield;
@@ -752,13 +945,13 @@ body {
   font-weight: 600;
 }
 .sp-note {
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--soft);
-  margin: 4px 8px 2px;
-  padding: 8px 11px;
-  border-radius: 9px;
-  background: var(--paper);
+  margin: 6px 4px 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--sunk);
 }
 .sp-note.warn {
   color: var(--peligro);
@@ -769,8 +962,12 @@ body {
   font-weight: 700;
   color: inherit;
 }
-
-/* ----- árbol de correlativas (React Flow) ----- */
+/* ----- árbol de correlativas: la línea de tiempo ----- */
+/* Rediseño 2-sep: columnas por cuatrimestre, bandas por año, correlativas siempre
+   visibles como curvas tenues. La cadena de una materia se resalta EN EL LUGAR
+   (naranja lo que necesita · oliva lo que habilita · el resto se apaga), así que
+   ya no hay re-layout ni "modo rama". El lienzo es HTML+SVG propio: React Flow y
+   elkjs se fueron con este rediseño. */
 .treeview {
   position: fixed;
   inset: 0;
@@ -778,248 +975,812 @@ body {
   background: var(--paper);
   display: flex;
   flex-direction: column;
+  animation: ov-fade-in 0.2s ease;
 }
-.tv-bar {
+.treeview.closing {
+  animation: ov-fade-out 0.18s ease forwards;
+  pointer-events: none;
+}
+
+/* ── cabecera ── */
+.tv-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 34px 10px;
+}
+.tv-volver {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 15px 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-fuerte);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s ease;
+}
+.tv-volver:hover {
+  background: var(--sunk);
+}
+.tv-tit {
+  flex: 1;
+  min-width: 0;
+}
+.tv-tit h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-tit p {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  color: var(--soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-ley-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-fuerte);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.tv-ley-btn.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--sobre-color);
+}
+
+/* ── chips de año ── */
+.tv-chips {
+  flex: none;
+  display: flex;
+  gap: 7px;
+  /* alineados con la cabecera y la barra de estado; en el teléfono, con el lienzo */
+  padding: 2px 34px 12px;
+  overflow-x: auto;
+}
+.tv-chip {
+  flex: none;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-fuerte);
+  background: transparent;
+  color: var(--soft);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tv-chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--sobre-color);
+}
+
+/* ── barra de estado (PC): la materia activa y sus dos números ──
+   El alto es FIJO, no un mínimo. Esta barra cambia de contenido con el mouse
+   —la pista larga cuando no hay nada, el nombre y los dos números cuando sí—, y
+   con `min-height` el contenido decidía el alto: por debajo de ~820px la línea
+   "primer año · 2° cuatrimestre · aprobada" envolvía y la barra pasaba de 62 a
+   68 px (a 128 con el botón Soltar), empujando el lienzo hacia abajo. Barrer el
+   mouse por el plano daba entonces un vaivén del árbol entero.
+   Con el alto clavado eso es imposible por construcción, para cualquier texto y
+   cualquier ancho; adentro, todo lo que podría envolver va a una sola línea con
+   puntos suspensivos. Hay un e2e que lo mide en los tres estados. */
+.tv-status {
+  flex: none;
+  margin: 0 34px 14px;
+  padding: 0 20px;
+  height: 62px;
+  border-radius: 999px;
+  background: var(--sunk);
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--line);
-  background: var(--card);
-  flex-wrap: wrap;
+  overflow: hidden;
 }
-.tv-titles {
+.tv-status-hint {
+  font-size: 14px;
+  color: var(--soft);
+}
+.tv-status-grid {
+  flex: 1;
   min-width: 0;
+  display: grid;
+  /* Las pastillas miden 210 px SIEMPRE que haya lugar: fijas, no ajustadas al
+     texto, para que pasar de una materia a otra no las corra de lugar —mover el
+     mouse no tiene que mover la interfaz. Cuando la ventana no da, ceden ellas
+     hasta 120 y no el nombre, que es lo que hay que poder leer. */
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 210px) minmax(120px, 210px);
+  align-items: center;
+  gap: 16px;
 }
-.tv-title {
+.tv-status-nom {
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: 20px;
-  letter-spacing: -0.01em;
+  font-size: 18px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.tv-hint {
-  font-size: 11.5px;
+.tv-status-cuando {
+  font-size: 12.5px;
   color: var(--soft);
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.tv-legend {
+.tv-pill {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
   display: flex;
-  gap: 14px;
-  margin-left: auto;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-.tl {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
 }
-.tl i {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-  display: inline-block;
-}
-.tl.need i {
-  background: var(--lk);
-}
-.tl.unlock i {
-  background: var(--hb);
-}
-.tl.need {
+.tv-pill.up {
+  background: var(--cad-up-bg);
   color: var(--lk-tx);
 }
-.tl.unlock {
+.tv-pill.down {
+  background: var(--cad-down-bg);
   color: var(--hb-tx);
 }
-.tl em {
-  font-style: normal;
-  font-weight: 500;
-  color: var(--soft);
-  margin-left: 3px;
-}
-.tv-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--card);
+.tv-soltar {
+  margin-left: auto;
+  flex: none;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-fuerte);
+  background: transparent;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 13px;
   color: var(--ink);
-  font-size: 22px;
+  cursor: pointer;
+}
+.tv-soltar:hover {
+  background: var(--pprev-bg);
+}
+
+/* ── el lienzo ── */
+.tv-marco {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.tv-lienzo {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 34px 34px;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.tv-lienzo.agarrado {
+  cursor: grabbing;
+  user-select: none;
+}
+.tv-escala {
+  position: relative;
+}
+.tv-plano {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.tv-banda {
+  position: absolute;
+  border-radius: 28px;
+  background: rgba(var(--tv-banda-rgb), 0.5);
+}
+.tv-banda.alt {
+  background: rgba(var(--tv-banda-rgb), 0.26);
+}
+.tv-banda-lbl {
+  position: absolute;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  color: var(--gold-tx);
+}
+.tv-cuatri-kick {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--soft);
+}
+.tv-aristas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.ta {
+  fill: none;
+  stroke: var(--tv-arista);
+  stroke-width: 1.6;
+  stroke-opacity: 0.6;
+  stroke-linecap: round;
+  transition: stroke-opacity 0.13s ease;
+}
+.ta.off {
+  stroke-opacity: 0.1;
+}
+.ta.up {
+  stroke: var(--gold-fuerte);
+  stroke-width: 3;
+  stroke-opacity: 1;
+}
+.ta.down {
+  stroke: var(--hb);
+  stroke-width: 3;
+  stroke-opacity: 1;
+}
+
+/* ── las tarjetas ── */
+.tv-nodo {
+  position: absolute;
+  width: 208px;
+  height: 86px;
+  padding: 11px 14px 11px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 16px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background: var(--sunk);
+  color: var(--ink);
+  border: 1px solid var(--line-marca);
+  box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.1);
+  transition:
+    opacity 0.13s ease,
+    background 0.13s ease,
+    box-shadow 0.13s ease;
+}
+.tv-nodo-nom {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+.tv-nodo-badge {
+  align-self: flex-start;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(var(--ink-rgb), 0.08);
+  color: var(--soft);
+}
+.tv-nodo.opt {
+  background: var(--card-hover);
+  border: 1.5px dashed var(--pprev-tx);
+}
+.tv-nodo.esp {
+  border: 1.5px dotted var(--soft);
+}
+.tv-nodo.sel {
+  background: var(--gold);
+  color: var(--sobre-color);
+  border: 1.5px solid var(--gold-fuerte);
+  box-shadow: 0 12px 32px rgba(var(--ink-rgb), 0.22);
+}
+.tv-nodo.sel .tv-nodo-badge {
+  background: rgba(var(--paper-rgb), 0.22);
+  color: var(--sobre-color);
+}
+.tv-nodo.up {
+  background: var(--cad-up-bg);
+  border: 1.5px solid var(--cad-up-line);
+  color: var(--cad-up-tx);
+  box-shadow: 0 3px 10px rgba(var(--ink-rgb), 0.16);
+}
+.tv-nodo.down {
+  background: var(--cad-down-bg);
+  border: 1.5px solid var(--cad-down-line);
+  color: var(--cad-down-tx);
+  box-shadow: 0 3px 10px rgba(var(--ink-rgb), 0.16);
+}
+.tv-nodo.dim {
+  opacity: 0.18;
+  box-shadow: none;
+}
+
+/* ── El riel de estado ───────────────────────────────────────────────────────
+   Una barrita en el canto de la tarjeta con el avance del alumno. Va al BORDE y
+   no como fondo porque el fondo ya está tomado: es lo que dice si la materia
+   está en la cadena de la que se está mirando. Dos datos, dos lugares.
+
+   `final` es medio relleno, igual que su tick en la pantalla principal: la
+   diferencia con `cursando` es de FORMA y no solo de color (los dos son de la
+   familia del acento). Acá el corte es vertical porque el riel lo es. */
+.tv-riel {
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  bottom: 14px;
+  width: 5px;
+  border-radius: 999px;
+}
+.tv-riel.aprobada {
+  background: var(--ap);
+}
+.tv-riel.final {
+  background: linear-gradient(180deg, var(--fi) 0 50%, var(--card) 50% 100%);
+}
+.tv-riel.cursando {
+  background: var(--cu);
+}
+/* Sobre la tarjeta seleccionada el fondo ES el acento, y ahí el riel se rompe:
+   la mitad "llena" de `final` es el mismo hex que el fondo (ΔE 0,0 — literalmente
+   invisible) y `cursando` queda casi encima. Se invierte el par: la mitad salien-
+   te pasa a ser la tinta clara y la otra un velo oscuro, así la FORMA —que es lo
+   que separa "final" de "cursando"— sobrevive. Vale para una sola tarjeta a la
+   vez, y la barra de arriba igual dice el estado con todas las letras. */
+.tv-nodo.sel .tv-riel {
+  box-shadow: 0 0 0 1.5px rgba(var(--paper-rgb), 0.75);
+}
+.tv-nodo.sel .tv-riel.aprobada,
+.tv-nodo.sel .tv-riel.cursando {
+  background: var(--sobre-color);
+}
+.tv-nodo.sel .tv-riel.final {
+  background: linear-gradient(
+    180deg,
+    var(--sobre-color) 0 50%,
+    rgba(var(--ink-rgb), 0.34) 50% 100%
+  );
+}
+/* En el resumen del pie el riel es una muestra suelta, sin tarjeta que lo ubique. */
+.tv-resumen .tv-riel {
+  position: static;
+  flex: none;
+  width: 5px;
+  height: 15px;
+}
+
+/* ── Pie: resumen de avance + leyenda + zoom ── */
+.tv-pie-pc {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding: 2px 34px 20px;
+}
+.tv-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.tv-res-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+/* En el panel del teléfono el resumen va arriba, separado de las referencias. */
+.tv-ley-panel .tv-resumen {
+  gap: 9px;
+  padding-bottom: 10px;
+  margin-bottom: 1px;
+  border-bottom: 1px solid var(--line);
+}
+.tv-res-item b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* modo edición (#admin): la affordance de "esta se puede clickear ahora".
+   ⚠️ El editor tiene su rediseño pendiente; esto lo mantiene funcional. */
+.tv-nodo.elegible {
+  outline: 2px dashed var(--gold);
+  outline-offset: 2px;
+}
+.tv-nodo.elegible:hover {
+  outline-style: solid;
+}
+/* mapa: muy alejado, las tarjetas son teselas — el texto a 4px sería ruido */
+.tv-plano.mapa .tv-nodo-nom,
+.tv-plano.mapa .tv-nodo-badge {
+  display: none;
+}
+
+/* ── leyenda ── */
+.tv-leyenda {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 9px 26px;
+}
+.tv-ley-panel {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 6px;
+  z-index: 25;
+  display: grid;
+  gap: 9px;
+  max-height: calc(100% - 20px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(var(--paper-rgb), 0.94);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  box-shadow: 0 12px 30px rgba(var(--ink-rgb), 0.16);
+  animation: velo 0.13s ease;
+}
+.tv-ley-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tv-ley-linea {
+  flex: none;
+  width: 24px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--tv-arista);
+}
+.tv-ley-linea.need {
+  height: 3px;
+  background: var(--gold-fuerte);
+}
+.tv-ley-linea.unlock {
+  height: 3px;
+  background: var(--hb);
+}
+.tv-ley-caja {
+  flex: none;
+  width: 22px;
+  height: 14px;
+  border-radius: 6px;
+}
+.tv-ley-caja.opt {
+  border: 1.5px dashed var(--pprev-tx);
+  background: var(--card-hover);
+}
+.tv-ley-caja.esp {
+  border: 1.5px dotted var(--soft);
+  background: var(--sunk);
+}
+.tv-ley-tx {
+  font-size: 12px;
+  color: var(--soft);
+}
+.tv-ley-tx.need {
+  color: var(--lk-tx);
+  font-weight: 600;
+}
+.tv-ley-tx.unlock {
+  color: var(--hb-tx);
+  font-weight: 600;
+}
+
+/* ── zoom ── */
+.tv-zoom {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--sunk);
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+}
+/* En el teléfono sí flota: ahí el lienzo ocupa todo y no hay fila al pie. Se queda
+   en su esquina, pero POR ENCIMA de la franja donde ahora flota la ficha: 152 px de
+   piso, contra los 136,4 que mide la ficha en su peor caso (el nombre más largo de
+   los cuatro planes, en dos renglones, a 320 px de ancho). Es un número fijo a
+   propósito: atarlo al alto del pie lo haría saltar cada vez que aparece la ficha,
+   que es exactamente lo que vinimos a sacar. El clamp de dos renglones del nombre
+   es lo que mantiene cierto el 136,4 para cualquier plan que se cargue mañana. */
+.tv-zoom.vertical {
+  position: absolute;
+  right: 12px;
+  bottom: 152px;
+  margin: 0;
+  flex-direction: column;
+  padding: 4px;
+  background: rgba(var(--paper-rgb), 0.9);
+  backdrop-filter: blur(6px);
+  border-color: rgba(var(--ink-rgb), 0.1);
+  box-shadow: 0 6px 18px rgba(var(--ink-rgb), 0.12);
+}
+.tv-zbtn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--soft);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tv-zoom.vertical .tv-zbtn {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+.tv-zbtn:hover {
+  background: rgba(var(--ink-rgb), 0.08);
+  color: var(--ink);
+}
+.tv-zpct {
+  min-width: 42px;
+  text-align: center;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--soft);
+}
+.tv-zoom.vertical .tv-zpct {
+  min-width: 0;
+  font-size: 10.5px;
+  padding: 1px 0;
+}
+.tv-zsep {
+  width: 1px;
+  height: 16px;
+  background: rgba(var(--ink-rgb), 0.12);
+  margin: 0 3px;
+}
+.tv-ztodo {
+  height: 28px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--soft);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tv-ztodo:hover {
+  background: rgba(var(--ink-rgb), 0.08);
+  color: var(--ink);
+}
+
+/* ── pie del teléfono: la pista o la ficha de la materia activa ──
+   FLOTA sobre el lienzo, no ocupa lugar en la columna. En el flujo, tocar una
+   materia cambiaba el pie de 68 a 117 px y el lienzo se achicaba 50: el árbol
+   saltaba abajo del dedo, justo en el gesto más común de la pantalla. Reservar
+   esos 50 px siempre era peor —muertos en las cuatro quintas partes de la sesión,
+   sobre 492 px de lienzo—, así que la ficha se lee como capa: es lo que ya decía
+   su diseño (fondo oscuro, sombra de 30 px), solo que ahora también se comporta
+   así. Lo que tapa se recupera paneando: el lienzo tiene aire de sobra abajo.
+   Las dos caras flotan, no solo la ficha: si la pista quedara en el flujo, el
+   lienzo crecería al elegir una materia y el salto volvería del otro lado. */
+.tv-pie {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 12px 14px;
+  /* por debajo del panel de referencias (25), que es modal y lo abrió el usuario */
+  z-index: 24;
+  pointer-events: none;
+}
+.tv-hint-m {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px 18px;
+  border-radius: 26px;
+  /* mismo vocabulario que las otras dos capas flotantes de esta pantalla (el panel
+     de referencias y el zoom): sin el velo y la sombra, un rectángulo crema sobre
+     un lienzo de tarjetas crema se lee como una tarjeta más, no como algo de arriba */
+  background: rgba(var(--paper-rgb), 0.9);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  box-shadow: 0 6px 18px rgba(var(--ink-rgb), 0.12);
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--soft);
+  text-wrap: pretty;
+  /* texto, no control: el dedo que arrastra desde abajo tiene que agarrar el lienzo */
+  pointer-events: none;
+}
+/* La ficha es OSCURA a propósito: flota sobre un lienzo crema lleno de tarjetas
+   crema, y tiene que leerse como control y no como una tarjeta más. */
+.tv-ficha {
+  pointer-events: auto;
+  padding: 12px 14px 12px 18px;
+  border-radius: 26px;
+  background: var(--ink);
+  color: var(--sobre-color);
+  box-shadow: 0 12px 30px rgba(var(--ink-rgb), 0.28);
+  animation: barra 0.17s ease;
+}
+.tv-ficha-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tv-ficha-tx {
+  flex: 1;
+  min-width: 0;
+}
+.tv-ficha-nom {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.2;
+  text-wrap: pretty;
+  /* dos renglones y basta: es lo que le pone techo al alto de la ficha, y de ese
+     techo depende que el zoom flotante nunca quede tapado */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.tv-ficha-cuando {
+  font-size: 11.5px;
+  color: rgba(var(--paper-rgb), 0.68);
+  margin-top: 3px;
+}
+.tv-ficha-x {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--paper-rgb), 0.14);
+  color: var(--sobre-color);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tv-ficha-x:hover {
+  background: rgba(var(--paper-rgb), 0.26);
+}
+.tv-ficha-pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+}
+.tv-ficha .tv-pill {
+  flex: 1;
+  height: 32px;
+  font-size: 12.5px;
+}
+
+@keyframes barra {
+  from {
+    transform: translateY(10px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .tv-pie-pc {
+    flex-wrap: wrap;
+    gap: 14px 22px;
+    padding-bottom: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tv-head {
+    padding: 12px 14px 8px;
+  }
+  .tv-tit h2 {
+    font-size: 21px;
+  }
+  .tv-tit p {
+    font-size: 12px;
+  }
+  .tv-volver {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .tv-chips {
+    padding: 2px 14px 10px;
+  }
+  .tv-lienzo {
+    /* el aire de abajo es lo que hace alcanzable lo que tapa el pie flotante:
+       sin esto, la última fila del plan quedaría siempre debajo de la ficha */
+    padding: 0 14px 148px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .treeview,
+  .tv-ficha,
+  .tv-ley-panel {
+    animation: none;
+  }
+  .tv-nodo,
+  .ta {
+    transition: none;
+  }
+}
+
+/* El velo de aparición que comparten menús, desplegables y paneles. */
+@keyframes velo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Botón de cierre compartido (lo usan los drawers de Notas y la administración). */
+.tv-close {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 21px;
   line-height: 1;
   cursor: pointer;
   flex: 0 0 auto;
+  transition: background 0.13s ease;
 }
 .tv-close:hover {
-  border-color: var(--ink);
+  background: var(--sunk);
 }
-.tv-canvas {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-}
-.tv-canvas .react-flow {
-  background: var(--paper);
-}
-
-/* nodo de materia */
-.tnode {
-  position: relative;
-  width: 200px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-fuerte);
-  border-radius: 9px;
-  padding: 8px 10px;
-  font-family: var(--sans);
-  cursor: pointer;
-  transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
-}
-.tnode .tn-cod {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--soft);
-}
-/* rótulo de fila del modo rama: cada escalón dice su año·cuatrimestre una sola
-   vez, al costado (las bandas del fondo quedan borrosas y no acompañan) */
-.rot-rama {
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--soft);
-  background: rgba(var(--blanco-rgb), 0.88);
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  padding: 3px 11px;
-  white-space: nowrap;
-  animation: arista-in 0.3s ease 0.42s both;
-}
-.react-flow__node-rotulo {
-  pointer-events: none !important;
-}
-.tnode .tn-nom {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
-  margin-top: 2px;
-}
-.tnode.cursando {
-  border-left-color: var(--cu);
-}
-.tnode.final {
-  border-left-color: var(--fi);
-}
-.tnode.aprobada {
-  border-left-color: var(--ap);
-}
-.tnode.role-dim {
-  opacity: 0.28;
-}
-.tnode.role-sel {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
-}
-/* role-need / role-unlock: el color (por profundidad) lo pone el inline style desde TreeView.
-   El nombre hereda ese color del nodo. */
-.tnode.role-need .tn-cod,
-.tnode.role-unlock .tn-cod {
-  color: inherit;
-  opacity: 0.7;
-}
-.tnode .react-flow__handle {
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-  min-width: 0;
-  min-height: 0;
-  border: 0;
-  background: transparent;
-}
-
-/* bandas de año (fondo) + marca de cuatrimestre */
-.react-flow__node-band {
-  pointer-events: none !important; /* React Flow pone inline pointer-events en el wrapper */
-}
-/* Cada año es un BLOQUE visible: banda con fondo propio, borde y esquinas — el
-   respiro entre bandas (YEAR_GAP del layout) + la alternancia de tono hacen
-   obvio dónde termina un año y empieza el otro. */
-.tv-band {
-  position: relative;
-  box-sizing: border-box;
-  background: rgba(var(--blanco-rgb), 0.55);
-  border: 1px solid rgba(var(--tv-tinte-rgb), 0.1);
-  border-radius: 18px;
-}
-.tv-band.alt {
-  background: rgba(var(--tv-tinte-rgb), 0.07);
-}
-/* franja de cuatrimestre (horizontal: una fila por cuatri). El 2° va tinte tenue. */
-.tv-cuatri {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  box-sizing: border-box;
-  border-radius: 12px;
-}
-.tv-cuatri.alt {
-  background: rgba(var(--tv-tinte-rgb), 0.05);
-}
-/* rótulo ARRIBA de su fila, en la franja libre que le reserva el layout (LBL_H) */
-.tv-cuatri-lbl {
-  position: absolute;
-  top: 6px;
-  left: 12px;
-  font-family: var(--sans);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--soft);
-  opacity: 0.5;
-  white-space: nowrap;
-}
-/* rail de años: fijo a la izquierda, sigue el paneo vertical (fuera del transform) */
-.tv-rail {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 5;
-}
-.tv-rail-item {
-  position: absolute;
-  left: 12px;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 5px 11px 6px;
-  background: var(--tv-rail-bg);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(var(--negro-rgb), 0.08);
-  font-family: var(--serif);
-  white-space: nowrap;
-}
-.tv-rail-item b {
-  font-size: 18px;
-  font-weight: 900;
-  color: var(--gold);
-}
-.tv-rail-item span {
-  font-size: 12px;
-  color: var(--soft);
-}
-.tv-rail-item em {
-  font-style: normal;
-  font-family: var(--sans);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ap-tx);
-  margin-left: 2px;
-}
-
-/* botón de ayuda (?) con tooltip — base */
+/* Tooltips ⓘ (los usa el editor de la administración). */
 .info-i {
   display: inline-flex;
   align-items: center;
@@ -1095,107 +1856,7 @@ body {
 }
 
 /* leyenda fija (dirección siempre presente) */
-.tv-bar .info-i.help {
-  margin-left: auto;
-}
-.tv-keypanel {
-  background: rgba(var(--blanco-rgb), 0.94);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 11px 15px;
-  box-shadow: 0 6px 20px rgba(var(--negro-rgb), 0.1);
-  font-size: 13.5px;
-  font-weight: 600;
-  display: grid;
-  gap: 8px;
-}
-/* en mobile queda más compacta (ahí ya se veía bien) */
-@media (max-width: 560px) {
-  .tv-keypanel {
-    padding: 7px 10px;
-    font-size: 11px;
-    gap: 5px;
-    border-radius: 10px;
-  }
-  .tv-keypanel .tk-dot {
-    width: 11px;
-    height: 11px;
-  }
-}
-.tk-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.tk-row.need {
-  color: var(--lk-tx);
-}
-.tk-row.unlock {
-  color: var(--hb-tx);
-}
-.tk-dot {
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
-  flex: 0 0 auto;
-}
-.tk-row.need .tk-dot {
-  background: var(--lk);
-}
-.tk-row.unlock .tk-dot {
-  background: var(--hb);
-}
-.tk-row em {
-  font-style: normal;
-  font-weight: 500;
-  color: var(--soft);
-  margin-left: 2px;
-}
-
-/* ── Árbol v2: viaje de tarjetas + modo rama ──
-   Al tocar una materia su cadena se JUNTA como un árbol (re-layout del subgrafo):
-   las tarjetas viajan (transition del transform que pone React Flow), el resto
-   queda atrás apagado y apenas borroso (suave a propósito), y las aristas de la
-   rama entran con un fade cuando las tarjetas ya aterrizaron. */
-.tv-canvas .react-flow__node {
-  transition:
-    transform 480ms cubic-bezier(0.22, 0.9, 0.3, 1),
-    opacity 0.35s ease,
-    filter 0.35s ease;
-}
-.tv-canvas.rama .react-flow__node.fondo {
-  opacity: 0.3;
-  filter: blur(2.5px);
-  pointer-events: none; /* clic sobre el fondo = clic afuera → vuelve a la malla */
-}
-.tv-canvas.rama .react-flow__node.fondo-banda {
-  opacity: 0.35;
-  pointer-events: none;
-}
-.tv-rail {
-  transition: opacity 0.35s ease;
-}
-.tv-canvas.rama .tv-rail {
-  opacity: 0.25;
-}
-@keyframes arista-in {
-  from {
-    opacity: 0;
-  }
-}
-.react-flow__edge.e-rama {
-  animation: arista-in 0.3s ease 0.42s both;
-}
-/* esqueleto en reposo: las correlativas cortas, tenues (que se lea de dónde
-   sale cada materia sin que la malla se convierta en un ovillo) */
-.react-flow__edge.e-malla {
-  transition: opacity 0.35s ease;
-  opacity: 0.75;
-}
-.react-flow__edge.e-malla.fondo-e {
-  opacity: 0.1; /* en modo rama se apagan con el resto del fondo */
-}
-/* spinner: mientras baja el chunk del árbol (Suspense) o corre el layout */
+/* El velo de carga del chunk del árbol (fallback del Suspense). */
 .tv-cargando {
   position: fixed;
   inset: 0;
@@ -1218,68 +1879,12 @@ body {
     transform: rotate(1turn);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .tv-canvas .react-flow__node {
-    transition: none;
-  }
-  .react-flow__edge.e-rama {
-    animation: none;
-  }
-  .react-flow__edge.e-malla {
-    transition: none;
-  }
-}
 
 /* ----- perfil / avatar ----- */
-.who {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-.avatar {
-  position: relative;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  border: 2px solid var(--line);
-  background: var(--gold);
-  color: var(--sobre-color);
-  font-family: var(--serif);
-  font-weight: 700;
-  font-size: 20px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  overflow: hidden;
-  flex: 0 0 auto;
-  padding: 0;
-}
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.avatar-edit {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(var(--ink-rgb), 0.58);
-  color: var(--sobre-color);
-  display: grid;
-  place-items: center;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.avatar:hover .avatar-edit {
-  opacity: 1;
-}
-.avatar:hover {
-  border-color: var(--ink);
-}
-
 /* ----- modal de perfil ----- */
 /* ----- bienvenida (primera visita) ----- */
+/* Tres pasos: qué es la app → qué carrera → cómo te llamás. La tarjeta es una sola
+   y el contenido cambia adentro; arriba, tres pastillas dicen cuánto falta. */
 .welcome {
   position: fixed;
   inset: 0;
@@ -1298,247 +1903,593 @@ body {
   overflow-y: auto;
   animation: welcome-fade 0.35s ease;
 }
-.welcome-card {
+/* En pantallas anchas el naipe se corre a la izquierda y el árbol queda a la vista
+   a su derecha: la bienvenida MUESTRA de qué se trata mientras la lee. */
+.w-escena {
+  position: relative;
   width: 100%;
-  max-width: 440px;
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 721px) {
+  .welcome {
+    place-items: center;
+    padding: 0;
+  }
+  /* El escenario del diseño. Todo lo de adentro guarda su posición relativa.
+     El sangrado del naipe va en el NAIPE y no acá: si fuera padding del escenario,
+     correría también al árbol, que tiene que cubrirlo entero. */
+  .w-escena {
+    width: min(100%, 1200px);
+    height: min(100%, 700px);
+  }
+  .w-escena .welcome-card {
+    margin-left: 58px;
+  }
+  /* El naipe nunca pasa del 88% de la altura: scrollea ADENTRO en vez de estirar
+     la página. Así el árbol de atrás sigue a la vista en pantallas bajas, que es
+     donde vive la idea de esta pantalla. */
+  .welcome-card {
+    max-height: 88%;
+    overflow-y: auto;
+  }
+}
+.welcome-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 452px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 13px;
+  align-items: stretch;
+  text-align: left;
+  gap: 0;
+  padding: 32px 34px 30px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  box-shadow: 0 20px 56px rgba(var(--ink-rgb), 0.2);
   animation: welcome-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+
+/* ── El árbol de fondo ───────────────────────────────────────────────────────
+   Un plan de juguete que se enciende solo: la idea de la app contada sin palabras.
+   Va DETRÁS del naipe, y en el teléfono queda como una banda arriba (ahí no hay
+   ancho para ponerlo al lado). Los colores son los mismos que el árbol de verdad,
+   para que el gesto ya se reconozca cuando se llegue a él. */
+.w-arbol {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* Centrado de verdad, también cuando NO entra: `place-items: center` de grid
+   deja el item pegado al inicio si desborda, y por eso el árbol quedaba arrancando
+   en x=0 en vez de recortado por los dos lados como en el diseño. */
+.w-arbol svg {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.wa-hoja {
+  fill: var(--pprev-bg);
+  stroke: var(--line-marca);
+  stroke-width: 2;
+  opacity: 0.5;
+  transition:
+    fill 0.4s ease,
+    stroke 0.4s ease,
+    opacity 0.4s ease;
+}
+.wa-hoja.sel {
+  fill: var(--gold);
+  stroke: var(--gold-fuerte);
+  opacity: 1;
+}
+.wa-hoja.atras {
+  fill: var(--cad-up-bg);
+  stroke: var(--cad-up-line);
+  opacity: 1;
+}
+.wa-hoja.adelante {
+  fill: var(--cad-down-bg);
+  stroke: var(--cad-down-line);
+  opacity: 1;
+}
+.wa-rama {
+  fill: none;
+  stroke: var(--line-marca);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+  transition:
+    stroke 0.4s ease,
+    stroke-width 0.4s ease,
+    opacity 0.4s ease;
+}
+/* con algo encendido, lo apagado se hunde para que la cadena se lea sola */
+.wa-ramas.activo .wa-rama {
+  opacity: 0.28;
+}
+.wa-rama.atras {
+  stroke: var(--gold-fuerte);
+  stroke-width: 3.4;
+}
+.wa-rama.adelante {
+  stroke: var(--hb);
+  stroke-width: 3.4;
+}
+/* las encendidas ganan aunque el grupo esté "activo" */
+.wa-ramas .wa-rama.atras,
+.wa-ramas .wa-rama.adelante,
+.wa-ramas.activo .wa-rama.atras,
+.wa-ramas.activo .wa-rama.adelante {
+  opacity: 1;
+}
+
+/* ── El avance de la bienvenida ── */
+.w-pasos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 20px;
+}
+.w-paso {
+  height: 5px;
+  width: 10px;
+  border-radius: 999px;
+  background: var(--line-fuerte);
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
+}
+.w-paso.hecho {
+  background: var(--gold-bg-2);
+}
+.w-paso.on {
+  width: 30px;
+  background: var(--gold);
+}
+
+/* ── Paso 1: la marca ── */
 .w-logo {
   line-height: 0;
   filter: drop-shadow(0 8px 20px rgba(var(--gold-rgb), 0.28));
 }
 .w-brand {
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: clamp(26px, 7vw, 34px);
-  letter-spacing: -0.02em;
-  line-height: 1;
-  margin: 4px 0 0;
-}
-.w-brand .q {
-  color: var(--gold);
+  font-weight: 400;
+  font-size: clamp(32px, 7vw, 40px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin: 18px 0 0;
 }
 .w-tag {
-  color: var(--soft);
+  margin: 12px 0 0;
   font-size: 15px;
+  line-height: 1.5;
+  color: var(--soft);
   max-width: 34ch;
-  margin: 0;
+  text-wrap: pretty;
 }
 .w-features {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  max-width: 320px;
-  margin-top: 8px;
+  gap: 2px;
+  margin: 26px 0 28px;
 }
 .w-feat {
   display: flex;
   align-items: center;
-  gap: 12px;
-  text-align: left;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 13px;
+  gap: 14px;
+  padding: 11px 0;
+}
+.w-feat + .w-feat {
+  border-top: 1px solid var(--gold-bg-2);
 }
 .w-feat-ic {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 9px;
-  background: rgba(var(--gold-rgb), 0.12);
-  color: var(--gold);
+}
+/* Los dos tonos del sistema, alternados: el ícono no dice un estado, así que no
+   hereda su significado — sólo evita que las tres filas sean el mismo bloque. */
+.w-feat-ic.need {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+}
+.w-feat-ic.unlock {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
 }
 .w-feat-tx {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-.w-feat-tx b {
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: 14.5px;
-}
-.w-feat-tx small {
-  color: var(--soft);
-  font-size: 12.5px;
-}
-.w-start {
-  width: 100%;
-  max-width: 360px;
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.w-start label {
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: 15px;
-}
-.w-start-row {
-  display: flex;
-  gap: 8px;
-}
-.w-start-row input {
   flex: 1;
   min-width: 0;
-  font-family: var(--sans);
-  font-size: 15px;
-  padding: 11px 13px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--ink);
-}
-.w-start-row input:focus {
-  outline: 2px solid var(--gold);
-  outline-offset: 1px;
-  border-color: var(--gold);
-}
-.w-start-row .btn {
-  white-space: nowrap;
-}
-.w-skip {
-  margin-top: 10px;
-}
-.w-priv {
-  color: var(--soft);
-  font-size: 11.5px;
-  margin: 2px 0 0;
-}
-/* bloque de cuenta dentro de la bienvenida (Google + divisor "o") */
-.w-acct {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
 }
-.w-acct .acct {
-  align-items: stretch;
+.w-feat-tx b {
+  font-size: 14.5px;
+  font-weight: 700;
 }
-.w-acct .gbtn {
-  align-self: stretch;
-}
-.w-acct .acct-hint {
-  text-align: center;
-}
-.w-go {
-  width: 100%;
-}
-/* "Seguir sin cuenta — tus datos quedan en este dispositivo" (un solo párrafo) */
-.w-nocta {
+.w-feat-tx small {
+  font-size: 13px;
   color: var(--soft);
-  font-size: 12.5px;
-  margin: 2px 0 0;
-  text-align: center;
 }
-.w-nocta .lnk {
-  font-size: 12.5px;
+
+/* ── Pasos 2 y 3 ── */
+.w-tit {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(28px, 5.5vw, 33px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.w-sub {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--soft);
+  max-width: 38ch;
+  text-wrap: pretty;
+}
+
+/* ── Elegir carrera ── */
+.w-planes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 22px 0 24px;
+}
+.w-plan {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--card-hover);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition:
+    background 0.13s ease,
+    border-color 0.13s ease;
+}
+.w-plan:hover {
+  background: var(--pprev-bg);
+}
+/* Elegida = HUNDIDA al tono del papel, no teñida de naranja. Sobre la superficie
+   del naipe (--card) el papel se lee como "apretada hacia adentro", que es lo que
+   hace el diseño; un relleno naranja la haría competir con el botón primario. */
+.w-plan.sel {
+  background: var(--paper);
+  border: 1.5px solid var(--gold);
+}
+.w-plan-dot {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--line-fuerte);
+  background: transparent;
+  color: var(--sobre-color);
+}
+.w-plan.sel .w-plan-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.w-plan-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.w-plan-nom {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-wrap: pretty;
+}
+.w-plan-meta {
+  font-size: 11.5px;
+  color: var(--soft);
+}
+.w-plan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+.w-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.w-chip.need {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+}
+.w-chip.unlock {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
+}
+.w-chip.neutro {
+  background: var(--sunk);
+  color: var(--soft);
+}
+
+/* ── El nombre ── */
+.w-name {
+  width: 100%;
+  height: 52px;
+  margin: 20px 0 14px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--card-hover);
+  font-family: var(--sans);
+  font-size: 16px;
   color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  outline: none;
 }
-/* saludo al volver logueada de Google (paso 2) */
+.w-name:focus {
+  border-color: var(--gold);
+  background: var(--card);
+}
+.w-o {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+}
+.w-o span {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.w-o em {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-style: normal;
+  color: var(--pprev-tx);
+}
+/* La caja de Google está HUNDIDA: es la opción secundaria del paso, y el relleno
+   del acento ya se lo llevó "Empezá". */
+/* El relleno de acá es MUCHO menor que el del botón de Google de la cabecera: son
+   306px de ancho y el texto entero no entra en un renglón con 20px a cada lado.
+   El diseño le deja 6, y así entra. */
+.w-google .gbtn {
+  padding: 1px 6px;
+}
+.w-google {
+  padding: 16px 17px;
+  background: var(--card-hover);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+}
+.w-google .acct-hint {
+  margin: 12px 2px 0;
+}
+
+/* ── Acciones ── */
+/* ⚠️ La clase va DUPLICADA (`.btn.w-go`, `.lnk.w-back`…) a propósito, y no es
+   capricho: `.btn` y `.lnk` se declaran MÁS ABAJO en esta misma hoja y con la misma
+   especificidad, así que pisaban en silencio a todo lo de acá. El resultado eran
+   cuatro medidas del diseño que el CSS decía y el navegador no hacía: el botón en
+   15px en vez de 17, y los dos enlaces del pie en 44px de alto y color `--soft`
+   cuando el diseño los quiere en 32, 13px, y "Entrar sin nombre" en el acento.
+   Duplicar la clase sube la especificidad sin mover una regla de lugar. */
+.btn.w-go {
+  width: 100%;
+  height: 52px;
+  font-size: 17px;
+}
+.w-priv {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--pprev-tx);
+}
+.w-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+}
+.lnk.w-back {
+  display: block;
+  margin: 14px auto 0;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  /* tinta al 60%, no `--soft`: es un paso atrás, no una nota al pie */
+  color: rgba(var(--ink-rgb), 0.6);
+}
+.w-pie .w-back {
+  margin: 0;
+}
+.lnk.w-skip {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  color: var(--gold-tx);
+}
+.lnk.w-skip:hover {
+  background: var(--gold-bg-2);
+  color: var(--gold-tx);
+}
 .w-hola {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  background: rgba(var(--gold-rgb), 0.08);
-  border: 1px solid var(--gold);
-  border-radius: 10px;
-  padding: 10px 12px;
+  gap: 11px;
+  margin: 20px 0 14px;
+  padding: 13px 15px;
+  background: var(--card-hover);
+  border: 1px solid var(--line);
+  border-radius: 22px;
   font-size: 13px;
+  line-height: 1.45;
+  color: var(--soft);
   text-align: left;
 }
-.w-back {
-  margin-top: 12px;
-  font-size: 12px;
+.w-hola b {
+  color: var(--ink);
 }
+
+/* ── El teléfono NO es la pantalla ancha angostada: es otra composición ──────
+   En el escritorio el naipe flota sobre el árbol, corrido a la izquierda. En el
+   teléfono no hay ancho para eso, así que el diseño APILA: una banda de árbol de
+   210px arriba y el naipe abajo, a ancho completo, arrancando a 170px del borde
+   y llegando hasta el fondo. Se solapan 40px a propósito: la hoja nace DENTRO
+   del dibujo, no flotando debajo. */
+@media (max-width: 720px) {
+  .welcome {
+    padding: 170px 0 0;
+    /* `minmax(0, 1fr)` y no `1fr` a secas, por lo mismo que la columna de arriba: el
+       mínimo automático de una fila de grid es su CONTENIDO, así que en una pantalla
+       baja la fila crecía, el naipe con ella, y su `max-height: 100%` terminaba
+       midiéndose contra esa fila crecida — o sea, no capaba nada y la banda del
+       árbol se iba de la pantalla. Con el mínimo en 0 la fila mide lo que queda
+       libre y el que scrollea es el naipe. */
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
+    align-items: stretch;
+  }
+  /* `static` A PROPÓSITO. Si `.w-escena` es el contenedor de posicionamiento, la
+     banda del árbol se cuelga de ACÁ — o sea, arranca DESPUÉS del padding de 170px
+     y le queda encima el naipe, que empieza exactamente ahí: el árbol se dibuja
+     entero y no se ve ni un píxel. Colgada de `.welcome` (que es `fixed`, y los
+     absolutos se miden contra su caja de padding) nace en el borde de la pantalla,
+     que es donde el diseño la pone. */
+  .w-escena {
+    position: static;
+    align-items: stretch;
+  }
+  .w-arbol {
+    bottom: auto;
+    height: 210px;
+  }
+  .w-arbol svg {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 100%;
+  }
+  .welcome-card {
+    max-width: none;
+    border-radius: 32px 32px 0 0;
+    /* El que scrollea es el naipe, no la pantalla: sin el tope, en una pantalla
+       baja el contenido lo estira, la página entera se va para arriba y la banda
+       del árbol desaparece — justo lo que esta composición quiere mostrar. */
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 720px) {
+  .welcome-card {
+    padding: 22px 22px 26px;
+  }
+}
+
 /* ----- selector de carrera (dropdown custom) ----- */
 .cselect {
   position: relative;
-  width: 100%;
+  min-width: 0;
 }
-/* variante inline: el dropdown vive dentro del subtítulo del header */
-.cselect.inline {
-  display: inline-flex;
-  width: auto;
-  vertical-align: baseline;
-}
+
+/* ── Variante 'inline': la del subtítulo de la cabecera ─────────────────────
+   Es una PASTILLA, no un renglón de texto: el chevron y el fondo al pasar dicen
+   que se puede tocar. El margen negativo a la izquierda la alinea con el h1 de
+   arriba a pesar de su propio padding. */
 .cselect.inline .cselect-btn {
+  margin: 5px 0 0 -9px;
   width: auto;
+  min-height: 0;
+  height: 28px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
   border: 0;
-  background: none;
-  padding: 0;
-  gap: 4px;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: inherit;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--soft);
+  transition: background 0.15s ease;
 }
 .cselect.inline .cselect-btn:hover {
-  border: 0;
-  color: var(--gold);
+  background: var(--sunk);
 }
 .cselect.inline.open .cselect-btn,
 .cselect.inline .cselect-btn:focus-visible {
-  outline: 0;
-  color: var(--gold);
-}
-.cselect.inline .cselect-chev {
-  width: 13px;
-  height: 13px;
-}
-.cselect.inline .cselect-chev svg {
-  width: 13px;
-  height: 13px;
+  background: var(--sunk);
 }
 .cselect.inline .cselect-val {
-  white-space: normal; /* en mobile envuelve en vez de cortarse */
-  overflow: visible;
-  text-overflow: clip;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cselect.inline .cselect-chev {
+  flex: none;
+  display: grid;
+  place-items: center;
+  opacity: 0.6;
 }
 .cselect.inline .cselect-list {
-  left: 0;
-  right: auto;
-  min-width: 280px;
-  text-transform: none;
-  letter-spacing: normal;
+  left: -9px;
 }
+
+/* ── Variante 'box': la de la bienvenida ────────────────────────────────── */
 .cselect-btn {
   width: 100%;
+  min-height: 48px;
+  padding: 0 18px;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--sans);
-  font-size: 14.5px;
-  font-weight: 500;
-  color: var(--ink);
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 11px 13px;
+  background: var(--card-hover);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
   cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
   text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .cselect-btn:hover {
-  border-color: var(--ink);
+  border-color: var(--line-fuerte);
 }
 .cselect.open .cselect-btn,
 .cselect-btn:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 1px;
   border-color: var(--gold);
+  background: var(--card);
+  outline: none;
 }
 .cselect-val {
   flex: 1;
@@ -1548,128 +2499,74 @@ body {
   white-space: nowrap;
 }
 .cselect-chev {
-  color: var(--soft);
+  flex: none;
   display: grid;
   place-items: center;
-  transition: transform 0.2s ease;
+  color: var(--soft);
+  transition: transform 0.16s ease;
 }
 .cselect.open .cselect-chev {
   transform: rotate(180deg);
 }
+
+/* ── La lista ───────────────────────────────────────────────────────────── */
 .cselect-list {
   position: absolute;
-  top: calc(100% + 6px);
   left: 0;
-  right: 0;
-  z-index: 30;
+  top: 100%;
+  z-index: 45;
+  width: min(400px, 88vw);
+  margin: 4px 0 0;
+  padding: 8px;
   list-style: none;
-  margin: 0;
-  padding: 5px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 14px 40px rgba(var(--negro-rgb), 0.16);
-  animation: cselect-in 0.14s ease;
+  border-radius: 22px;
+  box-shadow: 0 18px 44px rgba(var(--ink-rgb), 0.22);
+  animation: velo 0.12s ease;
 }
 .cselect-opt {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: none;
+  gap: 11px;
+  padding: 10px 12px;
   border: 0;
-  border-radius: 8px;
-  padding: 9px 10px;
+  border-radius: 15px;
+  background: transparent;
   cursor: pointer;
   text-align: left;
-  font-family: var(--sans);
+  font-family: inherit;
   color: var(--ink);
+  transition: background 0.13s ease;
 }
 .cselect-opt:hover {
-  background: var(--paper);
+  background: var(--sunk);
 }
 .cselect-opt.sel {
-  background: rgba(var(--gold-rgb), 0.1);
+  background: var(--gold-bg);
 }
 .cselect-opt-tx {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 .cselect-opt-name {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
+  line-height: 1.25;
 }
 .cselect-opt-meta {
-  font-family: var(--mono);
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--soft);
 }
 .cselect-opt-chk {
-  color: var(--gold);
+  flex: none;
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
-}
-@keyframes cselect-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cselect-list {
-    animation: none;
-  }
-}
-/* carrera dentro del menú Opciones (ítems inline) */
-.menu-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--soft);
-  padding: 8px 10px 4px;
-}
-.menu button.menu-carrera-item {
-  justify-content: space-between;
-}
-.menu button.menu-carrera-item.sel {
-  color: var(--gold);
-  font-weight: 600;
-}
-.menu-carrera-item .cselect-opt-chk {
-  color: var(--gold);
-}
-@keyframes welcome-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes welcome-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .welcome,
-  .welcome-card {
-    animation: none;
-  }
+  color: var(--gold-tx);
 }
 
 /* ----- tour de bienvenida (coach marks) ----- */
@@ -1692,80 +2589,145 @@ body {
 }
 .tour-card {
   position: fixed;
-  width: 300px;
+  width: 304px;
   max-width: calc(100vw - 24px);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 16px 44px rgba(var(--negro-rgb), 0.28);
-  padding: 15px 16px;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(var(--ink-rgb), 0.34);
+  padding: 18px 19px 15px;
   z-index: 101;
   animation: tour-in 0.18s ease;
 }
+/* Cuánto falta, de dos formas: los puntos se leen de un vistazo y el contador da
+   el número exacto. Uno solo de los dos deja la pregunta a medias. */
+.tour-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+.tour-dots {
+  display: flex;
+  gap: 5px;
+}
+.tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-fuerte);
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
+}
+.tour-dot.hecho {
+  background: var(--gold);
+}
+.tour-dot.on {
+  width: 18px;
+  background: var(--gold);
+}
 .tour-step {
+  margin-left: auto;
   font-family: var(--mono);
-  font-size: 11px;
-  color: var(--gold);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 10.5px;
+  color: var(--pprev-tx);
+  letter-spacing: 0.02em;
 }
 .tour-title {
   font-family: var(--serif);
-  font-weight: 800;
-  font-size: 17px;
-  margin: 3px 0 5px;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.12;
+  margin: 0;
   letter-spacing: -0.01em;
 }
 .tour-text {
   font-size: 13.5px;
   color: var(--soft);
   line-height: 1.5;
-  margin: 0 0 13px;
+  margin: 8px 0 16px;
+  text-wrap: pretty;
 }
 .tour-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 .tour-nav {
   display: flex;
   gap: 8px;
+  /* Sin esto el grupo mide lo que mide su contenido y "Marcar una materia" empuja
+     la fila fuera del naipe de 304px. Con min-width:0 el que cede es el botón
+     largo, que parte el texto en dos renglones adentro de la píldora. */
+  min-width: 0;
 }
 .tour-skip {
+  flex: none;
+  height: 36px;
+  padding: 0 13px;
   background: none;
   border: 0;
+  border-radius: 999px;
   color: var(--soft);
-  font-size: 13px;
-  cursor: pointer;
-  font-family: var(--sans);
-  padding: 6px 2px;
-}
-.tour-prev {
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: var(--sans);
-  color: var(--ink);
-}
-.tour-next {
-  background: var(--ink);
-  color: var(--paper);
-  border: 0;
-  border-radius: 8px;
-  padding: 7px 15px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: var(--sans);
+  transition: background 0.13s ease;
 }
-/* Paso de cierre: el botón invita a marcar → dorado de acento, no el oscuro de "Siguiente". */
-.tour-cta {
+.tour-skip:hover {
+  background: var(--sunk);
+}
+.tour-prev {
+  flex: none;
+  height: 36px;
+  padding: 0 15px;
+  background: none;
+  border: 1px solid var(--line-fuerte);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--sans);
+  color: var(--ink);
+  transition: background 0.13s ease;
+}
+.tour-prev:hover {
+  background: var(--sunk);
+}
+/* Avanzar SIEMPRE es del acento — también en el paso de cierre. Antes "Siguiente"
+   era tinta oscura y solo el último botón se ponía de color: el cambio se leía
+   como "esto es otra cosa" justo donde el paso pide lo mismo de siempre, tocar. */
+.tour-next {
+  /* El único que cede cuando la fila no entra. "Marcar una materia" no entra en
+     un renglón dentro de 304px: baja a dos, centrados. Y el alto es MÍNIMO, no
+     fijo: dos renglones entran en 36px, pero si alguna vez fueran tres (pantalla
+     angosta, letra grande del sistema) la píldora crece en vez de recortar el
+     texto. Con alto fijo el texto se sale — pasa en el diseño mismo a 268px. */
+  min-height: 36px;
+  padding: 4px 16px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   background: var(--gold);
   color: var(--sobre-color);
+  border: 0;
+  border-radius: 999px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.13s ease;
+}
+.tour-next:hover {
+  background: var(--gold-tx);
+}
+.tour-cta {
+  padding: 0 18px;
 }
 /* En el cierre el overlay DEJA PASAR los clics: la materia resaltada se toca directo
    (el spotlight invita a tocarla — tocarla tiene que funcionar). La tarjeta sigue viva. */
@@ -1797,42 +2759,53 @@ body {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(var(--ink-rgb), 0.5);
+  background: rgba(var(--ink-rgb), 0.44);
   display: none;
   place-items: center;
   z-index: 90;
-  padding: 18px;
+  padding: 20px;
 }
 .modal.show {
   display: grid;
 }
 .sheet {
-  background: var(--paper);
+  background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  max-width: 384px;
+  border-radius: 30px;
+  max-width: 468px;
   width: 100%;
-  padding: 24px 22px;
-  box-shadow: 0 20px 60px rgba(var(--negro-rgb), 0.25);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  box-shadow: 0 26px 70px rgba(var(--ink-rgb), 0.3);
 }
 .sheet h2 {
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: 23px;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 .m-desc {
   font-size: 13.5px;
   color: var(--soft);
-  margin: 0 0 16px;
-  line-height: 1.4;
+  margin: 8px 0 0;
+  line-height: 1.45;
+  max-width: 40ch;
+  text-wrap: pretty;
 }
+/* La foto y su botón viven juntos en una caja hundida: es un bloque ("tu
+   imagen"), no dos controles sueltos apoyados en el fondo del modal. */
 .ppick {
   display: flex;
-  gap: 14px;
+  gap: 18px;
   align-items: center;
-  margin: 6px 0 18px;
+  margin: 22px 0 20px;
+  padding: 16px 18px;
+  background: var(--card-hover);
+  border: 1px solid var(--line);
+  border-radius: 24px;
 }
 .ppick-side {
   display: flex;
@@ -1840,28 +2813,44 @@ body {
   align-items: flex-start;
   gap: 9px;
   min-width: 0;
+  flex: 1;
 }
 .ppick-btns {
   display: flex;
   align-items: center;
   gap: 14px;
 }
+/* "Subir foto" es secundario: contorno, no relleno. El relleno del acento está
+   reservado para Guardar, que es la acción del modal. */
+.ppick .btn.ghost {
+  min-height: 38px;
+  padding: 0 18px;
+  font-size: 13.5px;
+  background: var(--card);
+  color: var(--ink);
+  border: 1.5px solid var(--line-marca);
+}
+.ppick .btn.ghost:hover {
+  background: var(--pprev-bg);
+}
 .ppick-side .phint {
   margin: 0;
 }
 .pprev {
-  width: 66px;
-  height: 66px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   flex: 0 0 auto;
   overflow: hidden;
-  border: 2px solid var(--line);
-  background: var(--pprev-bg);
+  border: 0;
+  background: var(--gold-bg-2);
   display: grid;
   place-items: center;
-  color: var(--pprev-tx);
+  color: var(--gold-tx);
   font-family: var(--serif);
-  font-weight: 700;
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: 0.02em;
 }
 .pprev img {
   width: 100%;
@@ -1870,126 +2859,210 @@ body {
 }
 .flabel {
   display: block;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--soft);
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
 #pname {
   width: 100%;
+  height: 48px;
   font-family: var(--sans);
   font-size: 15px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
+  padding: 0 18px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--card-hover);
   color: var(--ink);
 }
 #pname:focus {
-  outline: 2px solid var(--gold);
-  outline-offset: 1px;
+  outline: none;
   border-color: var(--gold);
+  background: var(--card);
 }
 .m-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 24px;
 }
+/* El botón primario del sistema: pastilla, del color del ACENTO y con la
+   tipografía de los títulos. Antes era un rectángulo de tinta negra — leía como
+   un botón de formulario, no como la acción de esta app. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 600;
-  background: var(--ink);
-  color: var(--sobre-color);
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 15px;
+  background: var(--gold);
+  color: var(--card);
   border: 0;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 999px;
+  padding: 0 28px;
+  min-height: 44px;
   cursor: pointer;
+  transition: background 0.13s ease;
 }
 .btn:hover {
-  opacity: 0.9;
+  background: var(--gold-tx);
 }
 .btn.ghost {
   background: var(--card);
   color: var(--ink);
   border: 1px solid var(--line);
 }
+/* La acción secundaria (Cancelar / Ahora no). No es un link suelto: es una
+   pastilla sin fondo, del mismo alto que el primario, para que el par de
+   botones del pie se lea como un par. */
 .lnk {
   background: none;
   border: 0;
   color: var(--soft);
   font-family: var(--sans);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  transition: background 0.13s ease;
 }
 .lnk:hover {
   color: var(--ink);
+  background: var(--sunk);
 }
 .phint {
   font-size: 11.5px;
-  color: var(--soft);
-  margin-top: 7px;
+  line-height: 1.4;
+  color: var(--pprev-tx);
+  margin-top: 9px;
 }
 
 /* ----- hitos en el dashboard ----- */
 /* tarjetas de acción (Árbol / Notas) — las dos herramientas principales, bien a mano */
+/* ── Las dos tarjetas de navegación ─────────────────────────────────────────
+   Dejaron de ser una línea de texto: cada una muestra ADENTRO una miniatura de
+   lo que abre —el gesto del árbol, el promedio y la forma de las notas—, así la
+   tarjeta promete algo concreto en vez de nombrar una pantalla. */
 .nav-tiles {
-  display: flex;
-  gap: 10px;
-  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0 38px;
 }
 @media (max-width: 560px) {
   .nav-tiles {
-    flex-wrap: wrap;
+    grid-template-columns: 1fr;
   }
 }
 .nav-tile {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
+  display: block;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 24px;
+  padding: 18px 20px 14px;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
   color: var(--ink);
   transition:
-    border-color 0.15s ease,
-    transform 0.05s ease;
+    border-color 0.13s ease,
+    box-shadow 0.13s ease,
+    transform 0.13s ease;
 }
 .nav-tile:hover {
-  border-color: var(--ink);
+  border-color: var(--gold);
+  box-shadow: 0 8px 22px rgba(var(--ink-rgb), 0.12);
+  transform: translateY(-2px);
 }
 .nav-tile:active {
-  transform: translateY(1px);
+  transform: translateY(0);
+}
+.nt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .nav-tile svg {
-  color: var(--gold);
   flex: 0 0 auto;
+}
+.nt-head > svg {
+  color: var(--gold-tx);
 }
 .nav-tile .nt-t {
   font-family: var(--serif);
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: 400;
+  font-size: 18px;
 }
 .nav-tile .nt-r {
   margin-left: auto;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--soft);
-  font-weight: 500;
+}
+@media (max-width: 430px) {
+  /* la pista sobra cuando la tarjeta ya muestra una miniatura de lo que abre, y
+     acá parte en dos líneas y desalinea el encabezado */
+  .nav-tile .nt-r {
+    display: none;
+  }
+}
+.nt-mini {
+  display: block;
+  margin-top: 8px;
+}
+.nt-notas {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  margin-top: 8px;
+  height: 84px;
+}
+.np-n {
+  display: block;
+  font-family: var(--serif);
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.np-c {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--soft);
+  margin-top: 6px;
+}
+.nt-barras {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 58px;
+}
+.nt-barras i {
+  flex: 1;
+  border-radius: 999px 999px 4px 4px;
+}
+/* La nota tiñe la barra: cuanto mejor, más cerca del verde de "aprobada". Las
+   notas sin ninguna materia quedan como un muñón neutro, para que se vea la
+   forma de la distribución y no un hueco. */
+.nt-barras .b0 {
+  background: var(--line-marca);
+}
+.nt-barras .b-alta {
+  background: var(--ap);
+}
+.nt-barras .b-media {
+  background: var(--line-fuerte);
+}
+.nt-barras .b-baja {
+  background: var(--line-marca);
 }
 
 /* ----- menú Opciones ----- */
@@ -2000,13 +3073,24 @@ body {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 236px;
+  width: 258px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 14px 40px rgba(var(--negro-rgb), 0.16);
+  border-radius: 22px;
+  box-shadow: 0 18px 44px rgba(var(--ink-rgb), 0.22);
   padding: 6px;
   z-index: 70;
+  animation: velo 0.12s ease;
+}
+/* El nombre de cada sección. Sin esto la lista eran seis botones seguidos y dos
+   rayas mudas: la raya dice "acá cambia algo" pero no dice qué. */
+.menu-kicker {
+  padding: 9px 12px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--soft);
 }
 .menu button {
   display: flex;
@@ -2018,24 +3102,34 @@ body {
   border: 0;
   font-family: var(--sans);
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ink);
-  padding: 9px 10px;
-  border-radius: 8px;
+  padding: 9px 12px;
+  border-radius: 14px;
   cursor: pointer;
+  transition: background 0.13s ease;
 }
 .menu button:hover {
-  background: var(--paper);
+  background: var(--sunk);
+}
+.mi-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--pprev-tx);
+}
+.menu button:hover .mi-ico {
+  color: var(--soft);
 }
 .menu-sep {
   height: 1px;
   background: var(--line);
-  margin: 6px 4px;
+  margin: 6px 12px;
 }
 /* Firma al pie del menú: discreta, tipografía de datos, sin caja ni color propio.
    Se lee cuando la buscás y desaparece cuando no. Alineada a la izquierda con el
-   MISMO sangrado que los ítems (10px, el padding lateral de `.menu button`): un
-   texto centrado en una lista alineada se lee como un elemento suelto. */
+   MISMO sangrado que los ítems: un texto centrado en una lista alineada se lee
+   como un elemento suelto. */
 .menu-ver {
   font-family: var(--mono);
   font-size: 10px;
@@ -2043,312 +3137,587 @@ body {
   color: var(--soft);
   opacity: 0.62;
   text-align: left;
-  padding: 8px 10px 3px;
+  padding: 8px 12px 3px;
   user-select: text;
 }
+/* Reiniciar todo NO es rojo de error: es el acento, como en el diseño. El rojo
+   de `--peligro` queda para cuando algo salió mal, no para una acción que el
+   usuario elige a propósito (y que además pide confirmación). */
 .menu button.danger {
-  color: var(--peligro);
+  color: var(--gold-tx);
+}
+.menu button.danger .mi-ico {
+  color: var(--gold-tx);
 }
 .menu button.danger:hover {
-  background: var(--peligro-bg);
+  background: var(--gold-bg-2);
 }
 
-/* ----- resumen para PDF (visible solo al imprimir) ----- */
+/* ══════════════════════════════════════════════════════════════════════════════════
+   LA HOJA DEL EXPORT — una carilla A4, visible solo al imprimir
+   ══════════════════════════════════════════════════════════════════════════════════
+
+   Diseño de Luz (4-sep). Es un DOCUMENTO, no una pantalla: 794×1123 px = 210×297 mm a
+   96 dpi. Por eso `@page` va con `margin: 0` y los márgenes los pone la hoja — si el
+   margen lo pusiera el navegador, el fondo crema no llegaría al borde del papel.
+
+   Se imprime con `window.print()` sobre este HTML: nada de jspdf/html2canvas. El texto
+   sale seleccionable y los códigos de materia (mono) no se rasterizan.
+
+   Las medidas de acá NO son estimadas: salen de medir el diseño renderizado con estilos
+   computados. El original y las capturas están en `.claude/diseno-export/`; para volver
+   a medir, `node .claude/diseno-export/_medir.mjs`. */
+
 @media print {
   @page {
-    margin: 14mm;
+    size: A4;
+    margin: 0;
   }
+  html,
   body {
-    background: var(--card);
+    background: #fff;
   }
   .wrap {
     display: none !important;
   }
   #print-summary {
-    display: block !important;
+    display: flex !important;
   }
+  /* Sin esto los navegadores tiran los fondos al imprimir y la hoja sale en blanco. */
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 }
+
+/* ⚠️ TODAS las reglas de la hoja van scopeadas bajo `#print-summary`, y no es prolijidad:
+   `ps-` está usado por DOS cosas distintas en este archivo — acá es "print summary" y en
+   el panel del superadmin es "panel super". `.ps-lista` existía en los dos lados, y como
+   la del panel viene después en el archivo, ganaba: las tarjetas de la hoja renderizaban
+   con `padding: 0` y el texto quedaba pegado al borde. No lo agarró ningún test (un
+   selector que no matchea no falla) ni mirar la composición: lo agarró Luz, y después
+   MEDIR el padding computado. Con el id adelante, nada de la app puede volver a pisarla. */
 #print-summary {
+  /* ── La paleta del PAPEL ──────────────────────────────────────────────────────────
+     Once colores que la paleta de pantalla no tenía. Viven acá adentro a propósito: son
+     de una superficie de papel (más clara y más cálida que la pantalla) y no tienen por
+     qué filtrarse al resto de la app. Lo que SÍ se reusa tal cual, porque coincide
+     exacto con el diseño: --gold, --ap, --ink, --paper, --sunk, --line-fuerte. */
+  --px-papel: #fdfaf3; /* el papel; más claro que --paper, que acá es la tarjeta */
+  --px-mono: #8a7f74; /* el mono apagado: códigos, conteos, rótulos */
+  --px-sec: #5c534c; /* texto secundario (la carrera, "te faltan") */
+  --px-riel: #ece2cf; /* el riel de las barras */
+  --px-cursando: #e0a271; /* naranja de cursando; más claro que --cu */
+  --px-tenue: #9a8e80; /* el "/52" */
+  --px-pie: #6b6159; /* el texto legal del pie */
+  --px-pie-linea: #e6d6ba;
+  --px-ap-fuerte: #5a6844; /* el número del avance: más oscuro que --ap */
+  --px-raya-hueco: #f7e2cc; /* el hueco de la trama de "pendientes de final" */
+  --px-glifo-hueco: #fdf4e8; /* la mitad vacía del glifo ◐ */
+
   display: none;
-  max-width: 720px;
-  margin: 0 auto;
-  font-family: var(--sans);
+  box-sizing: border-box;
+  width: 794px;
+  min-height: 1123px;
+  padding: 40px 46px 30px;
+  background: var(--px-papel);
   color: var(--ink);
+  font-family: var(--sans);
+  flex-direction: column;
+  gap: 22px;
 }
-.ps-head {
+
+#print-summary * {
+  box-sizing: border-box;
+}
+
+/* Rótulo en versalitas espaciadas. Se repite en las 3 tarjetas, en el título y en los
+   años, así que vive una sola vez. */
+#print-summary .ps-kicker,
+#print-summary .ps-stat-l {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 1.33px;
+  line-height: 15px;
+  text-transform: uppercase;
+  color: var(--px-mono);
+}
+
+/* ----- 1 · cabecera ----- */
+#print-summary .ps-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+#print-summary .ps-id {
   display: flex;
   align-items: center;
-  gap: 15px;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 14px;
+  gap: 14px;
 }
-.ps-av {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
+
+/* El avatar: las iniciales pintadas en el círculo y la foto ENCIMA, en absolute.
+   Si la foto no carga —es una URL remota de Google y esto es una hoja que se imprime—
+   quedan las iniciales visibles. Sin onError, sin estado, sin imagen rota. */
+#print-summary .ps-av {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  background: var(--gold);
-  color: var(--sobre-color);
-  display: grid;
-  place-items: center;
-  font-family: var(--serif);
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--px-sec);
+  font-family: var(--sans);
+  font-size: 16px;
   font-weight: 700;
-  font-size: 23px;
-  flex: 0 0 auto;
+  letter-spacing: 0.3px;
 }
-.ps-av img {
+
+#print-summary .ps-av img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.ps-name {
-  font-family: var(--serif);
-  font-weight: 900;
-  font-size: 25px;
+
+#print-summary .ps-name {
+  font-size: 31px;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.02em;
-}
-.ps-sub {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--soft);
-  font-weight: 600;
-  margin-top: 6px;
+  letter-spacing: -0.465px;
 }
 
-/* franja de números (bien separados) */
-.ps-stats {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  margin: 18px 0 14px;
+#print-summary .ps-sub {
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--px-sec);
 }
-.ps-stat {
-  flex: 1;
-  padding: 13px 16px;
+
+#print-summary .ps-marca {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+#print-summary .ps-logo {
+  padding: 8px 17px 9px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--px-papel);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#print-summary .ps-plan {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 1.33px;
+  text-transform: uppercase;
+  color: var(--px-mono);
+}
+
+/* ----- 2 · la tarjeta grande: el avance y su barra juntos -----
+   Rediseño del 5-sep: antes el porcentaje, la barra y la leyenda eran tres bloques
+   apilados a lo ancho de la hoja. Juntos ocupan menos y se leen como una sola idea
+   ("cuánto llevás"), que es justo lo que la app promete. */
+#print-summary .ps-hero {
+  display: grid;
+  grid-template-columns: 30% 1fr;
+  gap: 28px;
+  align-items: center;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+#print-summary .ps-hero-l {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
-.ps-stat + .ps-stat {
-  border-left: 1px solid var(--line);
-}
-.ps-stat-n {
-  font-family: var(--serif);
-  font-weight: 900;
-  font-size: 33px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-.ps-stat-n i {
-  font-style: normal;
-  font-size: 17px;
-  color: var(--soft);
-}
-.ps-stat-l {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--soft);
-  font-weight: 700;
+
+#print-summary .ps-hero-r {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-/* barra + leyenda */
-.ps-bar {
-  height: 13px;
-  border-radius: 7px;
-  overflow: hidden;
-  display: flex;
-  background: var(--sunk);
-  border: 1px solid var(--line);
-  margin-bottom: 10px;
-}
-.ps-bar i {
-  display: block;
-  height: 100%;
-}
-.ps-bar .s-ap {
-  background: var(--ap);
-}
-.ps-bar .s-fi {
-  background: var(--fi);
-}
-.ps-bar .s-cu {
-  background: var(--cu);
-}
-.ps-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin-bottom: 24px;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-.ps-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ps-legend i {
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
-  flex: 0 0 auto;
-}
-.ps-legend .d-ap {
-  background: var(--ap);
-}
-.ps-legend .d-fi {
-  background: var(--fi);
-}
-.ps-legend .d-cu {
-  background: var(--cu);
-}
-.ps-legend .d-pe {
-  background: var(--line-fuerte);
-}
-
-/* secciones en 2 columnas */
-.ps-grid {
+/* ----- 3 · promedio y los títulos del plan, juntos -----
+   Los títulos ocupan más porque son texto (dos nombres largos), el promedio es un número. */
+#print-summary .ps-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-bottom: 20px;
-}
-.ps-h {
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold);
-  font-weight: 700;
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1.5px solid var(--ink);
+  grid-template-columns: 1fr 1.6fr;
+  gap: 14px;
+  align-items: stretch;
 }
 
-/* títulos */
-.ps-mile {
+#print-summary .ps-stat {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--line);
+  flex-direction: column;
+  gap: 3px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+#print-summary .ps-stat-n {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
   font-family: var(--serif);
-  font-size: 14px;
-}
-.ps-mile:last-child {
-  border-bottom: 0;
-}
-.ps-mile .m-mark {
-  color: var(--soft);
-  font-weight: 700;
-}
-.ps-mile.ok .m-mark {
-  color: var(--ap);
-}
-.ps-mile .m-name {
-  flex: 1;
-  min-width: 0;
-}
-.ps-mile b {
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--soft);
-  white-space: nowrap;
-}
-.ps-mile.ok b {
-  color: var(--ap-tx);
+  font-size: 52px;
+  line-height: 1.02;
 }
 
-/* avance por año */
-.ps-year {
-  display: flex;
+#print-summary .ps-stat-n.verde {
+  color: var(--px-ap-fuerte);
+}
+
+/* Sin notas cargadas no hay número que mostrar. Un guión en Caprasimo 52px se lee como
+   una barra de censura, así que el hueco se dice con palabras y en el tono de un rótulo. */
+#print-summary .ps-stat-n.vacio {
   align-items: center;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: 13px;
-}
-.ps-year:last-child {
-  border-bottom: 0;
-}
-.ps-year .yl {
-  width: 50px;
-  color: var(--soft);
-  font-weight: 600;
-}
-.ps-year .yt {
-  flex: 1;
-  height: 8px;
-  border-radius: 5px;
-  background: var(--sunk);
-  overflow: hidden;
-}
-.ps-year .yt i {
-  display: block;
-  height: 100%;
-  background: var(--ap);
-}
-.ps-year .yn {
-  width: 44px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+  min-height: 53px;
+  font-family: var(--sans);
+  font-size: 15px;
   font-weight: 700;
+  color: var(--px-tenue);
 }
 
-/* listas (cursando / pendientes de final) */
-.ps-list {
-  margin: 0;
+/* El signo % es del mismo tamaño que el número (en el diseño son una sola palabra). */
+#print-summary .ps-stat-n i {
+  font-style: normal;
+  font-size: inherit;
+}
+
+/* El "/52" en cambio es la mitad y va apoyado abajo: es el total, no el dato. */
+#print-summary .ps-stat-n i.ps-de {
+  font-size: 26px;
+  line-height: 1.02;
+  color: var(--px-tenue);
+}
+
+#print-summary .ps-stat-s {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+/* ----- 3b · los títulos del plan -----
+   Una fila por hito, con lo que falta para CADA uno. El nombre en serif porque es el
+   premio, y el contador pegado a SU título: la versión anterior tenía el número del
+   título de grado en un cuadro aparte, que repetía la resta del avance. */
+#print-summary .ps-titulos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--sunk);
+}
+
+#print-summary .ps-titulos ul {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 0;
   padding: 0;
   list-style: none;
 }
-.ps-list li {
-  position: relative;
+
+#print-summary .ps-titulos li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#print-summary .ps-hito-n {
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+#print-summary .ps-hito-f {
+  flex: none;
   font-size: 13px;
-  padding: 6px 0 6px 15px;
-  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  color: var(--px-sec);
+  white-space: nowrap;
 }
-.ps-list li:last-child {
-  border-bottom: 0;
+
+#print-summary .ps-hito-f b {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--gold);
 }
-.ps-list li::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 11px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--gold);
+
+/* El que ya está conseguido baja el tono: el foco es el que falta. */
+#print-summary .ps-titulos li.ok .ps-hito-n {
+  color: var(--px-sec);
 }
-.ps-list.cu li::before {
-  background: var(--cu);
+
+#print-summary .ps-titulos li.ok .ps-hito-f {
+  color: var(--ap);
+  font-weight: 700;
 }
-.ps-list.fi li::before {
-  background: var(--fi);
+
+/* ----- 4 · la barra de estados y su leyenda ----- */
+#print-summary .ps-bar {
+  display: flex;
+  overflow: hidden;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--px-riel);
 }
-.ps-list li.mut {
-  padding-left: 0;
-  color: var(--soft);
-  border-bottom: 0;
+
+#print-summary .ps-bar.fina {
+  height: 13px;
 }
-.ps-list li.mut::before {
-  display: none;
+
+#print-summary .ps-bar i {
+  display: block;
+  height: 100%;
 }
-.ps-foot {
-  margin-top: 22px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-  font-size: 10.5px;
-  color: var(--soft);
+
+#print-summary .ps-bar .s-ap {
+  background: var(--ap);
+}
+
+#print-summary .ps-bar .s-cu {
+  background: var(--px-cursando);
+}
+
+/* "Pendientes de final" va RAYADO, y no es decoración.
+   En esta paleta --cu y --fi son la misma familia de color, así que lo que los separa
+   tiene que ser un canal NO cromático: acá la trama, en la leyenda el glifo. Aplanar
+   esto a un color plano rompe la distinción incluso para quien ve bien, porque los dos
+   naranjas quedan pegados. */
+#print-summary .ps-bar .s-fi,
+#print-summary .g-fi {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--gold) 0 4px,
+    var(--px-raya-hueco) 4px 8px
+  );
+}
+
+/* Dos columnas, no cuatro en fila: adentro de la tarjeta no hay ancho para una sola
+   línea, y "Pendientes de final" es la etiqueta más larga de las cuatro. */
+#print-summary .ps-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px 24px;
+}
+
+#print-summary .ps-legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#print-summary .ps-legend b {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--px-mono);
+}
+
+#print-summary .ps-legend i,
+#print-summary .ps-lista-h i {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+}
+
+#print-summary .g-ap {
+  background: var(--ap);
+}
+
+#print-summary .g-cu {
+  background: var(--px-cursando);
+}
+
+/* El glifo de "pendiente de final": medio lleno. Pisa la trama de arriba a propósito —
+   en 13px una trama de 4px no se leería como trama, se vería sucia. */
+#print-summary .g-fi {
+  border: 1px solid var(--gold);
+  background: linear-gradient(
+    90deg,
+    var(--gold) 0 50%,
+    var(--px-glifo-hueco) 50% 100%
+  );
+}
+
+#print-summary .g-pe {
+  border: 1px solid var(--line-fuerte);
+  background: none;
+}
+
+/* ----- 6 · las dos listas ----- */
+#print-summary .ps-listas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+#print-summary .ps-lista {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+#print-summary .ps-lista-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.135px;
+}
+
+#print-summary .ps-lista-h i {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+}
+
+#print-summary .ps-lista-h b {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--px-mono);
+}
+
+#print-summary .ps-lista ul {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 11px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Las dos tarjetas quedan del mismo alto (como en el diseño), así que si una tiene 8
+   materias y la otra ninguna, el "Ninguna por ahora" flotaría arriba de un cajón vacío. */
+#print-summary .ps-lista li.ps-mas:only-child {
+  margin: auto 0;
+}
+
+#print-summary .ps-lista li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  line-height: 16px;
+}
+
+#print-summary .ps-lista li + li {
+  margin-top: 7px;
+}
+
+#print-summary .ps-mat {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+#print-summary .ps-cod {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--px-mono);
+}
+
+#print-summary .ps-mas {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--px-mono);
+}
+
+/* ----- 7 · avance por año ----- */
+#print-summary .ps-anios {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+#print-summary .ps-anios-g {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+#print-summary .ps-anio {
+  display: grid;
+  grid-template-columns: 50px 1fr 48px;
+  gap: 14px;
+  align-items: center;
+}
+
+#print-summary .ps-anio-l {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#print-summary .ps-anio-n {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--px-mono);
+  text-align: right;
+}
+
+/* ----- 8 · el pie ----- */
+#print-summary .ps-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  /* Empuja el pie al borde inferior: entre los años y el pie queda aire, no contenido. */
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--px-pie-linea);
+}
+
+#print-summary .ps-legal {
+  max-width: 440px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--px-pie);
+}
+
+#print-summary .ps-legal strong {
+  color: var(--ink);
+}
+
+#print-summary .ps-sello {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1.55;
+  color: var(--px-mono);
+  text-align: right;
 }
 
 /* ----- link "editar notas" + resaltado del promedio ----- */
@@ -2370,127 +3739,281 @@ body {
 .nota-link:hover {
   color: var(--ink);
 }
-@keyframes promhl {
-  from {
-    text-shadow: 0 0 0 rgba(var(--gold-rgb), 0);
-  }
-  to {
-    text-shadow: 0 0 24px rgba(var(--gold-rgb), 0.6);
-  }
-}
-.stat.hl .num {
-  color: var(--gold);
-  animation: promhl 1s ease-in-out infinite alternate;
-}
-
 /* ----- panel de Notas ----- */
 .sheet-wide {
   max-width: 520px;
 }
-.notas-top {
+
+/* ── La tarjeta del promedio ────────────────────────────────────────────────
+   El número en un disco, y al lado cuántas materias lo sostienen. La barra
+   contesta algo que antes no se veía: cuánto de lo aprobado tiene su nota
+   cargada — que es lo que le falta al promedio para ser confiable. */
+.drawer-prom {
+  flex: none;
+  margin: 0 24px 14px;
+  padding: 17px 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 26px;
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 18px;
 }
-.notas-top h2 {
-  font-family: var(--serif);
-  font-weight: 900;
-  font-size: 22px;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
+.np-disco {
+  width: 84px;
+  height: 84px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ap-bg);
+  border: 1.5px solid var(--avail-line);
+  color: var(--ap-tx);
 }
-.notas-prom {
-  margin-left: auto;
-  text-align: right;
-  flex: 0 0 auto;
+/* Sin ninguna nota cargada el disco queda punteado y apagado: es un hueco por
+   llenar, no un promedio de cero. */
+.np-disco.vacio {
+  background: var(--sunk);
+  border: 1.5px dashed var(--line-fuerte);
+  color: var(--pprev-tx);
 }
 .np-num {
-  display: block;
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: 38px;
-  line-height: 0.8;
-  color: var(--gold);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: inherit;
+}
+.np-tx {
+  flex: 1;
+  min-width: 0;
+  display: block;
 }
 .np-cap {
   display: block;
   font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--soft);
   font-weight: 700;
-  margin-top: 7px;
-}
-.notas-empty {
-  font-size: 13.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   color: var(--soft);
-  line-height: 1.5;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 18px;
-  margin: 6px 0 0;
 }
-.notas-list {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
-  max-height: 52vh;
-  overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+.np-sub {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--soft);
+  margin-top: 5px;
 }
-.nota-row {
+.np-bar {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--sunk);
+  overflow: hidden;
+  margin-top: 11px;
+}
+.np-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ap);
+  transition: width 0.22s ease;
+}
+
+/* ── Filtro ─────────────────────────────────────────────────────────────── */
+.np-chips {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px 12px;
+}
+.np-chip {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--line-fuerte);
+  color: var(--soft);
+  transition:
+    background 0.13s ease,
+    color 0.13s ease;
+}
+.np-chip.on {
+  background: var(--sunk);
+  border-color: transparent;
+  color: var(--ink);
+}
+.np-chip:not(.on):hover {
+  background: var(--pprev-bg);
+}
+
+.notas-empty {
+  padding: 26px 20px;
+  border-radius: 22px;
+  background: var(--sunk);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+  margin: 0;
+}
+
+/* ── Grupos por año ─────────────────────────────────────────────────────── */
+.notas-grupo {
+  margin-bottom: 20px;
+}
+.ng-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--line);
+  padding: 0 4px 9px;
 }
-.nota-row:last-child {
-  border-bottom: 0;
+.ng-t {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 15px;
+}
+.ng-line {
+  flex: 1;
+  height: 1px;
+  background: var(--line-marca);
+}
+.ng-meta {
+  font-size: 11.5px;
+  color: var(--pprev-tx);
+}
+.notas-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nota-row {
+  padding: 9px 9px 9px 15px;
+  border-radius: 18px;
+  background: var(--card-hover);
+  border: 1px solid var(--line);
+  transition:
+    background 0.13s ease,
+    border-color 0.13s ease;
+}
+/* La fila que está editándose se levanta: fondo de tarjeta y borde del acento. */
+.nota-row.abierta {
+  background: var(--card);
+  border: 1.5px solid var(--gold);
+}
+.nr-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nr-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .nr-cod {
   font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--soft);
-  flex: 0 0 auto;
-  width: 56px;
+  font-size: 10px;
+  color: var(--pprev-tx);
+  letter-spacing: -0.01em;
 }
 .nr-nom {
-  flex: 1;
   font-size: 13.5px;
-  font-weight: 500;
-  min-width: 0;
-}
-.nota-row input {
-  width: 58px;
-  flex: 0 0 auto;
-  text-align: center;
-  font-family: var(--sans);
-  font-size: 15px;
   font-weight: 600;
-  padding: 6px 8px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--card);
-  color: var(--ink);
-  -moz-appearance: textfield;
-  appearance: textfield;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
 }
-.nota-row input::-webkit-outer-spin-button,
-.nota-row input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* La nota: una pastilla que abre el teclado. Reemplaza al <input type=number>,
+   que en el teléfono levantaba el teclado del sistema entero para elegir uno de
+   diez valores — y encima aceptaba 11, 0 y 3,5. */
+.nr-pill {
+  width: 54px;
+  height: 40px;
+  flex: none;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 17px;
+  background: transparent;
+  border: 1.5px dashed var(--line-fuerte);
+  color: var(--pprev-tx);
+  transition:
+    background 0.13s ease,
+    border-color 0.13s ease;
 }
-.nota-row input:focus {
-  outline: 2px solid var(--gold);
-  outline-offset: 1px;
+.nr-pill.con {
+  background: var(--ap-bg);
+  border: 1.5px solid var(--avail-line);
+  color: var(--ap-tx);
+}
+.nr-pill:hover {
   border-color: var(--gold);
 }
-.nota-row input:focus::placeholder {
-  color: transparent;
+.nr-pad {
+  margin-top: 11px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.nr-teclas {
+  display: flex;
+  gap: 5px;
+}
+.nr-tecla {
+  flex: 1;
+  height: 34px;
+  min-width: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--card-hover);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  transition: background 0.13s ease;
+}
+.nr-tecla:hover {
+  background: var(--sunk);
+}
+.nr-tecla.sel {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--card);
+}
+.nr-quitar {
+  align-self: flex-end;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-tx);
+}
+.nr-quitar:hover {
+  background: var(--gold-bg-2);
 }
 
 /* ----- animaciones de apertura/cierre de overlays ----- */
@@ -2670,25 +4193,26 @@ body {
 /* ===== botón + panel de correlativas (inline) ===== */
 .corr-btn {
   flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--soft);
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--pprev-tx);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 .corr-btn:hover {
-  color: var(--lk);
-  border-color: var(--lk);
+  background: var(--sunk);
+  color: var(--gold-tx);
 }
 .corr-btn.on {
-  color: var(--sobre-color);
-  background: var(--lk);
-  border-color: var(--lk);
+  background: var(--sunk);
+  color: var(--gold-tx);
 }
 @keyframes panel-in {
   from {
@@ -2700,50 +4224,45 @@ body {
     transform: none;
   }
 }
+/* El panel se HUNDE en la página (fondo más oscuro que la fila), en vez de ser
+   otra tarjeta clara encima de una tarjeta clara: así se lee como algo que se
+   abrió DENTRO de la lista y no como una fila más. */
 .corr {
-  margin: -2px 0 10px;
-  padding: 11px 13px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  margin: 2px 0 4px;
+  padding: 14px 16px;
+  background: var(--sunk);
+  border: 0;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 12px;
 }
 .panel-in {
-  animation: panel-in 0.16s cubic-bezier(0.2, 0.85, 0.3, 1);
+  animation: panel-in 0.14s ease;
 }
 .corr-empty {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--soft);
 }
 .corr-blocks {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
 }
 .corr-block {
-  flex: 1 1 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   min-width: 0;
-  border: 1px solid var(--line);
-  border-left-width: 3px;
-  border-radius: 9px;
-  padding: 9px 11px 10px;
 }
-.corr-block.need {
-  border-left-color: var(--lk);
-  background: var(--lk-bg-suave);
-}
-.corr-block.unlock {
-  border-left-color: var(--hb);
-  background: var(--hb-bg-suave);
-}
+/* Acá el color ES el significado: naranja = lo que necesitás antes · oliva = lo
+   que habilitás después. Es el mismo par que usa el árbol, y por eso el rótulo
+   va del color de su sentido. */
 .cb-head {
   font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  letter-spacing: 0.12em;
 }
 .corr-block.need .cb-head {
   color: var(--lk-tx);
@@ -2754,49 +4273,51 @@ body {
 .cb-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 7px;
 }
 .cb-none {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--soft);
-  font-style: italic;
 }
 .chip {
-  font-family: var(--sans);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
+  font-family: var(--sans);
+  padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid transparent;
+  border: 0;
   cursor: pointer;
-  transition: filter 0.12s;
+  transition: filter 0.13s ease;
 }
 .chip:hover {
-  filter: brightness(0.96);
+  filter: brightness(0.95);
 }
 .chip.need {
   background: var(--lk-bg);
   color: var(--lk-tx);
-  border-color: var(--lk-line);
 }
 .chip.unlock {
   background: var(--hb-bg);
   color: var(--hb-tx);
-  border-color: var(--hb-line);
 }
 .corr-tree {
   align-self: flex-start;
-  background: none;
-  border: 0;
-  padding: 2px 0 0;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--gold);
+  height: 32px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line-fuerte);
+  background: transparent;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--ink);
   cursor: pointer;
+  transition: background 0.13s ease;
 }
 .corr-tree:hover {
-  color: var(--ink);
+  background: var(--pprev-bg);
 }
 
 /* flash dorado al navegar a una materia desde un chip */
@@ -2833,20 +4354,20 @@ body {
   position: fixed;
   inset: 0;
   z-index: 92;
-  background: rgba(var(--ink-rgb), 0.26);
+  background: rgba(var(--ink-rgb), 0.44);
   display: flex;
   justify-content: flex-end;
   animation: ov-fade-in 0.2s ease;
 }
 .drawer {
-  width: min(430px, 100%);
+  width: min(472px, 100%);
   height: 100%;
   background: var(--paper);
-  border-left: 1px solid var(--line);
-  box-shadow: -14px 0 44px rgba(var(--negro-rgb), 0.2);
+  border-left: 1px solid var(--line-marca);
+  box-shadow: -20px 0 60px rgba(var(--ink-rgb), 0.28);
   display: flex;
   flex-direction: column;
-  padding: 20px 20px 16px;
+  padding: 0;
   animation: drawer-in 0.26s cubic-bezier(0.2, 0.85, 0.3, 1);
 }
 .drawer-wrap.closing {
@@ -2857,57 +4378,36 @@ body {
   animation: drawer-out 0.22s ease forwards;
 }
 .drawer-head {
+  flex: none;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 14px;
+  padding: 26px 24px 16px;
 }
 .drawer-head h2 {
   font-family: var(--serif);
-  font-weight: 900;
-  font-size: 23px;
-  margin: 0 0 4px;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 .drawer-head .m-desc {
-  margin: 0;
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--soft);
+  max-width: 36ch;
+  text-wrap: pretty;
 }
 .drawer-head .tv-close {
   margin-left: auto;
-}
-.drawer-prom {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 12px;
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  margin-bottom: 12px;
-}
-.drawer-prom .np-num {
-  font-size: 34px;
-  line-height: 0.8;
-}
-.drawer-prom .np-cap {
-  margin-top: 0;
 }
 .drawer-body {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.ng-head {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--soft);
-  margin: 0 0 6px 2px;
+  padding: 2px 24px 22px;
 }
 .drawer .notas-list {
   max-height: none;
@@ -2915,11 +4415,15 @@ body {
   margin: 0;
 }
 .drawer-foot {
-  padding-top: 14px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 14px;
+  flex: none;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--line);
+}
+/* El botón de cierre del drawer ocupa el ancho: es la única acción del pie y en
+   el teléfono es donde llega el pulgar. */
+.drawer-foot .btn {
+  width: 100%;
+  height: 48px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2938,33 +4442,41 @@ body {
 .m-sep {
   height: 1px;
   background: var(--line);
-  margin: 20px 0 16px;
+  margin: 24px 0 20px;
 }
 .acct {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-/* botón de Google: fondo blanco, marco tenue, la G a la izquierda */
+/* Botón de Google: contorno, no relleno — el relleno del acento es de Guardar.
+   Va a TODO EL ANCHO: es la acción que se ofrece cuando no hay sesión, y una
+   pastilla angosta al costado se lee como algo opcional. */
 .gbtn {
   gap: 10px;
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 20px;
   background: var(--card);
   color: var(--ink);
-  border: 1px solid var(--line);
-  align-self: flex-start;
+  border: 1.5px solid var(--line-marca);
+  align-self: stretch;
 }
 .gbtn:hover {
   opacity: 1;
-  background: var(--card-hover);
+  background: var(--pprev-bg);
 }
 .gbtn:disabled {
   opacity: 0.6;
   cursor: default;
 }
 .acct-hint {
-  font-size: 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
   color: var(--soft);
-  margin: 0;
+  margin: 11px 2px 0;
+  text-wrap: pretty;
 }
 .acct-hint a {
   color: inherit;
@@ -2974,11 +4486,29 @@ body {
 .acct-hint a:hover {
   color: var(--ink);
 }
+/* Con sesión: una caja hundida con la cuenta adentro, igual que la de la foto. */
 .acct-in {
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
+  padding: 13px 15px;
+  background: var(--card-hover);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+.acct-in .acct-id {
+  flex: 1;
+}
+.acct-in .lnk {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--gold-tx);
+}
+.acct-in .lnk:hover {
+  background: var(--gold-bg-2);
+  color: var(--gold-tx);
 }
 .acct-id {
   display: flex;
@@ -3005,8 +4535,8 @@ body {
 }
 /* insignia de Google (identifica la cuenta por email, sin repetir la foto de perfil) */
 .acct-gbadge {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--card);
   border: 1px solid var(--line);
@@ -3076,11 +4606,131 @@ body {
 .sync-err {
   color: var(--peligro-fuerte);
 }
-/* aviso de instalación iOS: el iconito de compartir va inline con el texto */
-.ios-aviso .sa-ic {
+/* ----- hoja de instalar (cierre del tutorial) ----- */
+/* Sube desde abajo, no es un modal centrado: no interrumpe, ofrece. Cerrarla es
+   tocar afuera, Escape o "Ahora no". */
+.sheet-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  background: rgba(var(--ink-rgb), 0.4);
+  display: flex;
+  align-items: flex-end;
+  animation: ov-fade-in 0.2s ease;
+}
+.sheet-wrap.closing {
+  animation: ov-fade-out 0.2s ease forwards;
+  pointer-events: none;
+}
+.hoja {
+  width: 100%;
+  padding: 24px 24px 22px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  border-radius: 30px 30px 0 0;
+  box-shadow: 0 -18px 50px rgba(var(--ink-rgb), 0.2);
+  animation: hoja-sube 0.28s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+.sheet-wrap.closing .hoja {
+  animation: hoja-baja 0.2s ease forwards;
+}
+.hoja-in {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hoja-logo {
+  flex: none;
+  line-height: 0;
+}
+.hoja-tx {
+  flex: 1;
+  min-width: 220px;
+}
+.hoja-tit {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.1;
+}
+.hoja-tx p {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+.hoja-tx b {
+  color: var(--ink);
+  font-weight: 700;
+}
+/* el ícono de compartir va inline con el texto que lo nombra */
+.hoja-tx svg {
   display: inline-flex;
-  vertical-align: -3px;
-  color: var(--gold);
+  vertical-align: -2px;
+  color: var(--gold-tx);
+}
+.hoja-acts {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  justify-content: flex-end;
+  /* tres salidas no entran en un renglón de teléfono angosto */
+  flex-wrap: wrap;
+}
+.hoja-acts .btn {
+  min-height: 44px;
+  padding: 0 26px;
+}
+/* Los enlaces respiran menos que en el resto de la app: acá son tres cosas en un
+   renglón que el diseño dibujó con dos. */
+.hoja-acts .lnk {
+  padding: 0 12px;
+}
+@media (max-width: 420px) {
+  /* En un teléfono los tres no entran en el renglón del diseño. Antes que el
+     primario caiga suelto a la derecha de un renglón vacío, se lleva el renglón
+     entero: es el que se toca, y a lo ancho es el blanco más grande de la hoja. */
+  .hoja-acts .btn {
+    flex: 1 1 100%;
+  }
+}
+/* "No mostrar más" se va al otro extremo y habla más bajo que "Ahora no": las dos
+   son un no, pero una es definitiva. Ponerlas juntas y con el mismo peso invita a
+   tocar la que cierra la puerta para siempre creyendo que solo pospone. */
+.hoja-nunca {
+  margin-right: auto;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.72;
+}
+.hoja-nunca:hover {
+  opacity: 1;
+}
+
+@keyframes hoja-sube {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes hoja-baja {
+  to {
+    transform: translateY(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hoja,
+  .sheet-wrap,
+  .sheet-wrap.closing .hoja {
+    animation: none;
+  }
 }
 
 /* ----- modal de conflicto de sync ----- */
@@ -3869,32 +5519,9 @@ body {
   }
 }
 
-/* ----- el árbol como editor de correlativas (#admin) ----- */
-/* Los colores NO cambian: violeta sigue siendo "necesitás" y teal "habilitás", que es lo
-   que ya aprendió cualquiera que abrió el árbol como alumno. Lo único que se agrega es la
-   affordance de "esta se puede clickear ahora". */
-.tnode.edit-elegible {
-  cursor: pointer;
-  outline: 2px dashed var(--gold);
-  outline-offset: 2px;
-}
-.tnode.edit-elegible:hover {
-  outline-style: solid;
-  transform: translateY(-1px);
-}
-.tnode.edit-conectada {
-  cursor: pointer;
-  outline: 2px solid var(--lk);
-  outline-offset: 2px;
-}
-.tnode.edit-apagada {
-  opacity: 0.32;
-  cursor: default;
-}
-.tnode.edit-objetivo {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
-}
+/* ----- el árbol como editor de correlativas (#admin) -----
+   Las affordances de edición viven en los roles del lienzo nuevo (`.tv-nodo.elegible`,
+   `.sel`, `.up/.down`, `.dim`), junto al resto del árbol. */
 
 /* ----- barra del árbol-editor ----- */
 /* Abajo y no arriba: los controles del lienzo (zoom, encuadre) viven arriba, y una barra
@@ -4047,12 +5674,6 @@ body {
 .ed-rc.sin .ed-rc-n {
   color: var(--cu-tx);
 }
-/* "Ya conectada" se pinta del color de la dirección activa: en este editor el color ES
-   el significado (violeta lo que necesita, teal lo que habilita). */
-.tnode.edit-conectada.dir-posterior {
-  outline-color: var(--hb);
-}
-
 /* ----- cambios sin publicar ----- */
 /* Es lo que se lee antes de apretar Publicar, así que va arriba de todo en ese panel y
    se escanea por el signo de la izquierda: + agrega, − quita, ✎ modifica. */

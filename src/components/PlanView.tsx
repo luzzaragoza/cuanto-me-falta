@@ -31,18 +31,26 @@ const IcoDeshacer = () => (
 
 /** Banda de hito: el título que se obtiene al completar las materias que tiene arriba.
  *  Va al pie del año (o del cuatrimestre, si el hito cae a mitad de año), no en el
- *  encabezado: pedido de los usuarios del soft-launch. */
-function TituloHito({ nombre }: { nombre: string }) {
+ *  encabezado: pedido de los usuarios del soft-launch.
+ *
+ *  `obtenido` cambia la banda de "meta que viene" a "logro conseguido": es la única
+ *  parte del plan que celebra algo, y hasta ahora se veía igual estuviera o no.
+ *
+ *  La banda pendiente NO lleva leyenda (Luz, 8-sep: "se entiende por el color", y es
+ *  cierto: cambian el fondo, el borde, el birrete y la tinta). "al completar todo lo
+ *  anterior" además era una instrucción, repetida en cada hito del plan. La palabra
+ *  del logro sí se queda: es una sola, y es lo único que separa los dos estados sin
+ *  depender del color — que es la regla que el resto de la app ya respeta. */
+function TituloHito({ nombre, obtenido }: { nombre: string; obtenido: boolean }) {
   return (
-    <div className="titulo-hito">
+    <div className={'titulo-hito' + (obtenido ? ' ok' : '')}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 3 1 8l11 5 9-4.09V15h2V8z" />
         <path d="M5 11.18V15c0 1.66 3.13 3 7 3s7-1.34 7-3v-3.82l-7 3.18z" />
       </svg>
-      <span className="th-tx">
-        <span className="th-k">Título</span>
-        <span className="th-n">{nombre}</span>
-      </span>
+      <span className="th-k">Título</span>
+      <span className="th-n">{nombre}</span>
+      {obtenido && <span className="th-e">obtenido</span>}
     </div>
   )
 }
@@ -88,16 +96,34 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
   }
 
   const av0 = avanceDe(db)
+  // Avance por año, para el resumen y la barrita del encabezado.
+  const porAnio = new Map(av0.porAnio.map((a) => [a.year, a]))
+  // Hitos por nombre de título: la banda necesita saber si ya está obtenido.
+  const hitoDe = new Map(av0.hitos.map((h) => [h.titulo, h]))
 
   return (
     <div id="plan">
       {plan.anios.map((anio) => {
         const completo = av0.decidirAnio(plan.codsDelAnio(anio.year)) === 'pendiente'
+        const av = porAnio.get(anio.year)
+        const pctAnio = av && av.total ? Math.round((av.aprobadas / av.total) * 100) : 0
         return (
         <section className="year" key={anio.year}>
           <div className="yhead">
-            <span className="n">{anio.year}°</span>
-            <span className="l">Año</span>
+            <span className={'n' + (completo ? ' ok' : '')}>{anio.year}°</span>
+            <span className="ytx">
+              <span className="l">Año</span>
+              <span className="yres">
+                {av ? `${av.aprobadas} de ${av.total} aprobadas` : ''}
+              </span>
+            </span>
+            <span
+              className="ybar"
+              role="img"
+              aria-label={`${pctAnio}% del año aprobado`}
+            >
+              <i style={{ width: `${pctAnio}%` }} />
+            </span>
             <button
               className={'ybtn' + (completo ? ' undo' : '')}
               type="button"
@@ -131,11 +157,15 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
                     )}
                   </Fragment>
                 ))}
-                {q.titulo && <TituloHito nombre={q.titulo} />}
+                {q.titulo && (
+                  <TituloHito nombre={q.titulo} obtenido={hitoDe.get(q.titulo)?.ok ?? false} />
+                )}
               </div>
             ))}
           </div>
-          {anio.titulo && <TituloHito nombre={anio.titulo} />}
+          {anio.titulo && (
+            <TituloHito nombre={anio.titulo} obtenido={hitoDe.get(anio.titulo)?.ok ?? false} />
+          )}
         </section>
         )
       })}

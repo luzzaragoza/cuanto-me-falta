@@ -100,6 +100,10 @@ const run = async () => {
     deviceScaleFactor: 2, // retina: se ve nítido escalado a 820px en el README
   })
   await page.addInitScript(sembrar, seed)
+  // El refresco de planes levanta el toast "hay una versión nueva" a destiempo y se
+  // mete en la foto (la base ya difiere del bundle; que aparezca confirma que el
+  // aviso anda). Mismo truco que el arnés de píxeles del 29-ago: se corta el REST.
+  await page.route('**/rest/v1/**', (r) => r.abort())
 
   // ── 1. Pantalla principal (arriba: avance + tarjetas + arranque del plan) ──
   await page.goto(url, { waitUntil: 'networkidle' })
@@ -108,16 +112,21 @@ const run = async () => {
   await page.screenshot({ path: join(OUT, 'captura-app.png') })
   console.log('✓ docs/captura-app.png')
 
-  // ── 2. Árbol en MODO RAMA (árbol v2, ADR-10): abrir con foco entra directo en
-  // la rama de la materia, ya encuadrada por fitView — sin zoom ni paneo manual.
+  // ── 2. Árbol (rediseño 2-sep): abrir con foco deja la materia FIJADA, con su
+  // cadena resaltada en el lugar. Para la captura se aleja a "Ver todo": la línea
+  // de tiempo completa con la cadena naranja/oliva encima es la foto del feature.
   // Camino real del usuario: fila de la materia → "Ver correlativas" → "Ver árbol".
   await page.locator(`[id="mat-${FOCO}"] > .corr-btn`).click()
   await page.locator('.corr').waitFor()
   await page.locator('.corr-tree').click()
-  await page.locator('.react-flow').waitFor()
+  await page.locator('.treeview').waitFor()
   await page.setViewportSize({ width: 1240, height: 660 })
-  await page.locator('.tv-canvas.rama').waitFor() // la rama se juntó
-  await page.waitForTimeout(1600) // viaje de tarjetas + fitView + fade de flechas/rótulos
+  await page.locator('.tv-nodo.sel').waitFor() // el foco llegó fijado
+  // Tres pasos de alejar (100% → 61%): entra la cadena completa CON los nombres.
+  // "Ver todo" queda por debajo del umbral de mapa (42%) y las tarjetas perderían
+  // el texto — correcto en la app, mudo en una captura.
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Alejar' }).click()
+  await page.waitForTimeout(600) // asentar zoom y transiciones de la cadena
   await page.screenshot({ path: join(OUT, 'captura-arbol.png') })
   console.log('✓ docs/captura-arbol.png')
 

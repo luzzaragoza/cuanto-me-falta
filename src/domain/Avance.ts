@@ -34,6 +34,9 @@ export interface AvanceAnio {
   year: number
   aprobadas: number
   total: number
+  /** Los otros dos estados: la hoja del export dibuja la barra del año con los tres. */
+  final: number
+  cursando: number
 }
 
 export class Avance {
@@ -138,8 +141,14 @@ export class Avance {
   get porAnio(): AvanceAnio[] {
     return this.plan.anios.map((a) => {
       const mats = a.mats
-      const aprobadas = mats.filter((m) => this.estado(m.cod) === 'aprobada').length
-      return { year: a.year, aprobadas, total: mats.length }
+      const cuenta = (e: Estado) => mats.filter((m) => this.estado(m.cod) === e).length
+      return {
+        year: a.year,
+        aprobadas: cuenta('aprobada'),
+        total: mats.length,
+        final: cuenta('final'),
+        cursando: cuenta('cursando'),
+      }
     })
   }
 
