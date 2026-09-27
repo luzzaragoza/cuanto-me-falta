@@ -382,6 +382,24 @@ test.describe('en el teléfono', () => {
   })
 })
 
+// El teléfono ACOSTADO mide 844 de ancho: por ancho le tocaba el cromo de PC, que apila
+// cabecera, chips, barra y pie, y al árbol le quedaban 66 de 340px.
+test.describe('con el teléfono acostado', () => {
+  test.use({ viewport: { width: 844, height: 340 }, hasTouch: true, isMobile: true })
+
+  test('el árbol se queda con casi toda la pantalla', async ({ page }) => {
+    await page.locator('.nav-tiles .nav-tile').first().click()
+    const lienzo = page.locator('.tv-lienzo')
+    await expect(lienzo).toBeVisible()
+    const alto = page.viewportSize()!.height
+    expect((await lienzo.boundingBox())!.height).toBeGreaterThanOrEqual(alto * 0.75)
+    // el zoom flotante no se sube encima del botón de referencias
+    const zoom = (await page.locator('.tv-zoom').boundingBox())!
+    const info = (await page.locator('.tv-ley-btn').boundingBox())!
+    expect(zoom.y).toBeGreaterThanOrEqual(info.y + info.height)
+  })
+})
+
 test('elegir otra carrera en la bienvenida carga ese plan', async ({ page }) => {
   await page.addInitScript(() => {
     const raw = localStorage.getItem('plan-uade-v3')

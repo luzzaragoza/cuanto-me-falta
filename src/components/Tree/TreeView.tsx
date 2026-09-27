@@ -25,6 +25,13 @@ import {
 // elkjs y React Flow — el chunk del árbol pasó de ~506 KB gz a unos pocos KB.
 
 /** Zoom permitido. El piso bajo existe para la vista de mapa en el teléfono. */
+// Cuándo el árbol se arma con el cromo del teléfono. No alcanza con el ANCHO: un
+// celular acostado mide 667–844 de ancho y le tocaba el de PC, que apila cabecera,
+// chips, barra y pie — 260 de 340px, y al árbol le quedaban 66. Lo que delata a un
+// teléfono acostado es el ALTO (ninguno pasa de ~430; ninguna compu ni tablet baja de
+// ~600). ⚠️ La misma consulta está en global.css: tienen que coincidir.
+const MQ_TELEFONO = '(max-width: 640px), (max-height: 500px)'
+
 const ZOOM_MIN = 0.11
 const ZOOM_MAX = 1.6
 /** Debajo de esto las tarjetas pierden el texto y quedan como teselas de color:
@@ -171,9 +178,9 @@ export function TreeView({
 
   // ¿La pantalla es de teléfono? Cambia el cromo (chips + ficha + leyenda plegada),
   // no el lienzo. Vivo: rotar el teléfono o achicar la ventana lo actualiza.
-  const [esMobile, setEsMobile] = useState(() => window.matchMedia('(max-width: 640px)').matches)
+  const [esMobile, setEsMobile] = useState(() => window.matchMedia(MQ_TELEFONO).matches)
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 640px)')
+    const mq = window.matchMedia(MQ_TELEFONO)
     const onChange = () => setEsMobile(mq.matches)
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
