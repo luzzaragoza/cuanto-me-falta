@@ -84,10 +84,17 @@ export function Tour({
     height: rect.height + pad * 2,
   }
   const below = rect.top < window.innerHeight / 2
-  const left = Math.max(12, Math.min(hole.left, window.innerWidth - CARD_W - 12))
+  // En el teléfono el naipe va de borde a borde (12px de cada lado), siempre en el
+  // mismo lugar. Alineado al elemento, con 304px fijos, saltaba de costado en cada
+  // paso: pegado a la izquierda con 62px de aire a la derecha, y al paso siguiente
+  // al revés. En pantalla ancha sí se alinea al elemento, que es lo que lo señala.
+  const angosto = window.innerWidth < CARD_W + 24 + 120
+  const horiz: CSSProperties = angosto
+    ? { left: 12, right: 12, width: 'auto' }
+    : { left: Math.max(12, Math.min(hole.left, window.innerWidth - CARD_W - 12)) }
   const cardStyle: CSSProperties = below
-    ? { left, top: hole.top + hole.height + 12 }
-    : { left, bottom: window.innerHeight - hole.top + 12 }
+    ? { ...horiz, top: hole.top + hole.height + 12 }
+    : { ...horiz, bottom: window.innerHeight - hole.top + 12 }
 
   return (
     <div className={'tour' + (step.cta ? ' cta' : '')} role="dialog" aria-label="Tutorial">
