@@ -1,6 +1,9 @@
 # Archivo de contexto para Claude Code (local, no es parte de la app)
 CLAUDE.md
 
+# Plan comercial: documento interno, vive solo en la máquina (y en el artifact)
+docs/PLAN_COMERCIAL.md
+
 # Config local de Claude / editor
 .claude/
 

@@ -21,7 +21,3 @@ Documentación completa del proyecto: presentación, requerimientos, casos de us
 - Repositorio: [github.com/luzzaragoza/cuanto-me-falta](https://github.com/luzzaragoza/cuanto-me-falta)
 
 > Los diagramas están hechos en [Mermaid](https://mermaid.js.org/) (GitHub los renderiza automáticamente) y, cuando el tipo de diagrama lo requiere, como SVG en [`diagramas/`](diagramas/).
-
----
-
-*Documento de trabajo interno (no forma parte de esta documentación): `PLAN_COMERCIAL.md`.*
