@@ -11,8 +11,15 @@
 
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { App } from './App'
+import type { Vista } from './admin/AdminApp'
 
 const AdminApp = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })))
+
+/** `admin` y sus sub-rutas (`admin/planes`, …). Se resuelve acá sin importar el chunk. */
+const vistaAdmin = (ruta: string): Vista => {
+  const sub = ruta.replace(/^admin\/?/, '')
+  return sub === 'planes' || sub === 'permisos' || sub === 'resultados' ? sub : 'inicio'
+}
 
 const rutaActual = (): string => location.hash.replace(/^#\/?/, '').toLowerCase()
 
@@ -25,10 +32,10 @@ export function Root() {
     return () => window.removeEventListener('hashchange', alCambiar)
   }, [])
 
-  if (ruta === 'admin') {
+  if (ruta === 'admin' || ruta.startsWith('admin/')) {
     return (
       <Suspense fallback={<div className="adm-cargando" aria-label="Abriendo la administración…" />}>
-        <AdminApp />
+        <AdminApp vista={vistaAdmin(ruta)} />
       </Suspense>
     )
   }

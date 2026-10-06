@@ -595,10 +595,16 @@ test('el interruptor de año aprueba el año entero y se puede deshacer', async 
 test('la administración vive en #admin, en su propio chunk, y no deja entrar sin permiso', async ({
   page,
 }) => {
+  // las sub-rutas (`#admin/planes`, `#admin/permisos`…) también montan la administración:
+  // sin eso, un link directo a una de ellas abriría la app del alumno
+  await page.goto('/#admin/permisos')
+  await expect(page.locator('.adm-head')).toContainText('institucional')
+  await expect(page.locator('.hero')).toHaveCount(0)
+
   await page.goto('/#admin')
 
   // se montó la pantalla de administración, no la del alumno
-  await expect(page.locator('.adm-head')).toContainText('Administración')
+  await expect(page.locator('.adm-head')).toContainText('institucional')
   await expect(page.locator('.hero')).toHaveCount(0)
   await expect(page.locator('.adm-planes')).toHaveCount(0) // sin sesión no hay lista
 

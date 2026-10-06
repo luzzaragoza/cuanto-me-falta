@@ -170,6 +170,19 @@ export class Cupo {
     return new Cupo(usados, limite, false)
   }
 
+  /**
+   * Lo mínimo a lo que el superadmin puede BAJAR el cupo de una universidad: los planes
+   * que ya tiene, y nunca menos de 1.
+   *
+   * Bajarlo por debajo de lo cargado no borraría nada, pero dejaría a la facultad en un
+   * estado que ninguna pantalla sabe contar ("5 de 3"), y el primer plan que quisieran
+   * cargar después rebotaría sin que nadie entienda por qué. El diseño lo resuelve
+   * apagando el "−" justo ahí.
+   */
+  static piso(usados: number): number {
+    return Math.max(1, usados)
+  }
+
   get disponibles(): number | null {
     if (this.limite === null) return null
     return Math.max(0, this.limite - this.usados)
@@ -438,5 +451,118 @@ export class UniversidadNueva {
 
   listo(existentes: string[]): boolean {
     return this.problemas(existentes).length === 0
+  }
+}
+
+// ── Lo que muestran las pantallas institucionales (diseño del 28-sep) ─────────
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+/**
+ * "12 ago 2026". A mano y no con `toLocaleDateString`: el formato de `es-AR` cambia
+ * entre motores ("12 ago. 2026" en uno, "12 ago 2026" en otro), y en una lista donde
+ * todas las filas terminan en una fecha, el punto suelto se nota.
+ */
+export function fechaCorta(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`
+}
+
+/**
+ * Cómo se muestra una universidad en su círculo: su sigla.
+ *
+ * No hay columna "sigla" en la base porque no hace falta: el `id` de una universidad YA
+ * es su sigla en minúscula (`uade`, `utn` — ver `UniversidadNueva.idSugerido`). Si algún
+ * id viejo fuera largo, se arma con las iniciales del nombre, que es lo que haría
+ * cualquiera a mano.
+ */
+export function siglaDe(uni: { id: string; nombre: string }): string {
+  if (uni.id.length <= 6) return uni.id.toUpperCase()
+  const iniciales = uni.nombre
+    .trim()
+    .split(/\s+/)
+    // los conectores van en minúscula ("de", "la"); "La Plata" es parte del nombre
+    .filter((p) => /^\p{Lu}/u.test(p))
+    .map((p) => p[0] ?? '')
+    .join('')
+  return (iniciales || uni.id).toUpperCase().slice(0, 5)
+}
+
+/**
+ * El dominio de mail que más se repite entre los admins de una institución, para
+ * sugerirlo en el campo de "agregar admin" (`mail@uade.edu.ar`). Sin admins, `null`:
+ * inventar un dominio sería peor que no sugerir ninguno.
+ */
+export function dominioComun(mails: readonly string[]): string | null {
+  const cuenta = new Map<string, number>()
+  for (const m of mails) {
+    const d = m.split('@')[1]?.trim().toLowerCase()
+    if (d) cuenta.set(d, (cuenta.get(d) ?? 0) + 1)
+  }
+  let mejor: string | null = null
+  let n = 0
+  for (const [d, c] of cuenta) {
+    if (c > n) {
+      mejor = d
+      n = c
+    }
+  }
+  return mejor
+}
+
+/**
+ * El panorama de la lista de planes: cuántos hay, cuántos ven los alumnos y cuántos
+ * tienen cambios que todavía no ven. Es lo que dicen los tres círculos del encabezado y
+ * la frase de arriba, así que se cuenta una vez y los dos leen de acá.
+ */
+export class ResumenPlanes {
+  readonly total: number
+  readonly publicados: number
+  readonly pendientes: number
+
+  constructor(total: number, publicados: number, pendientes: number) {
+    this.total = total
+    this.publicados = publicados
+    this.pendientes = pendientes
+  }
+
+  static de(planes: readonly PlanAdmin[]): ResumenPlanes {
+    return new ResumenPlanes(
+      planes.length,
+      planes.filter((p) => p.visible).length,
+      planes.filter((p) => p.tieneCambiosSinPublicar).length,
+    )
+  }
+
+  /**
+   * La frase de arriba. `donde` es el comienzo, que depende de quién mira:
+   * "En UADE hay 4 planes cargados." o "5 planes en 2 universidades.".
+   */
+  frase(donde: string): string {
+    const pub =
+      this.publicados === 0
+        ? 'ninguno está publicado'
+        : this.publicados === 1
+          ? '1 está publicado'
+          : `${this.publicados} están publicados`
+    const pend =
+      this.pendientes === 0
+        ? 'ninguno tiene cambios pendientes'
+        : this.pendientes === 1
+          ? '1 tiene cambios que los alumnos todavía no ven'
+          : `${this.pendientes} tienen cambios que los alumnos todavía no ven`
+    return `${donde} ${pub[0]!.toUpperCase()}${pub.slice(1)} y ${pend}.`
+  }
+
+  /** "En UADE hay 4 planes cargados." (admin de una universidad) */
+  static dondeUna(nombre: string, total: number): string {
+    return `En ${nombre} hay ${total} ${total === 1 ? 'plan cargado' : 'planes cargados'}.`
+  }
+
+  /** "5 planes en 2 universidades." (superadmin) */
+  static dondeVarias(total: number, unis: number): string {
+    return `${total} ${total === 1 ? 'plan' : 'planes'} en ${unis} ${unis === 1 ? 'universidad' : 'universidades'}.`
   }
 }

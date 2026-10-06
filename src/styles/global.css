@@ -119,6 +119,36 @@
   --cad-down-bg: #e1eecc;
   --cad-down-line: #8fa073;
   --cad-down-tx: #272e1b;
+
+  /* ── LADO INSTITUCIONAL (#admin, diseño de Luz del 28-sep) ─────────────────
+     Las pantallas de las universidades (inicio, planes, permisos) usan la misma
+     paleta Organic, con un escalón más de cada rampa que la app del alumno no
+     necesitaba: la tinta oliva oscura, la familia neutra (el tercer "tono" de
+     las instituciones) y los tintes de los círculos decorativos del fondo. */
+  --sombra-rgb: 46, 43, 37;
+  --card-rgb: 255, 249, 240;
+  --oliva-rgb: 122, 138, 94;
+  --oliva-tx: #3d472b;
+  --inst-hero: #f2e5cf;
+  --inst-deco: #e6d7bb;
+  --inst-deco-gold: #f6e7d3;
+  --inst-deco-oliva: #eef2e2;
+  --inst-deco-neutro: #efe4d2;
+  --inst-borde-gold: #e0a271;
+  --inst-borde-oliva: #aebf92;
+  --inst-fila-line: #ece2d1;
+  --inst-guiones: #d6cab6;
+  --inst-guiones-slot: #b9ab94;
+  --inst-aviso-bg: #f1e6d2;
+  --inst-alta-deco: #fbe9da;
+  --neutro-bg: #e8dece;
+  --neutro-tx: #474238;
+  --neutro-fill: #82796a;
+  --gold-suave: #fbeee2;
+  --oliva-suave: #eef3e3;
+  --neutro-suave: #f2ebdf;
+  --cara-3-bg: #f6e0c4;
+  --cara-3-tx: #643312;
 }
 
 * {
@@ -4901,84 +4931,85 @@ body {
   margin: 14px 0 0;
 }
 
-/* ----- administración de planes (#admin) ----- */
-/* Pantalla aparte, no un modal: es otro trabajo. Usa los mismos tokens que la app
-   para que se sienta el mismo producto, pero con una fila de datos por plan en vez
-   de tarjetas: acá se escanea una lista, no se explora un plan. */
+/* ----- lado institucional (#admin) ----- */
+/* Diseño de Luz del 28-sep: inicio · planes · permisos y cupos. Las medidas salen del
+   artifact mirado renderizado (`.claude/diseno-unis/`), no de ojo. Contenido a 1080px,
+   márgenes de 32px, tarjetas de 26-32px de radio, todo lo chico en píldora.
+   Prefijos: `adm-` lo compartido, `in-` inicio, `lp-` lista de planes, `pc-` permisos
+   y cupos. NO `ps-`: ese es de la hoja del export (#print-summary) y ya chocó una vez. */
 .adm {
   min-height: 100vh;
   background: var(--paper);
+  color: var(--ink);
 }
 .adm-cargando {
   min-height: 100vh;
   background: var(--paper);
 }
+
+/* ── la barra de arriba ── */
 .adm-head {
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+}
+.adm-head-in {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 18px;
   flex-wrap: wrap;
-  padding: 12px 22px;
-  border-bottom: 1px solid var(--line);
-  background: var(--card);
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 15px 32px;
 }
-/* ── marca: mismo patrón que el encabezado del alumno (nombre en serif + kicker
-      en versalitas espaciadas), para que se sienta el mismo producto ── */
 .adm-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
-  min-width: 0;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 200px;
 }
 .adm-mark {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--gold);
-  color: var(--sobre-color);
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--lk-bg);
+  color: var(--lk-tx);
   font-family: var(--serif);
   font-size: 20px;
-  line-height: 1;
-  padding-bottom: 3px;
+  padding-bottom: 2px;
 }
 .adm-titulo {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   font-family: var(--serif);
-  font-weight: 800;
-  font-size: 17px;
-  line-height: 1.1;
+  font-size: 20px;
+  line-height: 1.15;
 }
 .adm-kicker {
-  font-family: var(--mono);
-  font-weight: 400;
-  font-size: 9.5px;
-  letter-spacing: 0.15em;
+  margin-top: 2px;
+  line-height: 1.55;
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.13em;
   color: var(--soft);
-  opacity: 0.75;
 }
-/* ── identidad: se lee cuando la buscás, no compite con la acción ── */
 .adm-acc {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 18px;
   flex-wrap: wrap;
 }
 .adm-quien {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  line-height: 1.25;
+  align-items: center;
+  gap: 10px 18px;
+  flex-wrap: wrap;
 }
 .adm-mail {
-  font-family: var(--sans);
   font-size: 12.5px;
   color: var(--soft);
   max-width: 42vw;
@@ -4986,103 +5017,108 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.adm-linea2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-/* el rol es una etiqueta con un punto de color: el privilegio se ve, sin fondo
-   saturado peleándole la atención al único botón de la barra */
+/* El rol: píldora con un punto de color. Naranja el superadmin, oliva el admin. */
 .adm-rol {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--fi-tx);
+  gap: 6px;
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: var(--hb-bg);
+  color: var(--oliva-tx);
 }
 .adm-rol::before {
   content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--fi);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ap);
 }
 .adm-rol.super {
+  background: var(--lk-bg);
   color: var(--lk-tx);
 }
 .adm-rol.super::before {
-  background: var(--lk);
+  background: var(--gold);
 }
 .adm-salir {
-  font-family: var(--sans);
-  font-size: 11.5px;
+  font: inherit;
+  font-size: 12.5px;
   color: var(--soft);
   background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
   text-decoration: underline;
-  text-decoration-color: var(--line);
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
 .adm-salir:hover {
   color: var(--ink);
-  text-decoration-color: currentColor;
 }
-/* la única acción con peso de la barra */
+.adm-salir.fuerte {
+  font-weight: 600;
+  color: var(--lk-tx);
+}
+.adm-salir.fuerte:hover {
+  color: var(--gold-fuerte);
+}
+/* La vuelta ("← Inicio", "← Volver a la app"): la única acción con peso de la barra. */
 .adm-volver {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ink-rgb), 0.18);
+  background: transparent;
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 8px 14px;
-  cursor: pointer;
+  text-decoration: none;
   white-space: nowrap;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
 }
 .adm-volver:hover {
-  border-color: var(--gold);
-  color: var(--gold);
+  background: rgba(var(--ink-rgb), 0.07);
+  color: var(--ink);
 }
-.adm-volver:focus-visible {
+.adm-volver:focus-visible,
+.adm a:focus-visible,
+.adm button:focus-visible,
+.adm input:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
-@media (max-width: 560px) {
-  .adm-head {
-    padding: 11px 16px;
-  }
-  .adm-quien {
-    align-items: flex-start;
-  }
-  .adm-mail {
-    max-width: 60vw;
-  }
-}
+
+/* ── los estados sin acceso (sin sesión, sin permiso, cargando) y el editor ── */
 .adm-main {
   max-width: 880px;
   margin: 0 auto;
   padding: 26px 20px 70px;
 }
 .adm-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
   background: var(--cu-bg);
   color: var(--cu-tx);
   border: 1px solid var(--cu);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 18px;
+  padding: 12px 16px;
   font-size: 13.5px;
   margin-bottom: 18px;
 }
 .adm-card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 26px;
   padding: 26px;
 }
 .adm-vacio {
@@ -5096,7 +5132,8 @@ body {
 }
 .adm-vacio h2 {
   font-family: var(--serif);
-  font-size: 20px;
+  font-weight: 400;
+  font-size: 22px;
   color: var(--ink);
   margin: 0;
 }
@@ -5105,119 +5142,1234 @@ body {
   max-width: 46ch;
   line-height: 1.55;
 }
-.adm-uni + .adm-uni {
-  margin-top: 28px;
-}
-.adm-uni-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.adm-uni-head h2 {
-  font-family: var(--serif);
-  font-size: 19px;
-  margin: 0;
-}
-.adm-cupo {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--soft);
-}
-.adm-planes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  overflow: hidden;
-}
-.adm-plan {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 16px;
-}
-.adm-plan + .adm-plan {
-  border-top: 1px solid var(--line);
-}
-.adm-plan-id {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.adm-carrera {
-  font-weight: 600;
-  font-size: 14.5px;
-}
 .adm-meta {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--soft);
 }
-.adm-plan-estado {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-.adm-pill {
+.adm-id {
   font-family: var(--mono);
-  font-size: 10.5px;
-  border-radius: 99px;
-  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--soft);
+  background: var(--pprev-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
   white-space: nowrap;
 }
-.adm-pill.ok {
-  color: var(--ap-tx);
-  background: var(--ap-bg);
+
+/* ── botones del lado institucional ── */
+.lp-primario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: none;
+  background: var(--gold);
+  color: var(--sobre-color);
+  font-family: var(--serif);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(var(--gold-rgb), 0.28);
+  transition: background 130ms ease, transform 130ms ease;
 }
-.adm-pill.no {
+.lp-primario:hover:not(:disabled) {
+  background: var(--gold-fuerte);
+  transform: translateY(-1px);
+}
+.lp-primario:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.lp-primario.grande {
+  height: 46px;
+  padding: 0 24px;
+  font-size: 15px;
+  box-shadow: 0 3px 10px rgba(var(--gold-rgb), 0.3);
+}
+/* "Revisar y publicar": misma familia, pero es un botón de fila, no de sección. */
+.lp-primario.chico {
+  height: 38px;
+  padding: 0 19px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+}
+.lp-primario.chico:hover:not(:disabled) {
+  transform: none;
+}
+.lp-secundario {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.lp-secundario:hover {
+  background: rgba(var(--ink-rgb), 0.07);
+  border-color: rgba(var(--ink-rgb), 0.35);
+  color: var(--ink);
+}
+
+/* ── inicio ── */
+.in-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 56px 32px 64px;
+}
+.in-alcance {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--lk-tx);
+}
+.in-saludo {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 10px 0 0;
+}
+.in-pregunta {
+  margin-top: 40px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--soft);
-  background: var(--paper);
+}
+.in-puertas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  margin-top: 14px;
+}
+.in-puerta {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 32px 28px;
+  border-radius: 32px;
+  background: var(--card);
   border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(var(--sombra-rgb), 0.05);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.in-puerta:hover {
+  box-shadow: 0 12px 32px rgba(var(--sombra-rgb), 0.14);
+  color: var(--ink);
+}
+.in-deco {
+  position: absolute;
+  right: -54px;
+  top: -54px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+}
+.in-icono {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+}
+.in-icono svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.in-puerta h2 {
+  position: relative;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 22px 0 0;
+}
+.in-puerta p {
+  margin: 10px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(var(--ink-rgb), 0.76);
+  max-width: 40ch;
+  text-wrap: pretty;
+}
+.in-ir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 22px;
+  font-family: var(--serif);
+  font-size: 15px;
+}
+.in-puerta.gold:hover {
+  border-color: var(--inst-borde-gold);
+}
+.in-puerta.gold .in-deco {
+  background: var(--inst-deco-gold);
+}
+.in-puerta.gold .in-icono {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+}
+.in-puerta.gold .in-ir {
+  color: var(--lk-tx);
+}
+.in-puerta.oliva:hover {
+  border-color: var(--inst-borde-oliva);
+}
+.in-puerta.oliva .in-deco {
+  background: var(--inst-deco-oliva);
+}
+.in-puerta.oliva .in-icono {
+  background: var(--hb-bg);
+  color: var(--hb-tx);
+}
+.in-puerta.oliva .in-ir {
+  color: var(--hb-tx);
+}
+.in-puerta.neutro:hover {
+  border-color: var(--line-fuerte);
+}
+.in-puerta.neutro .in-deco {
+  background: var(--inst-deco-neutro);
+}
+.in-puerta.neutro .in-icono {
+  background: var(--neutro-bg);
+  color: var(--neutro-tx);
+}
+.in-puerta.neutro .in-ir {
+  color: var(--neutro-tx);
+}
+
+/* ── el hero (lista de planes y permisos) ── */
+.lp-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 40px 32px 38px;
+  background: var(--inst-hero);
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.08);
+}
+.lp-deco {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.lp-deco.d1 {
+  right: -70px;
+  top: -96px;
+  width: 300px;
+  height: 300px;
+  background: var(--inst-deco);
+}
+.lp-deco.d2 {
+  right: 168px;
+  top: 112px;
+  width: 128px;
+  height: 128px;
+  background: rgba(var(--oliva-rgb), 0.16);
+}
+.lp-deco.d3 {
+  right: 62px;
+  bottom: -46px;
+  width: 92px;
+  height: 92px;
+  background: rgba(var(--gold-rgb), 0.16);
+}
+.lp-hero-in {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.lp-hero-in > .adm-quien {
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.lp-hero-in > .adm-quien .adm-mail {
+  color: rgba(var(--ink-rgb), 0.6);
+}
+.lp-titulo {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.lp-frase {
+  max-width: 560px;
+  margin: 14px 0 0;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: rgba(var(--ink-rgb), 0.7);
+  text-wrap: pretty;
+}
+.lp-cuentas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+.lp-cuenta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 104px;
+  height: 104px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid rgba(var(--ink-rgb), 0.09);
+}
+.lp-cuenta .n {
+  font-family: var(--serif);
+  font-size: 32px;
+  line-height: 1;
+}
+.lp-cuenta .l {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--soft);
+}
+.lp-cuenta.ok {
+  background: var(--hb-bg);
+  border-color: transparent;
+  color: var(--oliva-tx);
+}
+.lp-cuenta.pend {
+  background: var(--lk-bg);
+  border-color: transparent;
+  color: var(--lk-tx);
+}
+.lp-cuenta.ok .l,
+.lp-cuenta.pend .l {
+  color: inherit;
+  opacity: 0.78;
+}
+.lp-nota {
+  max-width: 210px;
+  margin: 0 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+/* ── la lista ── */
+.lp-cuerpo {
+  max-width: 1144px;
+  margin: 0 auto;
+  padding: 26px 32px 64px;
+}
+.lp-filtro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.lp-filtro-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--soft);
+}
+.lp-seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--sunk);
+  border-radius: 999px;
+}
+.lp-seg button {
+  height: 34px;
+  padding: 0 17px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: rgba(var(--ink-rgb), 0.62);
+}
+.lp-seg button.on {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(var(--sombra-rgb), 0.14);
+}
+.adm-uni {
+  margin-bottom: 38px;
+}
+.adm-uni-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.lp-sigla {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.lp-uni-id {
+  min-width: 0;
+}
+.lp-uni-id h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.15;
+  margin: 0;
+}
+.lp-uni-cupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: rgba(var(--ink-rgb), 0.6);
+}
+.lp-puntos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.lp-puntos span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.25);
+}
+.lp-puntos span.lleno {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.adm-uni-head .adm-nuevo {
+  margin-left: auto;
+}
+.adm-planes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.adm-plan {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto 176px;
+  align-items: center;
+  column-gap: 18px;
+  min-height: 96px;
+  padding: 16px 20px;
+  background: var(--card);
+  border: 1px solid rgba(var(--ink-rgb), 0.09);
+  border-radius: 26px;
+  transition: box-shadow 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.adm-plan:hover {
+  box-shadow: 0 10px 26px rgba(var(--sombra-rgb), 0.1);
+  border-color: rgba(var(--gold-rgb), 0.4);
+  transform: translateY(-2px);
+}
+.lp-ver {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  background: var(--hb-bg);
+  color: var(--oliva-tx);
+  font-family: var(--serif);
+  font-size: 19px;
+}
+.lp-ver.no {
+  background: transparent;
+  border: 2px dashed rgba(var(--ink-rgb), 0.24);
+  color: rgba(var(--ink-rgb), 0.4);
+}
+.adm-plan-id {
+  min-width: 0;
+}
+.adm-carrera {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.2;
+  text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lp-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+  font-size: 12.5px;
+  color: rgba(var(--ink-rgb), 0.62);
+}
+.lp-meta > span {
+  white-space: nowrap;
+}
+.lp-meta > span:last-child {
+  color: var(--soft);
+}
+.adm-plan-estado {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.adm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 13px 6px 11px;
+  border-radius: 999px;
+}
+.adm-pill.ok::before,
+.adm-pill.pend::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+.adm-pill.ok {
+  background: var(--hb-bg);
+  color: var(--oliva-tx);
+}
+.adm-pill.ok::before {
+  background: var(--ap);
 }
 .adm-pill.pend {
-  color: var(--cu-tx);
-  background: var(--cu-bg);
+  background: var(--lk-bg);
+  color: var(--lk-tx);
 }
-.adm-plan-act .btn {
-  font-size: 13px;
-  padding: 7px 14px;
+.adm-pill.pend::before {
+  background: var(--gold);
 }
-.adm-plan-act .btn:disabled {
+.adm-pill.no {
+  padding: 6px 13px;
+  border: 1px solid rgba(var(--ink-rgb), 0.22);
+  color: var(--soft);
+}
+.adm-plan-act {
+  display: flex;
+  justify-content: flex-end;
+}
+.lp-vacio-filtro {
+  margin: 12px 0 0;
+  padding: 18px 22px;
+  background: var(--inst-hero);
+  border-radius: 22px;
+  font-size: 13.5px;
+  color: rgba(var(--ink-rgb), 0.6);
+}
+/* "Todavía no hay planes" (y el panel de resultados mientras junta datos) */
+.lp-vacio {
+  position: relative;
+  overflow: hidden;
+  max-width: 620px;
+  padding: 38px 38px 34px;
+  background: var(--card);
+  border: 1px solid rgba(var(--ink-rgb), 0.09);
+  border-radius: 30px;
+  box-shadow: 0 8px 24px rgba(var(--sombra-rgb), 0.07);
+}
+.lp-vacio > * {
+  position: relative;
+}
+.lp-vacio .lp-vacio-deco {
+  position: absolute;
+  right: -54px;
+  top: -54px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: rgba(var(--oliva-rgb), 0.14);
+  pointer-events: none;
+}
+.lp-vacio-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 18px;
+  padding-bottom: 2px;
+  border-radius: 999px;
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+  font-family: var(--serif);
+  font-size: 26px;
+}
+.lp-vacio h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.12;
+  margin: 0 0 12px;
+}
+.lp-vacio p {
+  margin: 0 0 24px;
+  max-width: 460px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(var(--ink-rgb), 0.72);
+  text-wrap: pretty;
+}
+
+/* ── permisos y cupos ── */
+.pc-hero {
+  padding: 48px 32px 44px;
+}
+.pc-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--lk-tx);
+}
+.pc-titulo {
+  font-size: 46px;
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  margin-top: 10px;
+}
+.pc-hero .lp-frase {
+  max-width: 52ch;
+  color: rgba(var(--ink-rgb), 0.76);
+}
+.pc-resumen {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+.pc-dato {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px 8px 8px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(var(--sombra-rgb), 0.1);
+}
+.pc-dato .n {
+  display: grid;
+  place-items: center;
+  min-width: 50px;
+  height: 50px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-family: var(--serif);
+  font-size: 21px;
+}
+.pc-dato .l {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.pc-alta-btn {
+  margin-left: auto;
+}
+/* Los tres tonos de las instituciones (y de los datos del resumen), en el orden en que
+   aparecen: naranja, oliva, neutro. Los admins de cada una rotan sus propias caras. */
+.tono-0 {
+  --t-bg: var(--lk-bg);
+  --t-tx: var(--lk-tx);
+  --t-suave: var(--gold-suave);
+  --t-fill: var(--gold);
+}
+.tono-1 {
+  --t-bg: var(--hb-bg);
+  --t-tx: var(--oliva-tx);
+  --t-suave: var(--oliva-suave);
+  --t-fill: var(--ap);
+}
+.tono-2 {
+  --t-bg: var(--neutro-bg);
+  --t-tx: var(--neutro-tx);
+  --t-suave: var(--neutro-suave);
+  --t-fill: var(--neutro-fill);
+}
+.pc-dato .n {
+  background: var(--t-bg);
+  color: var(--t-tx);
+}
+.cara-0 {
+  background: var(--lk-bg);
+  color: var(--lk-tx);
+}
+.cara-1 {
+  background: var(--hb-bg);
+  color: var(--oliva-tx);
+}
+.cara-2 {
+  background: var(--cara-3-bg);
+  color: var(--cara-3-tx);
+}
+.pc-cuerpo {
+  max-width: 1080px;
+  padding-top: 36px;
+}
+.pc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+/* el alta: la tarjeta punteada que aparece arriba de todo */
+.pc-alta {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+  padding: 26px 30px;
+  border-radius: 30px;
+  background: var(--card);
+  border: 1.5px dashed var(--inst-borde-gold);
+}
+.pc-alta > * {
+  position: relative;
+}
+.pc-alta .pc-alta-deco {
+  position: absolute;
+  right: -40px;
+  bottom: -60px;
+  width: 160px;
+  height: 160px;
+  border-radius: 999px;
+  background: var(--inst-alta-deco);
+}
+.pc-alta-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pc-alta-head h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 23px;
+  margin: 0;
+}
+.pc-alta-sigla {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--inst-borde-gold);
+  color: var(--lk-tx);
+  font-family: var(--serif);
+  font-size: 15px;
+}
+.pc-alta-campos {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.pc-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--soft);
+}
+.pc-campo.ancho {
+  flex: 2;
+  min-width: 240px;
+}
+.pc-campo.sigla {
+  width: 140px;
+}
+.pc-campo input {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  background: var(--card-hover);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.pc-crear {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: none;
+  background: var(--ink);
+  color: var(--sobre-color);
+  font-family: var(--serif);
+  font-size: 14px;
+  cursor: pointer;
+}
+.pc-crear:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.adm-nota {
-  margin: 22px 0 0;
+.pc-cancelar {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--soft);
+  cursor: pointer;
+}
+.pc-cancelar:hover {
+  color: var(--ink);
+}
+.pc-alta-error,
+.pc-error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--peligro);
+}
+/* una institución: admins a la izquierda, cupo a la derecha */
+.pc-inst {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  padding: 28px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 32px;
+  box-shadow: 0 2px 8px rgba(var(--sombra-rgb), 0.05);
+}
+.pc-inst-izq {
+  min-width: 0;
+}
+.pc-inst-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.pc-inst-sigla {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: var(--t-bg);
+  color: var(--t-tx);
+  font-family: var(--serif);
+  font-size: 16px;
+}
+.pc-inst-id {
+  min-width: 0;
+}
+.pc-inst-id h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 25px;
+  line-height: 1.12;
+  margin: 0;
+  text-wrap: pretty;
+}
+.pc-inst-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 7px;
+}
+.pc-caras {
+  display: flex;
+}
+.pc-cara {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-right: -7px;
+  border-radius: 999px;
+  border: 2px solid var(--card);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.pc-inst-cuantos {
+  margin-left: 8px;
   font-size: 13px;
   color: var(--soft);
-  line-height: 1.55;
-  border-left: 3px solid var(--gold);
-  padding-left: 12px;
 }
-@media (max-width: 620px) {
+.pc-admins {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+.pc-admin {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 18px 10px 10px;
+  border-radius: 999px;
+  background: var(--card-hover);
+  border: 1px solid var(--inst-fila-line);
+}
+.pc-admin-ini {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-family: var(--serif);
+  font-size: 15px;
+}
+.pc-admin-quien {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 180px;
+}
+.pc-admin-mail {
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-all;
+}
+.pc-admin-desde {
+  font-size: 12px;
+  color: var(--soft);
+}
+.pc-quitar {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ink-rgb), 0.16);
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--lk-tx);
+  cursor: pointer;
+}
+.pc-quitar:hover {
+  background: var(--lk-bg);
+}
+.pc-sin-admins {
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 22px;
+  background: var(--inst-aviso-bg);
+  font-size: 13px;
+  color: var(--soft);
+}
+.pc-agregar {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--inst-guiones);
+}
+.pc-agregar input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.pc-agregar button {
+  flex: none;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: none;
+  background: var(--t-bg);
+  color: var(--t-tx);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pc-agregar button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.pc-agregar button:disabled {
+  cursor: not-allowed;
+}
+.pc-cupo {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 22px 20px;
+  border-radius: 26px;
+  background: var(--t-suave);
+}
+.pc-cupo > * {
+  position: relative;
+}
+.pc-cupo .pc-cupo-deco {
+  position: absolute;
+  right: -36px;
+  top: -36px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: var(--t-bg);
+  opacity: 0.6;
+}
+.pc-cupo-lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--soft);
+}
+.pc-cupo-num {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 10px;
+  font-family: var(--serif);
+}
+.pc-cupo-num .n {
+  font-size: 44px;
+  line-height: 1;
+}
+.pc-cupo-num .de {
+  font-size: 20px;
+  color: var(--soft);
+}
+.pc-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+.pc-slots span {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(var(--card-rgb), 0.7);
+  border: 1.5px dashed var(--inst-guiones-slot);
+}
+.pc-slots span.lleno {
+  background: var(--t-fill);
+  border: none;
+}
+.pc-libres {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--neutro-tx);
+}
+.pc-ajustar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
+  font-size: 12px;
+  color: var(--soft);
+}
+.pc-ajustar button {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: none;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(var(--sombra-rgb), 0.12);
+}
+.pc-ajustar button:hover:not(:disabled) {
+  background: rgb(var(--blanco-rgb));
+}
+.pc-ajustar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── angosto ──
+   Los prototipos están dibujados para escritorio (a 390px el de permisos se encima
+   solo). Criterio propio, a revisar con Luz: todo se apila en el orden de lectura, y
+   los márgenes bajan a 16px como en la app del alumno. */
+@media (max-width: 760px) {
+  .adm-head-in {
+    padding: 12px 16px;
+    gap: 10px 14px;
+  }
+  .adm-brand {
+    min-width: 0;
+  }
+  .adm-mail {
+    max-width: 60vw;
+  }
+  .in-main {
+    padding: 36px 16px 48px;
+  }
+  .in-saludo,
+  .lp-titulo,
+  .pc-titulo {
+    font-size: 34px;
+  }
+  .in-puertas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .in-puerta {
+    padding: 24px 22px 22px;
+    border-radius: 26px;
+  }
+  .lp-hero,
+  .pc-hero {
+    padding: 28px 16px 30px;
+  }
+  .lp-deco.d2 {
+    display: none;
+  }
+  .lp-cuentas {
+    gap: 10px;
+  }
+  .lp-cuenta {
+    width: 88px;
+    height: 88px;
+  }
+  .lp-cuenta .n {
+    font-size: 26px;
+  }
+  .lp-cuenta .l {
+    font-size: 8.5px;
+  }
+  .lp-nota {
+    flex-basis: 100%;
+    max-width: none;
+    margin: 4px 0 0;
+  }
+  .lp-cuerpo {
+    padding: 22px 16px 48px;
+  }
+  .lp-seg button {
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+  .adm-uni-head .adm-nuevo {
+    margin-left: 0;
+    width: 100%;
+  }
   .adm-plan {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: 52px minmax(0, 1fr);
+    row-gap: 12px;
+    column-gap: 14px;
+    padding: 16px;
+    border-radius: 22px;
+  }
+  .lp-ver {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
   }
   .adm-plan-estado,
   .adm-plan-act {
+    grid-column: 1 / -1;
     justify-content: flex-start;
   }
-}
-.adm-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
+  .adm-plan-act > * {
+    width: 100%;
+    justify-content: center;
+  }
+  .pc-alta-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+  .pc-cuerpo {
+    padding-top: 22px;
+  }
+  .pc-inst {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px 16px;
+    border-radius: 26px;
+  }
+  .pc-inst-sigla {
+    width: 52px;
+    height: 52px;
+    font-size: 14px;
+  }
+  .pc-inst-id h2 {
+    font-size: 21px;
+  }
+  .pc-admin {
+    border-radius: 22px;
+    padding: 10px 12px 10px 10px;
+  }
+  .pc-admin-quien {
+    min-width: 0;
+  }
+  .pc-alta {
+    padding: 22px 18px;
+  }
+  .pc-campo.ancho,
+  .pc-campo.sigla {
+    flex: 1 1 100%;
+    width: auto;
+    min-width: 0;
+  }
+  .lp-vacio {
+    padding: 28px 22px 26px;
+  }
 }
 
 /* ----- editor de un plan (#admin → Editar) ----- */
@@ -5951,77 +7103,6 @@ body {
 }
 
 /* ── Crear un plan (y su universidad) ────────────────────────────────────── */
-/* El botón vive en el encabezado de cada universidad, al lado del cupo: donde
-   se lee "podés crear 2 más" es donde se espera poder hacerlo. */
-.adm-nuevo {
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--gold);
-  background: none;
-  border: 1px dashed var(--gold);
-  border-radius: 6px;
-  padding: 5px 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.adm-nuevo:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--gold) 10%, transparent);
-}
-.adm-nuevo:disabled {
-  color: var(--soft);
-  border-color: var(--line);
-  cursor: not-allowed;
-}
-/* ── Panel del superadmin ─────────────────────────────────────────────────
-   Permisos y cupos vivían colgados de la lista de planes: un botón en el encabezado de
-   cada universidad y un enlace al pie, los dos invisibles para un admin de universidad.
-   O sea, espacio muerto en el 90% de las sesiones. Acá son la pantalla entera. */
-.ps-unis {
-  margin-top: 18px;
-}
-.ps-lista {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-}
-.ps-uni {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--card);
-  margin-bottom: 6px;
-}
-.ps-uni-id {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1 1 200px;
-  min-width: 0;
-}
-/* Los dos números que se miran de un vistazo: cuánto se usó del cupo y cuánta gente
-   entra. Ancho fijo para que formen columna y no bailen fila a fila. */
-.ps-cupo {
-  flex: none;
-  min-width: 108px;
-}
-.ps-admins {
-  flex: none;
-  min-width: 74px;
-}
-.ps-acciones {
-  margin-top: 22px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-.ps-acciones .cp-ayuda {
-  margin-top: 8px;
-}
-
 .cp {
   display: flex;
   flex-direction: column;
@@ -6353,129 +7434,6 @@ body {
 .ed-deshacer:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-/* ── Permisos de una universidad (solo superadmin) ───────────────────────── */
-.adm-permisos {
-  font-family: var(--sans);
-  font-size: 13px;
-  color: var(--soft);
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 5px 12px;
-  cursor: pointer;
-}
-.adm-permisos:hover {
-  color: var(--ink);
-  border-color: var(--line-fuerte);
-}
-
-.hb {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  max-width: 620px;
-}
-.hb-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-/* Sin esto el bloque de título toma su ancho natural (la bajada es larga) y empuja el
-   "volver" a un renglón propio, donde parece parte del contenido y no la salida. */
-.hb-head > div:first-child {
-  flex: 1 1 320px;
-  min-width: 0;
-}
-.hb-head > .lnk {
-  flex: none;
-}
-.hb-head h2 {
-  font-family: var(--serif);
-  font-size: 22px;
-  margin: 0 0 4px;
-}
-.hb-limite,
-.hb-lista,
-.hb-alta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.hb-limite-in {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  max-width: 260px;
-}
-.hb-admins {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-/* La fila envuelve: en pantallas angostas, el chip de permisos (que es `nowrap`)
-   apretaba el mail hasta recortarlo — y ahí no se puede leer a quién le vas a sacar
-   el acceso, que es justo lo que hay que confirmar antes de tocar "quitar". */
-.hb-admin {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 9px 12px;
-}
-.hb-mail {
-  flex: 1 1 180px;
-  min-width: 0;
-  font-size: 14px;
-  word-break: break-all;
-}
-.hb-permisos {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--soft);
-  white-space: nowrap;
-}
-/* Destructivo pero secundario: no puede pesar más que el mail al que se lo vas a
-   sacar. Se despierta al pasar por encima. */
-.hb-quitar {
-  flex: none;
-  font-weight: 400;
-  color: var(--soft);
-  text-decoration: none;
-}
-.hb-quitar:hover {
-  color: var(--cu-tx);
-  text-decoration: underline;
-}
-.hb-alta-fila {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.hb-alta-fila .cp-in {
-  flex: 1;
-  min-width: 0;
-}
-.hb-checks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 18px;
-  font-size: 13.5px;
-}
-.hb-checks label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
 }
 
 /* ── Confirmaciones propias (reemplazan confirm/alert del navegador) ─────── */

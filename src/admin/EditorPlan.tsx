@@ -55,10 +55,13 @@ export function EditorPlan({
   planId,
   puedeEditar,
   onVolver,
+  abrirPublicar = false,
 }: {
   planId: string
   puedeEditar: boolean
   onVolver: () => void
+  /** Entrar con el panel de revisar y publicar ya abierto ("Revisar y publicar" de la lista). */
+  abrirPublicar?: boolean
 }) {
   const [b, setB] = useState<Borrador | null>(null)
   const [pestania, setPestania] = useState<Pestania>('estructura')
@@ -72,7 +75,7 @@ export function EditorPlan({
   /** Lo tipeado en el buscador de la materia abierta. Se limpia al abrir otra. */
   const [busca, setBusca] = useState('')
   /** El panel de revisar y publicar, abierto o cerrado (drawer, como el de Notas). */
-  const [panel, setPanel] = useState(false)
+  const [panel, setPanel] = useState(abrirPublicar)
   /** La foto que ven los alumnos. `null` = nunca se publicó. */
   const [publicado, setPublicado] = useState<PlanDef | null>(null)
   const [publicando, setPublicando] = useState(false)

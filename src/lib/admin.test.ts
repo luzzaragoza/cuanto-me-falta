@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { Habilitacion, PlanAdmin, PlanNuevo, SesionAdmin, UniversidadNueva } from './admin'
+import {
+  Cupo,
+  dominioComun,
+  fechaCorta,
+  Habilitacion,
+  PlanAdmin,
+  PlanNuevo,
+  ResumenPlanes,
+  SesionAdmin,
+  siglaDe,
+  UniversidadNueva,
+} from './admin'
 
 const hab = () => new Habilitacion('uade')
 
@@ -306,5 +317,66 @@ describe('UniversidadNueva · el Gate C empieza acá', () => {
     expect(new UniversidadNueva('X', 0).problemas([])).toHaveLength(1)
     expect(new UniversidadNueva('X', 1.5).problemas([])).toHaveLength(1)
     expect(new UniversidadNueva('X', 1).problemas([])).toEqual([])
+  })
+})
+
+describe('lo que muestran las pantallas institucionales', () => {
+  const plan = (id: string, version: number | null, cambios: boolean): PlanAdmin =>
+    PlanAdmin.desde({
+      id,
+      universidad_id: 'uade',
+      estado: version === null ? 'borrador' : 'publicado',
+      version_publicada: version,
+      tiene_cambios: cambios,
+    })!
+
+  it('cuenta cargados, publicados y con cambios, y lo dice en castellano', () => {
+    const r = ResumenPlanes.de([
+      plan('a', 3, false),
+      plan('b', 2, true),
+      plan('c', 1, true),
+      plan('d', null, false),
+    ])
+    expect([r.total, r.publicados, r.pendientes]).toEqual([4, 3, 2])
+    // la frase exacta del diseño de Luz
+    expect(r.frase(ResumenPlanes.dondeUna('UADE', r.total))).toBe(
+      'En UADE hay 4 planes cargados. 3 están publicados y 2 tienen cambios que los alumnos todavía no ven.',
+    )
+  })
+
+  it('la frase no dice "0 están publicados" ni "1 tienen"', () => {
+    const uno = ResumenPlanes.de([plan('a', 1, true)])
+    expect(uno.frase(ResumenPlanes.dondeUna('UTN', 1))).toBe(
+      'En UTN hay 1 plan cargado. 1 está publicado y 1 tiene cambios que los alumnos todavía no ven.',
+    )
+    const nada = ResumenPlanes.de([plan('a', null, false)])
+    expect(nada.frase(ResumenPlanes.dondeVarias(1, 2))).toBe(
+      '1 plan en 2 universidades. Ninguno está publicado y ninguno tiene cambios pendientes.',
+    )
+  })
+
+  it('la sigla es el id en mayúscula; si el id es largo, las iniciales del nombre', () => {
+    expect(siglaDe({ id: 'uade', nombre: 'UADE' })).toBe('UADE')
+    expect(siglaDe({ id: 'utn', nombre: 'Universidad Tecnológica Nacional' })).toBe('UTN')
+    expect(siglaDe({ id: 'universidad-de-la-plata', nombre: 'Universidad Nacional de La Plata' })).toBe(
+      'UNLP',
+    )
+  })
+
+  it('sugiere el dominio de mail más repetido, y ninguno si no hay admins', () => {
+    expect(dominioComun(['a@uade.edu.ar', 'b@gmail.com', 'c@UADE.edu.ar'])).toBe('uade.edu.ar')
+    expect(dominioComun([])).toBeNull()
+    expect(dominioComun(['sin-arroba'])).toBeNull()
+  })
+
+  it('el cupo no baja de los planes cargados, ni de 1', () => {
+    expect(Cupo.piso(4)).toBe(4)
+    expect(Cupo.piso(0)).toBe(1)
+  })
+
+  it('la fecha corta no depende del motor ("12 ago 2026", sin punto)', () => {
+    expect(fechaCorta('2026-08-12T15:00:00')).toBe('12 ago 2026')
+    expect(fechaCorta(null)).toBe('—')
+    expect(fechaCorta('no es fecha')).toBe('—')
   })
 })
