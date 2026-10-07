@@ -106,7 +106,7 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
       {plan.anios.map((anio) => {
         const completo = av0.decidirAnio(plan.codsDelAnio(anio.year)) === 'pendiente'
         const av = porAnio.get(anio.year)
-        const pctAnio = av && av.total ? Math.round((av.aprobadas / av.total) * 100) : 0
+        const ancho = (n = 0) => ({ width: av && av.total ? `${(n / av.total) * 100}%` : '0%' })
         return (
         <section className="year" key={anio.year}>
           <div className="yhead">
@@ -117,12 +117,20 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
                 {av ? `${av.aprobadas} de ${av.total} aprobadas` : ''}
               </span>
             </span>
+            {/* Los mismos tres tramos que el anillo de arriba y que la barra del PDF:
+                así el año que estás cursando se ve desde su encabezado. */}
             <span
               className="ybar"
               role="img"
-              aria-label={`${pctAnio}% del año aprobado`}
+              aria-label={
+                av
+                  ? `${av.aprobadas} aprobadas, ${av.final} pendientes de final y ${av.cursando} cursando, de ${av.total}`
+                  : ''
+              }
             >
-              <i style={{ width: `${pctAnio}%` }} />
+              <i className="ap" style={ancho(av?.aprobadas)} />
+              <i className="fi" style={ancho(av?.final)} />
+              <i className="cu" style={ancho(av?.cursando)} />
             </span>
             <button
               className={'ybtn' + (completo ? ' undo' : '')}

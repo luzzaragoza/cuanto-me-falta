@@ -35,5 +35,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Vitest vacía todo import de CSS (aun con `?raw`): sin esto, la guardia de la paleta
+    // leería un string vacío. Solo esta hoja, que es la que mide `styles/paleta.test.ts`.
+    css: { include: [/global\.css/] },
   },
 })
