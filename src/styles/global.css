@@ -1,18 +1,28 @@
 :root {
-  /* ── ORGANIC · la paleta del rediseño (2-sep) ───────────────────────────
-     Dos familias sobre neutros cálidos: naranja terroso (el acento) y verde
-     oliva. Reemplaza a la paleta que separaba los estados por MATIZ (verde
-     aprobada · azul final · naranja cursando), y por eso hay una diferencia
-     de fondo que conviene tener presente al tocar esto:
+  /* ── ORGANIC · la paleta del rediseño (2-sep; tercer color el 6-oct) ─────
+     Tres familias sobre neutros cálidos: terracota (el acento y "pend. de
+     final"), verde oliva (aprobada) y CIRUELA (cursando). Es una paleta
+     análoga estirada: ciruela (≈320°) y oliva (≈83°) flanquean al terracota
+     (≈24°), así que el acento queda en el centro del arco y un estado a cada
+     lado. Por eso el ciruela entra sin parecer un parche: es del mismo arco
+     cálido, no un color frío pegado encima.
 
-     ANTES el color solo ya distinguía los 4 estados. AHORA no: `--cu` y
-     `--fi` son la misma familia. Lo que los separa es el BORDE (ΔE ≥ 11.9
-     entre los 4, incluso simulando deuteranopia y protanopia) y el GLIFO
-     del tick (✓ aprobada · ◐ final · • cursando · vacío pendiente), que es
-     un canal no cromático. Medido, no a ojo.
+     El 2-sep había quedado en DOS familias, con `--cu` naranja como `--fi`:
+     ΔE 7,7 entre cursando y final (6,5 con deuteranopia), o sea el mismo
+     color a simple vista. De ahí el feedback de que los colores confundían.
+     Con ciruela: ΔE ≥ 22 contra los otros dos estados, también simulando
+     protanopia y deuteranopia, y 4,47:1 sobre el papel (el naranja daba
+     2,32). Lo mide `styles/paleta.test.ts`: si una paleta futura vuelve a
+     juntarlos, CI rojo.
 
-     ⇒ REGLA para lo que se agregue: ningún estado puede quedar distinguido
-     por el token fuerte SOLO. Siempre borde o glifo acompañando. */
+     ⇒ REGLA, que sigue valiendo: ningún estado puede quedar distinguido por
+     el color SOLO. Siempre borde o glifo acompañando (✓ aprobada · ◐ final
+     · • cursando · vacío pendiente). Aprobada y final, por ejemplo, quedan
+     a ΔE 7,2 con protanopia: ahí el que los separa es el glifo.
+     ⇒ Y la otra: ciruela ES cursando. Fuera de los estados aparece solo como
+     tono decorativo donde no hay nada que leer como estado (el onboarding),
+     nunca como acento de un botón. Un color con dos trabajos fue justamente
+     lo que rompió la paleta anterior. */
 
   --paper: #f5ead8;
   --card: #fff9f0;
@@ -23,9 +33,9 @@
   --ap: #728157;
   --ap-bg: #e9f1da;
   --ap-tx: #3f4a2c;
-  --cu: #d68a4e;
-  --cu-bg: #fff3e6;
-  --cu-tx: #402310;
+  --cu: #8e5b7d;
+  --cu-bg: #f5e6ef;
+  --cu-tx: #46243c;
   --fi: #c67139;
   --fi-bg: #ffe9d9;
   --fi-tx: #402310;
@@ -82,13 +92,29 @@
   --avail-bg: #e1eecc;
   --avail-line: #b9c7a0;
 
-  /* Peligro. Es el ÚNICO rojo de la app: no confundir con `--cu` (cursando), que
-     ahora es naranja de la MISMA familia que el acento. Por eso se eligió un rojo
-     más frío que el de antes: ΔE 23.5 contra el acento, verificado. */
+  /* Familia de cursando, en dos niveles como las otras: `--cu-bg` es el tinte suave de
+     la fila, y `--cu-bg-2` el más cargado de chips e íconos (como `--gold-bg-2` y
+     `--hb-bg`). Al de chip se le corrió el tono 10° hacia el violeta: con el mismo croma
+     que sus hermanos, a esa luminosidad el ciruela se lee rosa. `--cu-medio` es la tinta
+     para texto chico encima (L* 40 y 5,1:1, el peso de `--lk-tx` y `--hb-tx`); la
+     oscura, `--cu-tx`, queda para el nombre de la materia en la fila. */
+  --cu-bg-2: #f5e1f3;
+  --cu-medio: #81506f;
+
+  /* Peligro. Es el ÚNICO rojo de la app, y se eligió frío para que no se confunda
+     con sus vecinos: ΔE 23,5 contra el acento y 25 contra el ciruela de cursando. */
   --peligro: #9b2c22;
   --peligro-bg: #fbe6e1;
   --peligro-line: #f0cabf;
   --peligro-fuerte: #b3403d;
+
+  /* Avisos del panel de administración: códigos duplicados, hallazgos que bloquean
+     publicar, lo que se va a borrar. Usaban `--cu` porque el cursando de antes era
+     naranja; cuando cursando pasó a ciruela se separaron, para que un error del
+     editor no se lea como "materia en curso". Son los valores de siempre. */
+  --aviso: #d68a4e;
+  --aviso-bg: #fff3e6;
+  --aviso-tx: #402310;
 
   /* Avisos flotantes (fondo oscuro con tinta clara: no siguen al tema del resto) */
   --toast-bg: rgba(46, 43, 37, 0.92);
@@ -403,8 +429,7 @@ body {
   background: var(--ap);
 }
 /* Mitad llena = la cursada está, falta rendir. Es el MISMO glifo que el tick de la
-   fila, y es lo que distingue "pend. de final" de "cursando" sin depender del
-   matiz: con Organic los dos son de la familia del acento. */
+   fila: el canal que no depende del color, por si el matiz no alcanza. */
 .counts .d-fi {
   background: linear-gradient(90deg, var(--fi) 0 50%, var(--fi-bg) 50% 100%);
   box-shadow: inset 0 0 0 1.5px var(--fi);
@@ -481,6 +506,7 @@ body {
   color: var(--soft);
 }
 .ybar {
+  display: flex;
   height: 7px;
   width: 116px;
   flex: none;
@@ -491,9 +517,16 @@ body {
 .ybar i {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  background: var(--ap);
   transition: width 0.22s ease;
+}
+.ybar .ap {
+  background: var(--ap);
+}
+.ybar .fi {
+  background: var(--fi);
+}
+.ybar .cu {
+  background: var(--cu);
 }
 /* Interruptor de año: aprobar el año entero de una. Va a la derecha del todo,
    como pastilla: el encabezado ahora tiene contenido propio (resumen + barra),
@@ -731,8 +764,8 @@ body {
 }
 .mat.cursando .tick {
   background: transparent;
-  border: 2px solid var(--fi);
-  color: var(--fi);
+  border: 2px solid var(--cu);
+  color: var(--cu);
 }
 .mat.cursando .nom {
   color: var(--cu-tx);
@@ -825,10 +858,9 @@ body {
 .sp-opt.sel {
   background: var(--sunk);
 }
-/* Las MISMAS cuatro formas que el tick de la fila, y por el mismo motivo: con
-   Organic, `cursando` y `pend. de final` son la misma familia de color, así que
-   lo que los separa es la forma —hueco con punto vs medio relleno— y eso se lee
-   incluso en escala de grises. Acá se ve el cuarteto completo uno al lado del
+/* Las MISMAS cuatro formas que el tick de la fila: hueco con punto, medio relleno,
+   lleno con ✓. Cada estado tiene su familia de color, y además la forma, que se
+   lee incluso en escala de grises. Acá se ve el cuarteto completo uno al lado del
    otro, que es donde más se nota si dos se parecen. */
 .sp-dot {
   width: 24px;
@@ -845,9 +877,9 @@ body {
   background: transparent;
 }
 .sp-dot.cursando {
-  border: 2px solid var(--fi);
+  border: 2px solid var(--cu);
   background: transparent;
-  color: var(--fi);
+  color: var(--cu);
 }
 .sp-dot.final {
   border-color: var(--fi);
@@ -1336,9 +1368,9 @@ body {
    no como fondo porque el fondo ya está tomado: es lo que dice si la materia
    está en la cadena de la que se está mirando. Dos datos, dos lugares.
 
-   `final` es medio relleno, igual que su tick en la pantalla principal: la
-   diferencia con `cursando` es de FORMA y no solo de color (los dos son de la
-   familia del acento). Acá el corte es vertical porque el riel lo es. */
+   `final` es medio relleno, igual que su tick en la pantalla principal: además
+   del color (terracota contra el ciruela de `cursando`), la diferencia es de
+   FORMA. Acá el corte es vertical porque el riel lo es. */
 .tv-riel {
   position: absolute;
   left: 6px;
@@ -1358,7 +1390,7 @@ body {
 }
 /* Sobre la tarjeta seleccionada el fondo ES el acento, y ahí el riel se rompe:
    la mitad "llena" de `final` es el mismo hex que el fondo (ΔE 0,0 — literalmente
-   invisible) y `cursando` queda casi encima. Se invierte el par: la mitad salien-
+   invisible) y el ciruela de `cursando` da 1,5:1 encima. Se invierte el par: la mitad salien-
    te pasa a ser la tinta clara y la otra un velo oscuro, así la FORMA —que es lo
    que separa "final" de "cursando"— sobrevive. Vale para una sola tarjeta a la
    vez, y la barra de arriba igual dice el estado con todas las letras. */
@@ -2184,8 +2216,9 @@ body {
   display: grid;
   place-items: center;
 }
-/* Los dos tonos del sistema, alternados: el ícono no dice un estado, así que no
-   hereda su significado — sólo evita que las tres filas sean el mismo bloque. */
+/* Los tres tonos del sistema, uno por fila, y cada ícono con el color de lo que
+   describe: Estados el ciruela (es donde vive cursando, así el color ya es conocido
+   cuando aparece en la app), Correlativas el verde del árbol, Avance el acento. */
 .w-feat-ic.need {
   background: var(--lk-bg);
   color: var(--lk-tx);
@@ -2193,6 +2226,10 @@ body {
 .w-feat-ic.unlock {
   background: var(--hb-bg);
   color: var(--hb-tx);
+}
+.w-feat-ic.cu {
+  background: var(--cu-bg-2);
+  color: var(--cu-medio);
 }
 .w-feat-tx {
   flex: 1;
@@ -2314,9 +2351,11 @@ body {
   background: var(--hb-bg);
   color: var(--hb-tx);
 }
-.w-chip.neutro {
-  background: var(--sunk);
-  color: var(--soft);
+/* El tercero era neutro cuando la paleta tenía dos familias; con ciruela, cada
+   chip tiene la suya. Son decorativos: no dicen ningún estado. */
+.w-chip.cu {
+  background: var(--cu-bg-2);
+  color: var(--cu-medio);
 }
 
 /* ── El nombre ── */
@@ -3329,20 +3368,19 @@ body {
    MEDIR el padding computado. Con el id adelante, nada de la app puede volver a pisarla. */
 #print-summary {
   /* ── La paleta del PAPEL ──────────────────────────────────────────────────────────
-     Once colores que la paleta de pantalla no tenía. Viven acá adentro a propósito: son
+     Diez colores que la paleta de pantalla no tenía. Viven acá adentro a propósito: son
      de una superficie de papel (más clara y más cálida que la pantalla) y no tienen por
      qué filtrarse al resto de la app. Lo que SÍ se reusa tal cual, porque coincide
-     exacto con el diseño: --gold, --ap, --ink, --paper, --sunk, --line-fuerte. */
+     exacto con el diseño: --gold, --ap, --fi, --ink, --paper, --sunk, --line-fuerte. */
   --px-papel: #fdfaf3; /* el papel; más claro que --paper, que acá es la tarjeta */
   --px-mono: #8a7f74; /* el mono apagado: códigos, conteos, rótulos */
   --px-sec: #5c534c; /* texto secundario (la carrera, "te faltan") */
   --px-riel: #ece2cf; /* el riel de las barras */
-  --px-cursando: #e0a271; /* naranja de cursando; más claro que --cu */
+  --px-cursando: #a17393; /* el ciruela de cursando para el papel: más claro que --cu, y lo justo para dar 3:1 contra el riel de la barra (el naranja de antes daba 1,7) */
   --px-tenue: #9a8e80; /* el "/52" */
   --px-pie: #6b6159; /* el texto legal del pie */
   --px-pie-linea: #e6d6ba;
   --px-ap-fuerte: #5a6844; /* el número del avance: más oscuro que --ap */
-  --px-raya-hueco: #f7e2cc; /* el hueco de la trama de "pendientes de final" */
   --px-glifo-hueco: #fdf4e8; /* la mitad vacía del glifo ◐ */
 
   display: none;
@@ -3631,18 +3669,13 @@ body {
   background: var(--px-cursando);
 }
 
-/* "Pendientes de final" va RAYADO, y no es decoración.
-   En esta paleta --cu y --fi son la misma familia de color, así que lo que los separa
-   tiene que ser un canal NO cromático: acá la trama, en la leyenda el glifo. Aplanar
-   esto a un color plano rompe la distinción incluso para quien ve bien, porque los dos
-   naranjas quedan pegados. */
-#print-summary .ps-bar .s-fi,
-#print-summary .g-fi {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--gold) 0 4px,
-    var(--px-raya-hueco) 4px 8px
-  );
+/* "Pendientes de final" en color liso, como en la pantalla (decisión de Luz, 7-oct: la
+   trama "quedaba rara"). Con ciruela en cursando el matiz ya separa los tres tramos:
+   ΔE ≥ 31 entre ellos. La forma sigue en la leyenda, en el glifo medio lleno.
+   Límite conocido: impresa en blanco y negro, los tres tramos son casi el mismo gris
+   (L* 52–56). Ahí la hoja lo dice con texto: los conteos de la leyenda y las listas. */
+#print-summary .ps-bar .s-fi {
+  background: var(--fi);
 }
 
 /* Dos columnas, no cuatro en fila: adentro de la tarjeta no hay ancho para una sola
@@ -3685,13 +3718,12 @@ body {
   background: var(--px-cursando);
 }
 
-/* El glifo de "pendiente de final": medio lleno. Pisa la trama de arriba a propósito —
-   en 13px una trama de 4px no se leería como trama, se vería sucia. */
+/* El glifo de "pendiente de final": medio lleno, el mismo ◐ que en la app. */
 #print-summary .g-fi {
-  border: 1px solid var(--gold);
+  border: 1px solid var(--fi);
   background: linear-gradient(
     90deg,
-    var(--gold) 0 50%,
+    var(--fi) 0 50%,
     var(--px-glifo-hueco) 50% 100%
   );
 }
@@ -5071,9 +5103,9 @@ body {
   padding: 26px 20px 70px;
 }
 .adm-error {
-  background: var(--cu-bg);
-  color: var(--cu-tx);
-  border: 1px solid var(--cu);
+  background: var(--aviso-bg);
+  color: var(--aviso-tx);
+  border: 1px solid var(--aviso);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 13.5px;
@@ -5183,8 +5215,8 @@ body {
   border: 1px solid var(--line);
 }
 .adm-pill.pend {
-  color: var(--cu-tx);
-  background: var(--cu-bg);
+  color: var(--aviso-tx);
+  background: var(--aviso-bg);
 }
 .adm-plan-act .btn {
   font-size: 13px;
@@ -5260,7 +5292,7 @@ body {
   color: var(--ap-tx);
 }
 .ed-sav.mal {
-  color: var(--bad, var(--cu-tx));
+  color: var(--aviso-tx);
 }
 .ed-solo-lectura {
   background: var(--fi-bg);
@@ -5318,13 +5350,13 @@ body {
   flex-wrap: wrap;
 }
 .ed-fila.dup .ed-cod {
-  border-color: var(--cu);
-  background: var(--cu-bg);
+  border-color: var(--aviso);
+  background: var(--aviso-bg);
 }
 .ed-dup {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
 }
 .ed-cod,
 .ed-nom,
@@ -5400,8 +5432,8 @@ body {
   cursor: pointer;
 }
 .ed-borrar:hover:not(:disabled) {
-  color: var(--cu-tx);
-  border-color: var(--cu);
+  color: var(--aviso-tx);
+  border-color: var(--aviso);
 }
 .ed-add,
 .ed-add-anio {
@@ -5574,7 +5606,7 @@ body {
   margin: 0 0 10px;
 }
 .ed-rojo {
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
   font-size: 13.5px;
   margin: 0 0 8px;
   font-weight: 600;
@@ -5594,9 +5626,9 @@ body {
   border-left: 3px solid var(--line);
 }
 .ed-hallazgos li.err {
-  background: var(--cu-bg);
-  color: var(--cu-tx);
-  border-left-color: var(--cu);
+  background: var(--aviso-bg);
+  color: var(--aviso-tx);
+  border-left-color: var(--aviso);
 }
 .ed-hallazgos li.avi {
   background: var(--paper);
@@ -5788,7 +5820,7 @@ body {
   border-left-color: var(--ap);
 }
 .ed-rc.sin {
-  border-left-color: var(--cu);
+  border-left-color: var(--aviso);
 }
 .ed-rc.na {
   border-left-color: var(--line);
@@ -5802,7 +5834,7 @@ body {
   white-space: nowrap;
 }
 .ed-rc.sin .ed-rc-n {
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
 }
 /* ----- cambios sin publicar ----- */
 /* Es lo que se lee antes de apretar Publicar, así que va arriba de todo en ese panel y
@@ -5862,11 +5894,11 @@ body {
 }
 .ed-cam.materia-borrada,
 .ed-cam.correlativa-borrada {
-  border-left-color: var(--cu);
+  border-left-color: var(--aviso);
 }
 .ed-cam.materia-borrada .ed-cam-signo,
 .ed-cam.correlativa-borrada .ed-cam-signo {
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
 }
 .ed-cam.materia-editada,
 .ed-cam.cabecera,
@@ -5895,8 +5927,8 @@ body {
   cursor: pointer;
 }
 .ed-descartar:hover {
-  color: var(--cu-tx);
-  border-color: var(--cu);
+  color: var(--aviso-tx);
+  border-color: var(--aviso);
 }
 
 /* el panel de publicar es más ancho que el de notas: lleva la lista de cambios */
@@ -5933,7 +5965,7 @@ body {
   color: var(--gold);
 }
 .ed-abrir-pub.con-errores {
-  border-color: var(--cu);
+  border-color: var(--aviso);
 }
 .ed-badge {
   font-family: var(--mono);
@@ -5947,7 +5979,7 @@ body {
   text-align: center;
 }
 .ed-badge.mal {
-  background: var(--cu);
+  background: var(--aviso);
 }
 
 /* ── Crear un plan (y su universidad) ────────────────────────────────────── */
@@ -6132,7 +6164,7 @@ body {
   flex-direction: column;
   gap: 5px;
   font-size: 14px;
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
 }
 .cp-acciones {
   display: flex;
@@ -6167,7 +6199,7 @@ body {
 }
 .ed-grupo-tit.materia-borrada,
 .ed-grupo-tit.correlativa-borrada {
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
 }
 
 /* Un antes/después de verdad: los dos valores enfrentados, no un string armado. */
@@ -6189,8 +6221,8 @@ body {
 .ed-antes {
   font-family: var(--mono);
   font-size: 12px;
-  background: var(--cu-bg);
-  color: var(--cu-tx);
+  background: var(--aviso-bg);
+  color: var(--aviso-tx);
   border-radius: 3px;
   padding: 1px 6px;
   text-decoration: line-through;
@@ -6231,8 +6263,8 @@ body {
   background: color-mix(in srgb, var(--ap) 6%, transparent);
 }
 .ed-fila.cam-materia-borrada {
-  box-shadow: inset 3px 0 0 0 var(--cu);
-  background: color-mix(in srgb, var(--cu) 6%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--aviso);
+  background: color-mix(in srgb, var(--aviso) 6%, transparent);
 }
 
 /* ── Franja de 3 pasos ───────────────────────────────────────────────────── */
@@ -6314,13 +6346,13 @@ body {
 }
 /* bloqueado: hay errores */
 .ed-paso.bloqueado .ed-paso-n {
-  background: var(--cu-bg);
-  color: var(--cu-tx);
+  background: var(--aviso-bg);
+  color: var(--aviso-tx);
   border-color: transparent;
 }
 .ed-paso.bloqueado.aqui .ed-paso-btn {
-  border-color: var(--cu);
-  background: color-mix(in srgb, var(--cu) 6%, var(--card));
+  border-color: var(--aviso);
+  background: color-mix(in srgb, var(--aviso) 6%, var(--card));
 }
 /* todavía no se puede empezar */
 .ed-paso.pendiente .ed-paso-btn {
@@ -6453,7 +6485,7 @@ body {
   text-decoration: none;
 }
 .hb-quitar:hover {
-  color: var(--cu-tx);
+  color: var(--aviso-tx);
   text-decoration: underline;
 }
 .hb-alta-fila {
@@ -6499,10 +6531,10 @@ body {
 }
 /* Destructivo: el color dice lo que el texto ya dice, para que no haya sorpresa. */
 .btn.peligro {
-  background: var(--cu-tx);
+  background: var(--aviso-tx);
 }
 .btn.peligro:hover {
-  background: var(--cu);
+  background: var(--aviso);
 }
 
 /* La barra del árbol-editor: quién es la materia activa y qué se puede hacer. */

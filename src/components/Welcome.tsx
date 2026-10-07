@@ -65,7 +65,7 @@ const Check = () => (
 )
 
 const FEATURES = [
-  { Icon: EstadosIcon, t: 'Estados', d: 'pendiente, cursando, final o aprobada', tono: 'need' },
+  { Icon: EstadosIcon, t: 'Estados', d: 'pendiente, cursando, final o aprobada', tono: 'cu' },
   { Icon: CorrIcon, t: 'Correlativas', d: 'qué necesitás antes y qué habilita después', tono: 'unlock' },
   { Icon: AvanceIcon, t: 'Avance', d: 'cuánto te falta para el título', tono: 'need' },
 ]
@@ -220,7 +220,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
                         <span className="w-plan-chips">
                           <span className="w-chip need">{plural(p.materias.length, 'materia', 'materias')}</span>
                           <span className="w-chip unlock">{plural(anios, 'año', 'años')}</span>
-                          <span className="w-chip neutro">{plural(p.titulos.length, 'título', 'títulos')}</span>
+                          <span className="w-chip cu">{plural(p.titulos.length, 'título', 'títulos')}</span>
                         </span>
                       )}
                     </span>
