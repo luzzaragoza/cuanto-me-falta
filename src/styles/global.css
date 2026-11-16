@@ -95,7 +95,7 @@
   --line-fuerte: #c4c2ba;
   --line-marca: #d9d7cf;
   --pprev-bg: #f1f0eb;
-  --pprev-tx: #747888;
+  --pprev-tx: #6c7081;
   --card-hover: #fbfbf9;
 
   /* Familia de la tinta. `--tinta-tx` es para TEXTO chico sobre claro y para
@@ -1051,7 +1051,7 @@ mark {
 /* ----- árbol de correlativas: la línea de tiempo ----- */
 /* Rediseño 2-sep: columnas por cuatrimestre, bandas por año, correlativas siempre
    visibles como curvas tenues. La cadena de una materia se resalta EN EL LUGAR
-   (naranja lo que necesita · oliva lo que habilita · el resto se apaga), así que
+   (naranja lo que necesita · verde lo que habilita · el resto se apaga), así que
    ya no hay re-layout ni "modo rama". El lienzo es HTML+SVG propio: React Flow y
    elkjs se fueron con este rediseño. */
 .treeview {
@@ -1197,7 +1197,7 @@ mark {
   flex: 1;
   min-width: 0;
   display: grid;
-  /* Las pastillas miden 210 px SIEMPRE que haya lugar: fijas, no ajustadas al
+  /* Las dos etiquetas miden 210 px SIEMPRE que haya lugar: fijas, no ajustadas al
      texto, para que pasar de una materia a otra no las corra de lugar —mover el
      mouse no tiene que mover la interfaz. Cuando la ventana no da, ceden ellas
      hasta 120 y no el nombre, que es lo que hay que poder leer. */
@@ -1425,7 +1425,7 @@ mark {
    está en la cadena de la que se está mirando. Dos datos, dos lugares.
 
    `final` es medio relleno, igual que su tick en la pantalla principal: además
-   del color (terracota contra el ciruela de `cursando`), la diferencia es de
+   del color (naranja contra el violeta de `cursando`), la diferencia es de
    FORMA. Acá el corte es vertical porque el riel lo es. */
 .tv-riel {
   position: absolute;
@@ -1444,10 +1444,10 @@ mark {
 .tv-riel.cursando {
   background: var(--cu);
 }
-/* Sobre la tarjeta seleccionada el fondo ES el acento, y ahí el riel se rompe:
-   la mitad "llena" de `final` es el mismo hex que el fondo (ΔE 0,0 — literalmente
-   invisible) y el ciruela de `cursando` da 1,5:1 encima. Se invierte el par: la mitad salien-
-   te pasa a ser la tinta clara y la otra un velo oscuro, así la FORMA —que es lo
+/* Sobre la tarjeta seleccionada el fondo ES la tinta de marca, y ahí el riel se
+   rompe: el violeta de `cursando` da menos de 2:1 sobre el azul y el verde de
+   `aprobada` apenas más. Se invierte el par: la parte llena pasa a ser la tinta
+   clara y, en `final`, la otra mitad un velo oscuro, así la FORMA —que es lo
    que separa "final" de "cursando"— sobrevive. Vale para una sola tarjeta a la
    vez, y la barra de arriba igual dice el estado con todas las letras. */
 .tv-nodo.sel .tv-riel {
@@ -1705,8 +1705,8 @@ mark {
   padding: 10px 18px;
   border-radius: var(--r-lg);
   /* mismo vocabulario que las otras dos capas flotantes de esta pantalla (el panel
-     de referencias y el zoom): sin el velo y la sombra, un rectángulo crema sobre
-     un lienzo de tarjetas crema se lee como una tarjeta más, no como algo de arriba */
+     de referencias y el zoom): sin el velo y la sombra, un rectángulo claro sobre
+     un lienzo de tarjetas claras se lee como una tarjeta más, no como algo de arriba */
   background: rgba(var(--paper-rgb), 0.9);
   backdrop-filter: blur(6px);
   border: 1px solid rgba(var(--ink-rgb), 0.1);
@@ -1718,8 +1718,8 @@ mark {
   /* texto, no control: el dedo que arrastra desde abajo tiene que agarrar el lienzo */
   pointer-events: none;
 }
-/* La ficha es OSCURA a propósito: flota sobre un lienzo crema lleno de tarjetas
-   crema, y tiene que leerse como control y no como una tarjeta más. */
+/* La ficha es OSCURA a propósito: flota sobre un lienzo claro lleno de tarjetas
+   claras, y tiene que leerse como control y no como una tarjeta más. */
 .tv-ficha {
   pointer-events: auto;
   padding: 12px 14px 12px 18px;
@@ -1889,8 +1889,8 @@ mark {
   .tv-zoom.vertical .tv-zpct {
     min-width: 38px;
   }
-  /* 3 · La ficha en UN renglón y con tope de ancho: nombre | pastillas | ×. A lo
-     ancho de 844 px medía 117 de alto (la mitad del lienzo) con dos pastillas de
+  /* 3 · La ficha en UN renglón y con tope de ancho: nombre | etiquetas | ×. A lo
+     ancho de 844 px medía 117 de alto (la mitad del lienzo) con dos etiquetas de
      400 px cada una. `contents` en su fila de arriba pone la × al final. */
   .tv-pie {
     right: auto;
@@ -2060,7 +2060,7 @@ mark {
 /* ----- modal de perfil ----- */
 /* ----- bienvenida (primera visita) ----- */
 /* Tres pasos: qué es la app → qué carrera → cómo te llamás. La tarjeta es una sola
-   y el contenido cambia adentro; arriba, tres pastillas dicen cuánto falta. */
+   y el contenido cambia adentro; arriba, tres rayitas dicen cuánto falta. */
 .welcome {
   position: fixed;
   inset: 0;
@@ -2263,9 +2263,9 @@ mark {
   margin-top: 1px;
   color: var(--tinta);
 }
-/* Los tres tonos del sistema, uno por fila, y cada ícono con el color de lo que
-   describe: Estados el ciruela (es donde vive cursando, así el color ya es conocido
-   cuando aparece en la app), Correlativas el verde del árbol, Avance el acento. */
+/* Tres renglones separados por una línea, con el ícono en tinta y sin fondo de
+   color: los estados y las correlativas tienen sus colores, pero acá todavía no
+   hay nada que leer como estado. */
 .w-feat-tx {
   flex: 1;
   min-width: 0;
@@ -2381,8 +2381,8 @@ mark {
   background: var(--tinta-bg-2);
   color: var(--tinta-tx);
 }
-/* El tercero era neutro cuando la paleta tenía dos familias; con ciruela, cada
-   chip tiene la suya. Son decorativos: no dicen ningún estado. */
+/* Los tres chips van iguales, en el tinte de la tinta: son datos del plan, no
+   dicen ningún estado. */
 
 /* ── El nombre ── */
 .w-name {
@@ -2845,7 +2845,7 @@ mark {
   gap: 8px;
   /* Sin esto el grupo mide lo que mide su contenido y "Marcar una materia" empuja
      la fila fuera del naipe de 304px. Con min-width:0 el que cede es el botón
-     largo, que parte el texto en dos renglones adentro de la píldora. */
+     largo, que parte el texto en dos renglones adentro del botón. */
   min-width: 0;
 }
 .tour-skip {
@@ -2889,7 +2889,7 @@ mark {
   /* El único que cede cuando la fila no entra. "Marcar una materia" no entra en
      un renglón dentro de 304px: baja a dos, centrados. Y el alto es MÍNIMO, no
      fijo: dos renglones entran en 36px, pero si alguna vez fueran tres (pantalla
-     angosta, letra grande del sistema) la píldora crece en vez de recortar el
+     angosta, letra grande del sistema) el botón crece en vez de recortar el
      texto. Con alto fijo el texto se sale — pasa en el diseño mismo a 268px. */
   min-height: 36px;
   padding: 4px 16px;
@@ -3300,7 +3300,7 @@ mark {
 
    Diseño de Luz (4-sep). Es un DOCUMENTO, no una pantalla: 794×1123 px = 210×297 mm a
    96 dpi. Por eso `@page` va con `margin: 0` y los márgenes los pone la hoja — si el
-   margen lo pusiera el navegador, el fondo crema no llegaría al borde del papel.
+   margen lo pusiera el navegador, el fondo no llegaría al borde del papel.
 
    Se imprime con `window.print()` sobre este HTML: nada de jspdf/html2canvas. El texto
    sale seleccionable y los códigos de materia (mono) no se rasterizan.
@@ -3345,7 +3345,7 @@ mark {
      no tienen por qué filtrarse al resto. Lo que SÍ se reusa tal cual: --tinta, --ap,
      --fi, --ink, --paper (que acá es la tarjeta), --sunk, --line-fuerte. */
   --px-papel: #ffffff; /* el papel */
-  --px-mono: #747888; /* el mono apagado: códigos, conteos, rótulos */
+  --px-mono: #6c7081; /* el mono apagado: códigos, conteos, rótulos */
   --px-sec: #4f5567; /* texto secundario (la carrera, "te faltan") */
   --px-riel: #e6e5df; /* el riel de las barras */
   --px-cursando: #7c4dc9; /* el violeta de cursando: 4:1 contra el riel de la barra */
@@ -3527,7 +3527,7 @@ mark {
   color: var(--px-ap-fuerte);
 }
 
-/* Sin notas cargadas no hay número que mostrar. Un guión en Caprasimo 52px se lee como
+/* Sin notas cargadas no hay número que mostrar. Un guión a 52px se lee como
    una barra de censura, así que el hueco se dice con palabras y en el tono de un rótulo. */
 #print-summary .ps-stat-n.vacio {
   align-items: center;
@@ -3558,7 +3558,7 @@ mark {
 }
 
 /* ----- 3b · los títulos del plan -----
-   Una fila por hito, con lo que falta para CADA uno. El nombre en serif porque es el
+   Una fila por hito, con lo que falta para CADA uno. El nombre en la tipografía de títulos porque es el
    premio, y el contador pegado a SU título: la versión anterior tenía el número del
    título de grado en un cuadro aparte, que repetía la resta del avance. */
 #print-summary .ps-titulos {
@@ -3649,7 +3649,7 @@ mark {
 }
 
 /* "Pendientes de final" en color liso, como en la pantalla (decisión de Luz, 7-oct: la
-   trama "quedaba rara"). Con ciruela en cursando el matiz ya separa los tres tramos:
+   trama "quedaba rara"). Con violeta en cursando el matiz ya separa los tres tramos:
    ΔE ≥ 31 entre ellos. La forma sigue en la leyenda, en el glifo medio lleno.
    Límite conocido: impresa en blanco y negro, los tres tramos son casi el mismo gris
    (L* 52–56). Ahí la hoja lo dice con texto: los conteos de la leyenda y las listas. */
@@ -4897,7 +4897,7 @@ mark {
   border-bottom: 1px solid var(--line);
   background: var(--card);
 }
-/* ── marca: mismo patrón que el encabezado del alumno (nombre en serif + kicker
+/* ── marca: mismo patrón que el encabezado del alumno (nombre en la tipografía de títulos + kicker
       en versalitas espaciadas), para que se sienta el mismo producto ── */
 .adm-brand {
   display: flex;

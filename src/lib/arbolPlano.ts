@@ -6,7 +6,7 @@
 //
 // Acá murieron dos cosas del árbol anterior, a propósito:
 // - El "modo rama" (re-acomodar la cadena con ELK): la cadena ahora se RESALTA en
-//   el lugar — naranja lo que necesita, oliva lo que habilita, el resto se apaga.
+//   el lugar — naranja lo que necesita, verde lo que habilita, el resto se apaga.
 //   Con eso elkjs y React Flow dejaron de hacer falta (−506 KB gz de chunk).
 // - Las rampas por distancia (--need-N / --unlock-N): el diseño usa UN color por
 //   sentido, no cuatro por profundidad. La distancia ya la cuenta la geometría:

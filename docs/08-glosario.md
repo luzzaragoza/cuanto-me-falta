@@ -23,7 +23,7 @@
 |---|---|
 | **Estado de una materia** | Situación del estudiante respecto de esa materia: `pendiente`, `cursando`, `pendiente de final` o `aprobada`. |
 | **Disponible** | Materia pendiente que ya se puede cursar: todas sus correlativas directas están al menos en curso. |
-| **Necesitás / Habilita** | Las dos direcciones del grafo desde una materia: sus prerrequisitos (violeta) y todo lo que destraba (teal). |
+| **Necesitás / Habilita** | Las dos direcciones del grafo desde una materia: sus prerrequisitos (naranja) y todo lo que destraba (verde). |
 | **Árbol de correlativas** | Vista de grafo interactiva del plan completo, con foco por materia y cadenas resaltadas por nivel. |
 | **Hito** | Cada título del plan mostrado en el tablero, con la cantidad de materias que faltan para alcanzarlo. |
 | **Backup** | Archivo JSON con todo el progreso local, exportable e importable por el usuario. |
