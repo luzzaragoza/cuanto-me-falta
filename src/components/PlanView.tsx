@@ -48,7 +48,7 @@ function TituloHito({ nombre, obtenido }: { nombre: string; obtenido: boolean })
         <path d="M12 3 1 8l11 5 9-4.09V15h2V8z" />
         <path d="M5 11.18V15c0 1.66 3.13 3 7 3s7-1.34 7-3v-3.82l-7 3.18z" />
       </svg>
-      <span className="th-k">Título</span>
+      <span className="th-k">Título:</span>
       <span className="th-n">{nombre}</span>
       {obtenido && <span className="th-e">obtenido</span>}
     </div>
@@ -88,7 +88,7 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
     )
   }
 
-  // navegar a una materia desde un chip: scroll + flash dorado
+  // navegar a una materia desde un chip: scroll + una pasada de resaltador
   const goTo = (cod: string) => {
     document.getElementById(rowId(cod))?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setFlash(cod)
@@ -110,14 +110,11 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
         return (
         <section className="year" key={anio.year}>
           <div className="yhead">
-            <span className={'n' + (completo ? ' ok' : '')}>{anio.year}°</span>
-            <span className="ytx">
-              <span className="l">Año</span>
-              <span className="yres">
-                {av ? `${av.aprobadas} de ${av.total} aprobadas` : ''}
-              </span>
-            </span>
-            {/* Los mismos tres tramos que el anillo de arriba y que la barra del PDF:
+            <div className="ytx">
+              <h2 className="ytit">{anio.year}° año</h2>
+              <span className="yres">{av ? `${av.aprobadas} de ${av.total} aprobadas` : ''}</span>
+            </div>
+            {/* Los mismos tres tramos que el mapa de arriba y que la barra del PDF:
                 así el año que estás cursando se ve desde su encabezado. */}
             <span
               className="ybar"
@@ -145,7 +142,7 @@ export function PlanView({ db, openCod, onOpen, onVerArbol }: Props) {
           <div className="cuatris">
             {anio.cuatris.map((q) => (
               <div className="cuati" key={q.n}>
-                <h3>{q.n}° Cuatrimestre</h3>
+                <h3>{q.n}° cuatrimestre</h3>
                 {q.mats.map((m) => (
                   <Fragment key={m.cod}>
                     <MateriaRow

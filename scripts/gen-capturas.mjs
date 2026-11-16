@@ -94,7 +94,9 @@ const run = async () => {
   await server.listen()
   const url = `http://localhost:${PORT}/`
 
-  const browser = await chromium.launch()
+  // CHROMIUM_PATH: para máquinas donde el navegador ya viene instalado en otro lado
+  // y no coincide con la versión que fija @playwright/test (contenedores, CI propio).
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
   const page = await browser.newPage({
     viewport: { width: 1240, height: 730 },
     deviceScaleFactor: 2, // retina: se ve nítido escalado a 820px en el README

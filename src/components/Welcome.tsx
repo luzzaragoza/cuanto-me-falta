@@ -8,44 +8,17 @@ import { useSession } from '../state/auth'
 import { PLANES, nombreUniversidad } from '../data/planes'
 import { GoogleG } from './AccountBox'
 import { ArbolFondo } from './ArbolFondo'
+import { Logo } from './Logo'
 import { Auth } from '../state/auth'
 
-// Marca en serif de sistema (Georgia) para que el ¿ del logo sea idéntico al del
-// favicon / OG: esos son PNG y SVG rasterizados, así que no pueden pedir una webfont
-// y caen a la serif del sistema. El wordmark de abajo sí usa la display de la app.
-//
-// El acento y la tinta van LITERALES, no como tokens: este badge tiene que coincidir
-// con el favicon y la imagen de OG, que son PNG generados aparte. Si siguiera a la
-// paleta, un cambio de colores dejaría el logo de la app distinto del de la pestaña
-// del navegador y del que se ve al compartir el link.
-//
-// ⚠️ Estos dos hex son los MISMOS que `GOLD` y `WHITE` en scripts/gen-icons.mjs.
-// Cambiarlos acá sin correr ese script deja el badge distinto del favicon.
-const LogoBadge = () => (
-  <svg viewBox="0 0 100 100" width="54" height="54" aria-hidden="true">
-    <rect x="4" y="4" width="92" height="92" rx="26" fill="#c67139" />
-    <text
-      x="50"
-      y="76"
-      textAnchor="middle"
-      fontFamily="Georgia, 'Times New Roman', serif"
-      fontSize="74"
-      fontWeight="700"
-      fill="#fff9f0"
-    >
-      ¿
-    </text>
-  </svg>
-)
-
 const EstadosIcon = () => (
-  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="5" />
     <path d="M8 12l3 3 5-6" />
   </svg>
 )
 const CorrIcon = () => (
-  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="3" width="6" height="5" rx="1.6" />
     <rect x="3" y="16" width="6" height="5" rx="1.6" />
     <rect x="15" y="16" width="6" height="5" rx="1.6" />
@@ -53,7 +26,7 @@ const CorrIcon = () => (
   </svg>
 )
 const AvanceIcon = () => (
-  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 20h16" />
     <path d="M7 20v-6M12 20V8M17 20v-9" />
   </svg>
@@ -65,9 +38,9 @@ const Check = () => (
 )
 
 const FEATURES = [
-  { Icon: EstadosIcon, t: 'Estados', d: 'pendiente, cursando, final o aprobada', tono: 'cu' },
-  { Icon: CorrIcon, t: 'Correlativas', d: 'qué necesitás antes y qué habilita después', tono: 'unlock' },
-  { Icon: AvanceIcon, t: 'Avance', d: 'cuánto te falta para el título', tono: 'need' },
+  { Icon: EstadosIcon, t: 'Marcá cada materia', d: 'Pendiente, cursando, con el final pendiente o aprobada.' },
+  { Icon: CorrIcon, t: 'Mirá las correlativas', d: 'Qué necesitás antes y qué habilita después.' },
+  { Icon: AvanceIcon, t: 'Seguí tu avance', d: 'Cuánto te falta para cada título, siempre a la vista.' },
 ]
 
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
@@ -160,7 +133,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
         {paso === 1 && (
           <>
             <span className="w-logo">
-              <LogoBadge />
+              <Logo size={52} />
             </span>
             <h1 className="w-brand">¿Cuánto me falta?</h1>
             <p className="w-tag">
@@ -169,9 +142,9 @@ export function Welcome({ onClose }: { onClose: () => void }) {
             </p>
 
             <div className="w-features">
-              {FEATURES.map(({ Icon, t, d, tono }) => (
+              {FEATURES.map(({ Icon, t, d }) => (
                 <div className="w-feat" key={t}>
-                  <span className={`w-feat-ic ${tono}`}>
+                  <span className="w-feat-ic">
                     <Icon />
                   </span>
                   <span className="w-feat-tx">
@@ -218,9 +191,9 @@ export function Welcome({ onClose }: { onClose: () => void }) {
                           vez sería ruido, y acá contesta "¿es esta?" antes de entrar. */}
                       {sel && (
                         <span className="w-plan-chips">
-                          <span className="w-chip need">{plural(p.materias.length, 'materia', 'materias')}</span>
-                          <span className="w-chip unlock">{plural(anios, 'año', 'años')}</span>
-                          <span className="w-chip cu">{plural(p.titulos.length, 'título', 'títulos')}</span>
+                          <span className="w-chip">{plural(p.materias.length, 'materia', 'materias')}</span>
+                          <span className="w-chip">{plural(anios, 'año', 'años')}</span>
+                          <span className="w-chip">{plural(p.titulos.length, 'título', 'títulos')}</span>
                         </span>
                       )}
                     </span>

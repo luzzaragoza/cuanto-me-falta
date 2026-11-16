@@ -168,7 +168,7 @@ export function ArbolFondo() {
               y={n.y}
               width={W}
               height={H}
-              rx={18}
+              rx={9}
             />
           ))}
         </g>

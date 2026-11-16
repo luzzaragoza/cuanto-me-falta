@@ -5,6 +5,7 @@
 // que administrás con su estado real (qué versión ve el alumno y si el borrador tiene
 // cambios sin publicar). Editar y publicar llegan en la entrega siguiente.
 
+import { Logo } from '../components/Logo'
 import { useEffect, useState } from 'react'
 import { authHabilitado } from '../lib/supabase'
 import { Auth, useSession } from '../state/auth'
@@ -83,7 +84,7 @@ export function AdminApp() {
           etiqueta con un punto de color — el color dice el privilegio sin gritar. */}
       <header className="adm-head">
         <div className="adm-brand">
-          <span className="adm-mark">¿</span>
+          <Logo size={30} />
           <span className="adm-titulo">
             Administración
             <span className="adm-kicker">planes de estudio</span>

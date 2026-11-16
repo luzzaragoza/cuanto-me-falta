@@ -1,14 +1,5 @@
 import type { Estado } from '../types'
-
-// El glifo de cada estado.  no lleva carácter a propósito: su tick es un
-// círculo MEDIO RELLENO (la cursada está, falta rendir), y esa es una diferencia de
-// FORMA — se lee en escala de grises y no depende de cómo rasterice un glifo.
-const TICK: Record<Estado, string> = {
-  pendiente: '',
-  cursando: '•',
-  final: '',
-  aprobada: '✓',
-}
+import { Glifo } from './Glifo'
 
 const TreeIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -67,10 +58,10 @@ export function MateriaRow({
         }
       }}
     >
-      <span className="tick">{TICK[estado]}</span>
+      <Glifo estado={estado} className={disponible && estado === 'pendiente' ? 'avail' : ''} />
       <span className="info">
-        <span className="cod">{cod.startsWith('CUST') ? '—' : cod}</span>
         <span className="nom">{nom}</span>
+        <span className="cod">{cod.startsWith('CUST') ? '—' : cod}</span>
       </span>
       {disponible && <span className="avail-tag">disponible</span>}
       <button

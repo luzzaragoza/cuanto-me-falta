@@ -176,7 +176,7 @@ describe('paleta · la hoja del PDF', () => {
 
   for (const vision of VISIONES) {
     it(`el tramo de cursando se separa del de final (${vision})`, () => {
-      expect(cursando.distancia(token('gold'), vision)).toBeGreaterThanOrEqual(DISTINTOS)
+      expect(cursando.distancia(token('fi'), vision)).toBeGreaterThanOrEqual(DISTINTOS)
     })
   }
 })

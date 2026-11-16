@@ -5,6 +5,7 @@ import { avanceDe } from '../domain/Avance'
 import { store } from '../state/store'
 import { toast } from '../lib/toast'
 import { Analytics } from '../lib/analytics'
+import { Glifo } from './Glifo'
 
 const OPTS: { k: Estado; label: string; desc: string }[] = [
   { k: 'pendiente', label: 'Pendiente', desc: 'Todavía no la empecé' },
@@ -14,8 +15,6 @@ const OPTS: { k: Estado; label: string; desc: string }[] = [
 ]
 
 // Ver MateriaRow: 'final' no lleva glifo, lo dice el medio relleno del círculo.
-const TICK: Record<Estado, string> = { pendiente: '', cursando: '•', final: '', aprobada: '✓' }
-
 const Check = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 6 9 17l-5-5" />
@@ -109,7 +108,7 @@ export function StatePopover({ cod, anchor, db, onClose, onVerArbol }: Props) {
           className={'sp-opt' + (estado === o.k ? ' sel' : '')}
           onClick={() => select(o.k)}
         >
-          <span className={'sp-dot ' + o.k}>{TICK[o.k]}</span>
+          <Glifo estado={o.k} />
           <span className="sp-name">
             {o.label}
             <small>{o.desc}</small>
