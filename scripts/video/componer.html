@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Composición · Nada, abu. Me recibí.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..112,400..800&display=block"
+    />
+    <style>
+      /* El lienzo: 1080×1920, todo en posiciones absolutas. Nada se anima con
+         CSS: `render(t)` calcula cada cuadro a partir del tiempo, así el mismo
+         instante da siempre la misma imagen. */
+      :root {
+        --papel: #f6f5f1;
+        --tinta: #151b33;
+        --azul: #24388a;
+        --resalta: #ffe45c;
+        --linea: #e3e1da;
+        --suave: #5b6173;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--papel);
+        font-family: 'Archivo', sans-serif;
+        color: var(--tinta);
+        -webkit-font-smoothing: antialiased;
+      }
+      #lienzo {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+      #lienzo > * {
+        position: absolute;
+      }
+
+      /* ── Cabecera: la fecha y, a veces, una frase ── */
+      #fecha,
+      #titulo {
+        left: 0;
+        width: 1080px;
+        text-align: center;
+        font-stretch: 108%;
+        white-space: nowrap;
+      }
+      #fecha {
+        font-size: 42px;
+        line-height: 50px;
+        font-weight: 700;
+        color: var(--azul);
+      }
+      #titulo {
+        top: 312px;
+        font-size: 56px;
+        line-height: 64px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      /* ── El celular: la app real, sin marco de marca ── */
+      #cel {
+        left: 199px;
+        width: 682px;
+        height: 1476px;
+        border-radius: 46px;
+        overflow: hidden;
+        background: var(--papel);
+        box-shadow:
+          0 0 0 2px var(--linea),
+          0 10px 26px rgba(21, 27, 51, 0.13);
+      }
+      #cel canvas {
+        display: block;
+        width: 682px;
+        height: 1476px;
+      }
+      #toque {
+        width: 92px;
+        height: 92px;
+        margin: -46px 0 0 -46px;
+        border-radius: 50%;
+        background: rgba(36, 56, 138, 0.2);
+        border: 3px solid rgba(36, 56, 138, 0.55);
+      }
+
+      /* ── Burbujas: genéricas, con los colores de la app ── */
+      #pares {
+        inset: 0;
+      }
+      .par {
+        position: absolute;
+        left: 0;
+        width: 1080px;
+        bottom: 430px; /* el borde de abajo queda en y = 1490 */
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .burbuja {
+        max-width: 820px; /* la pregunta más larga entra en un renglón */
+        padding: 20px 32px 24px;
+        border-radius: 30px;
+        font-size: 44px;
+        line-height: 1.18;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        text-wrap: balance;
+        box-shadow: 0 6px 18px rgba(21, 27, 51, 0.14);
+      }
+      .burbuja.abu {
+        align-self: flex-start;
+        margin-left: 130px;
+        background: #fff;
+        border: 2px solid var(--linea);
+        border-bottom-left-radius: 8px;
+      }
+      .burbuja.abu small {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 25px;
+        line-height: 30px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: var(--azul);
+      }
+      .burbuja.yo {
+        align-self: flex-end;
+        margin-right: 130px; /* borde derecho en x = 950 */
+        padding-top: 22px;
+        background: var(--azul);
+        color: #fff;
+        border-bottom-right-radius: 8px;
+      }
+
+      /* ── Momento 5: el número, grande ── */
+      #numero {
+        left: 0;
+        width: 1080px;
+        bottom: 430px;
+        display: flex;
+        justify-content: center;
+      }
+      #numero .tarjeta {
+        min-width: 330px;
+        padding: 26px 40px 30px;
+        border-radius: 34px;
+        background: #fff;
+        border: 2px solid var(--linea);
+        box-shadow: 0 6px 18px rgba(21, 27, 51, 0.14);
+        text-align: center;
+      }
+      #numero b {
+        display: inline-block;
+        min-width: 250px;
+        padding: 0 26px;
+        border-radius: 12px;
+        background: var(--resalta);
+        font-size: 196px;
+        line-height: 204px;
+        font-weight: 800;
+        font-stretch: 108%;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ── Cierre ── */
+      #cierre {
+        inset: 0;
+        background: var(--papel);
+      }
+      #cierre > * {
+        position: absolute;
+      }
+      #c-marca {
+        left: 0;
+        width: 1080px;
+        top: 318px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+      }
+      #c-marca span {
+        font-size: 54px;
+        line-height: 60px;
+        font-weight: 800;
+        font-stretch: 108%;
+        letter-spacing: -0.02em;
+      }
+      #c-chat {
+        left: 0;
+        width: 1080px;
+        top: 640px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      #c-chat .burbuja {
+        font-size: 50px;
+        max-width: 700px;
+        box-shadow: 0 4px 14px rgba(21, 27, 51, 0.1);
+      }
+      #c-url {
+        left: 0;
+        width: 1080px;
+        top: 1080px;
+        text-align: center;
+      }
+      #c-url b {
+        display: inline-block;
+        padding: 6px 26px 10px;
+        border-radius: 12px;
+        background: var(--resalta);
+        font-size: 78px;
+        line-height: 90px;
+        font-weight: 800;
+        font-stretch: 108%;
+        letter-spacing: -0.025em;
+      }
+      #c-chico {
+        left: 150px;
+        width: 780px;
+        top: 1240px;
+        text-align: center;
+        font-size: 31px;
+        line-height: 44px;
+        font-weight: 500;
+        color: var(--suave);
+        text-wrap: balance;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="lienzo">
+      <div id="fecha"></div>
+      <div id="titulo"></div>
+      <div id="cel"><canvas width="682" height="1476"></canvas></div>
+      <div id="toque"></div>
+      <div id="pares"></div>
+      <div id="numero"><div class="tarjeta"><b></b></div></div>
+      <div id="cierre">
+        <div id="c-marca">
+          <svg viewBox="0 0 100 100" width="170" height="170" aria-hidden="true">
+            <rect x="4" y="4" width="92" height="92" rx="22" fill="#ffe45c" />
+            <path id="c-trazo" transform="translate(21.95 64.73) scale(0.083)" fill="#151b33" />
+          </svg>
+          <span>¿Cuánto me falta?</span>
+        </div>
+        <div id="c-chat">
+          <div class="burbuja abu" id="c-abu"><small>Abu</small><span></span></div>
+          <div class="burbuja yo" id="c-yo"></div>
+        </div>
+        <div id="c-url"><b></b></div>
+        <div id="c-chico"></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s) => document.querySelector(s)
+      const CEL = { x: 199, y: 392, w: 682, h: 1476, s: 682 / 390 }
+      let G = null
+      const imgs = new Map()
+      let tomaDibujada = null
+
+      const clamp = (x) => Math.max(0, Math.min(1, x))
+      const sale = (x) => 1 - Math.pow(1 - clamp(x), 3) // ease-out cúbico
+      const r = (x) => Math.round(x * 1000) / 1000
+
+      /** Entrada y salida de algo que vive entre t0 y t1: opacidad y un corrimiento corto. */
+      function vida(t, t0, t1, entra = 0.26, seVa = 0.18, sube = 26) {
+        if (t < t0 || t >= t1) return { o: 0, y: 0 }
+        const a = sale((t - t0) / entra)
+        const b = clamp((t1 - t) / seVa)
+        return { o: r(a * b), y: r((1 - a) * sube - (1 - b) * 10) }
+      }
+      const pon = (el, v) => {
+        el.style.opacity = v.o
+        el.style.transform = `translateY(${v.y}px)`
+      }
+
+      async function imagen(id) {
+        if (!imgs.has(id)) {
+          const im = new Image()
+          im.src = `${G.base}/${id}.png`
+          imgs.set(id, im.decode().then(() => im))
+        }
+        return imgs.get(id)
+      }
+
+      async function init(guion) {
+        G = guion
+        $('#c-trazo').setAttribute('d', G.trazo)
+        $('#c-abu span').textContent = G.cierre.abu.texto
+        $('#c-yo').textContent = G.cierre.yo.texto
+        $('#c-url b').textContent = G.cierre.url.texto
+        $('#c-chico').textContent = G.cierre.chico.texto
+        // Un contenedor por par de burbujas: la respuesta ocupa su lugar desde el
+        // principio (invisible), así la pregunta no salta cuando llega.
+        const pares = new Map()
+        for (const b of G.burbujas) {
+          if (!pares.has(b.par)) {
+            const c = document.createElement('div')
+            c.className = 'par'
+            $('#pares').appendChild(c)
+            pares.set(b.par, c)
+          }
+          const el = document.createElement('div')
+          el.className = `burbuja ${b.quien}`
+          if (b.quien === 'abu') el.innerHTML = '<small>Abu</small>'
+          el.appendChild(document.createTextNode(b.texto))
+          pares.get(b.par).appendChild(el)
+          b.el = el
+        }
+        for (const w of [500, 600, 700, 800]) await document.fonts.load(`${w} 40px Archivo`)
+        await document.fonts.ready
+        await Promise.all([...new Set(G.tomas.map((x) => x.img))].map(imagen))
+      }
+
+      /** Dibuja el instante `t`. Devuelve una firma: si no cambia, el cuadro es igual. */
+      async function render(t) {
+        const firma = []
+
+        // La app: la última toma que empezó antes de t.
+        let toma = G.tomas[0].img
+        for (const x of G.tomas) if (x.t <= t + 1e-6) toma = x.img
+        if (toma !== tomaDibujada) {
+          const ctx = $('#cel canvas').getContext('2d')
+          ctx.imageSmoothingQuality = 'high'
+          ctx.drawImage(await imagen(toma), 0, 0, CEL.w, CEL.h)
+          tomaDibujada = toma
+        }
+        firma.push(toma)
+
+        // La cámara: el celular sube cuando lo que importa está al pie de la página.
+        let dy = 0
+        for (const c of G.camara) if (t >= c.t0 && t < c.t1) dy = c.dy * sale((t - c.t0) / 0.3)
+        const celY = r(CEL.y + dy)
+        $('#cel').style.top = `${celY}px`
+        firma.push(celY)
+
+        // El toque sobre la pantalla.
+        let tq = { o: 0, e: 1, x: 0, y: 0 }
+        for (const q of G.toques) {
+          const d = t - (q.t - 0.14)
+          if (d >= 0 && d < 0.42) {
+            tq = {
+              o: r(sale(d / 0.1) * clamp((0.42 - d) / 0.16)),
+              e: r(0.72 + 0.28 * sale(d / 0.14)),
+              x: CEL.x + q.x * CEL.s,
+              y: celY + q.y * CEL.s,
+            }
+          }
+        }
+        const elT = $('#toque')
+        elT.style.opacity = tq.o
+        elT.style.left = `${tq.x}px`
+        elT.style.top = `${tq.y}px`
+        elT.style.transform = `scale(${tq.e})`
+        firma.push(tq.o, tq.e)
+
+        // La frase del momento, y la fecha, que le hace lugar.
+        const tit = G.titulos.find((x) => t >= x.t0 && t < x.t1)
+        const vTit = tit ? vida(t, tit.t0, tit.t1, 0.3, 0.2, 14) : { o: 0, y: 0 }
+        if (tit) $('#titulo').textContent = tit.texto
+        pon($('#titulo'), vTit)
+        const fe = G.fechas.find((x) => t >= x.t0 && t < x.t1)
+        const vFe = fe ? vida(t, fe.t0, fe.t1, 0.22, 0.12, 12) : { o: 0, y: 0 }
+        if (fe) $('#fecha').textContent = fe.texto
+        const lugar = tit ? sale((t - tit.t0) / 0.3) * clamp((tit.t1 - t) / 0.2) : 0
+        $('#fecha').style.top = `${r(288 - 36 * lugar)}px`
+        pon($('#fecha'), vFe)
+        firma.push(tit?.texto, vTit.o, vTit.y, fe?.texto, vFe.o, vFe.y, r(lugar))
+
+        // Las burbujas.
+        for (const b of G.burbujas) {
+          const v = vida(t, b.t0, b.t1)
+          pon(b.el, v)
+          b.el.parentElement.style.display = t >= b.t0 - 0.5 && t < b.t1 + 0.1 ? 'flex' : 'none'
+          if (v.o) firma.push(b.texto, v.o, v.y)
+        }
+
+        // El número del momento 5.
+        const N = G.numero
+        const ini = N.puntos[0].t
+        const vN = vida(t, ini, N.hasta, 0.28, 0.18)
+        let valor = N.puntos[0].valor
+        let desde = ini
+        for (const p of N.puntos) if (p.t <= t + 1e-6) ((valor = p.valor), (desde = p.t))
+        const golpe = r(1 + 0.07 * (1 - sale((t - desde) / 0.14)))
+        $('#numero b').textContent = valor
+        $('#numero b').style.transform = `scale(${t > ini + 0.2 ? golpe : 1})`
+        pon($('#numero'), vN)
+        if (vN.o) firma.push('n', valor, vN.o, vN.y, golpe)
+
+        // El cierre.
+        const C = G.cierre
+        const oC = r(clamp((t - C.t0) / 0.3))
+        $('#cierre').style.opacity = oC
+        $('#cierre').style.display = oC ? 'block' : 'none'
+        if (oC) {
+          const hasta = G.dur + 1
+          const partes = [
+            ['#c-marca', vida(t, C.t0, hasta, 0.4, 0.2, 18)],
+            ['#c-abu', vida(t, C.abu.t, hasta)],
+            ['#c-yo', vida(t, C.yo.t, hasta)],
+            ['#c-url', vida(t, C.url.t, hasta, 0.32)],
+            ['#c-chico', vida(t, C.chico.t, hasta, 0.32, 0.2, 14)],
+          ]
+          for (const [sel, v] of partes) (pon($(sel), v), firma.push(v.o, v.y))
+          firma.push('c', oC)
+        }
+        return firma.join('|')
+      }
+    </script>
+  </body>
+</html>
