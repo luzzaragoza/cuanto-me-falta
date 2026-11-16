@@ -2,25 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Instalar } from '../lib/instalar'
 import { Analytics } from '../lib/analytics'
 import { useExitAnimation } from '../hooks/useExitAnimation'
-
-// El badge de la app. Mismos hex literales que Welcome y `scripts/gen-icons.mjs`:
-// tiene que ser el MISMO ícono que va a quedar en la pantalla de inicio.
-const LogoBadge = () => (
-  <svg viewBox="0 0 100 100" width="46" height="46" aria-hidden="true">
-    <rect x="4" y="4" width="92" height="92" rx="26" fill="#c67139" />
-    <text
-      x="50"
-      y="76"
-      textAnchor="middle"
-      fontFamily="Georgia, 'Times New Roman', serif"
-      fontSize="74"
-      fontWeight="700"
-      fill="#fff9f0"
-    >
-      ¿
-    </text>
-  </svg>
-)
+import { Logo } from './Logo'
 
 // Ícono "compartir" de iOS (cuadrado con flecha para arriba), para que se reconozca
 // QUÉ botón tocar en Safari.
@@ -89,7 +71,7 @@ export function InstalarSheet({ onClose }: { onClose: (motivo: 'luego' | 'nunca'
       <div className="hoja" role="dialog" aria-label="Instalar la app" onAnimationEnd={onExitEnd}>
         <div className="hoja-in">
           <span className="hoja-logo">
-            <LogoBadge />
+            <Logo size={46} />
           </span>
           <div className="hoja-tx">
             <div className="hoja-tit">Tenela a mano</div>

@@ -17,7 +17,7 @@ import {
 // El árbol como LÍNEA DE TIEMPO (rediseño 2-sep): columnas por cuatrimestre, bandas
 // por año, y las correlativas siempre visibles como curvas tenues. Pasar el mouse
 // por una materia (o tocarla) resalta su cadena completa EN EL LUGAR: naranja lo
-// que necesita, oliva lo que habilita, el resto se apaga. Un clic la fija.
+// que necesita, verde lo que habilita, el resto se apaga. Un clic la fija.
 //
 // Acá no hay motor de layout ni lienzo de terceros: el plano es una cuenta
 // (`arbolPlano.ts`) y el zoom es un transform con scroll. Con este modelo murió el

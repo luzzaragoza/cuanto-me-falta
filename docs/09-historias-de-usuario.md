@@ -140,7 +140,7 @@ Las épicas **E7 y E8** tienen otro protagonista: no el estudiante, sino quien m
 
 **Criterios de aceptación**
 
-1. **Dado** una materia, **cuando** abro su panel de correlativas, **entonces** veo dos grupos con código de color: «Necesitás» (violeta) y «Habilita» (teal), con sus materias directas.
+1. **Dado** una materia, **cuando** abro su panel de correlativas, **entonces** veo dos grupos con código de color: «Necesitás» (naranja) y «Habilita» (verde), con sus materias directas.
 2. **Dado** un panel abierto, **cuando** abro el de otra materia, **entonces** ambos permanecen abiertos en simultáneo para poder comparar.
 3. **Dado** una materia sin correlativas, **cuando** abro su panel, **entonces** se indica que no requiere ni habilita otras materias.
 

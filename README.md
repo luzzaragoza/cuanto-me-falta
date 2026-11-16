@@ -33,7 +33,7 @@ Si cursás dos carreras que comparten materias, lo que aprobaste en una figura a
   <img src="docs/captura-arbol.png" alt="Árbol de correlativas" width="820">
 </p>
 <p align="center">
-  <sub>Tocás una materia y ves toda su cadena: lo que <b>necesitás</b> antes (violeta) y lo que <b>habilita</b> después (teal).</sub>
+  <sub>Tocás una materia y ves toda su cadena: lo que <b>necesitás</b> antes (naranja) y lo que <b>habilita</b> después (verde).</sub>
 </p>
 
 ## Tus datos son tuyos

@@ -94,7 +94,9 @@ const run = async () => {
   await server.listen()
   const url = `http://localhost:${PORT}/`
 
-  const browser = await chromium.launch()
+  // CHROMIUM_PATH: para máquinas donde el navegador ya viene instalado en otro lado
+  // y no coincide con la versión que fija @playwright/test (contenedores, CI propio).
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
   const page = await browser.newPage({
     viewport: { width: 1240, height: 730 },
     deviceScaleFactor: 2, // retina: se ve nítido escalado a 820px en el README
@@ -114,7 +116,7 @@ const run = async () => {
 
   // ── 2. Árbol (rediseño 2-sep): abrir con foco deja la materia FIJADA, con su
   // cadena resaltada en el lugar. Para la captura se aleja a "Ver todo": la línea
-  // de tiempo completa con la cadena naranja/oliva encima es la foto del feature.
+  // de tiempo completa con la cadena naranja/verde encima es la foto del feature.
   // Camino real del usuario: fila de la materia → "Ver correlativas" → "Ver árbol".
   await page.locator(`[id="mat-${FOCO}"] > .corr-btn`).click()
   await page.locator('.corr').waitFor()

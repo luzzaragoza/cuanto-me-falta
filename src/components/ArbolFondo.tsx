@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 // El árbol de fondo de la bienvenida: un plan de estudios de juguete que se va
 // encendiendo solo. No es decoración abstracta — es LA idea de la app contada sin
 // palabras: una materia se enciende y con ella lo que necesita antes (naranja) y lo
-// que habilita después (oliva). Cuando la persona llega al árbol de verdad, ya vio
+// que habilita después (verde). Cuando la persona llega al árbol de verdad, ya vio
 // el gesto.
 //
 // Es una ANIMACIÓN, no un control: las hojas no se tocan. Está detrás de la tarjeta
@@ -168,7 +168,7 @@ export function ArbolFondo() {
               y={n.y}
               width={W}
               height={H}
-              rx={18}
+              rx={9}
             />
           ))}
         </g>

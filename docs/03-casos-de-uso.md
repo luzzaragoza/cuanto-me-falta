@@ -155,7 +155,7 @@
 
 **Flujo principal**
 
-1. La aplicación despliega, debajo de la materia, su panel de correlativas directas en dos grupos con código de color: **"Necesitás"** (violeta) y **"Habilita"** (teal).
+1. La aplicación despliega, debajo de la materia, su panel de correlativas directas en dos grupos con código de color: **"Necesitás"** (naranja) y **"Habilita"** (verde).
 2. El estudiante puede abrir los paneles de otras materias sin cerrar el primero: se admiten múltiples paneles abiertos en simultáneo para comparar.
 3. El estudiante cierra los paneles que ya no necesita.
 
@@ -389,7 +389,7 @@ La sesión se cierra; el progreso local queda intacto y la aplicación vuelve al
 
 1. La aplicación muestra el **resumen de carga**: cada materia con su cantidad de previas, y un filtro para ver solo las que faltan.
 2. El administrador elige una materia; se abre el **árbol del plan** enfocado en ella.
-3. Elige la dirección: **necesita…** (violeta) o **habilita…** (teal) — los mismos colores que el estudiante ya aprendió a leer.
+3. Elige la dirección: **necesita…** (naranja) o **habilita…** (verde) — los mismos colores que el estudiante ya aprendió a leer.
 4. La aplicación **ilumina las materias conectables** en ese sentido y **apaga las demás**. Cada toque **conecta o desconecta**, sin mover el foco, y **guarda solo**.
 5. El administrador cambia de materia objetivo tocando cualquier otra, o cierra el árbol.
 

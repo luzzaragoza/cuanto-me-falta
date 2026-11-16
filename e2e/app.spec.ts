@@ -155,6 +155,12 @@ test('en el teléfono, elegir una materia no achica el lienzo del árbol', async
     )
     .toBe('none')
 
+  // El mouse quedó donde estaba el botón que abrió el árbol, y ahí abajo puede haber
+  // una materia: en este navegador de escritorio eso es un hover, y el hover muestra la
+  // ficha en lugar de la pista. Un teléfono no tiene hover; se saca el mouse de encima
+  // para que el test mida lo que dice medir y no dónde cayó el botón en la pantalla.
+  await page.mouse.move(2, 2)
+
   const alto = async () => (await page.locator('.tv-lienzo').boundingBox())!.height
   const enReposo = await alto()
   await expect(page.locator('.tv-hint-m')).toBeVisible()
@@ -352,7 +358,7 @@ test.describe('en el teléfono', () => {
 
     // paso 3: el campo mide lo que tiene que medir, y no abre el teclado solo
     const campo = page.getByPlaceholder('Tu nombre')
-    expect((await campo.boundingBox())!.height).toBe(52)
+    expect((await campo.boundingBox())!.height).toBe(48)
     await expect(campo).not.toBeFocused()
 
     // el "OK" del teclado cierra el teclado; no entra a la app

@@ -138,7 +138,7 @@ export function NotasPanel({ onClose }: { onClose: () => void }) {
               return (
                 <div className="notas-grupo" key={year}>
                   <div className="ng-head">
-                    <span className="ng-t">{year}° Año</span>
+                    <span className="ng-t">{year}° año</span>
                     <span className="ng-line" />
                     <span className="ng-meta">
                       {conNota} de {todas.length} con nota
@@ -152,12 +152,12 @@ export function NotasPanel({ onClose }: { onClose: () => void }) {
                         <li className={'nota-row' + (abierto ? ' abierta' : '')} key={m.cod}>
                           <div className="nr-top">
                             <span className="nr-tx">
+                              <span className="nr-nom">{av.nombreDe(m.cod)}</span>
                               <span className="nr-cod">
                                 {m.cod.startsWith('CUST') ? '—' : m.cod}
                               </span>
-                              <span className="nr-nom">{av.nombreDe(m.cod)}</span>
                             </span>
-                            {/* Una pastilla, no un <input number>: en el teléfono el
+                            {/* Un casillero, no un <input number>: en el teléfono el
                                 campo numérico abre un teclado entero para elegir uno
                                 de diez valores. Acá los diez están a un toque. */}
                             <button

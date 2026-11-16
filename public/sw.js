@@ -2,7 +2,12 @@
 // Estrategia deliberada:
 //   - Navegación (HTML): RED PRIMERO → nunca quedás clavado en una versión vieja.
 //   - Assets hasheados de Vite: CACHE PRIMERO → carga instantánea y offline.
-const CACHE = 'cmf-v1'
+//
+// El nombre del caché se sube cuando cambia algo que NO lleva hash en el nombre: los
+// íconos, el favicon y la imagen de compartir se sirven "caché primero", así que con el
+// mismo nombre un dispositivo que ya los tiene no los vuelve a pedir nunca. v2 = el
+// ícono nuevo (16-nov): al activarse, el worker borra el caché viejo entero.
+const CACHE = 'cmf-v2'
 
 self.addEventListener('install', () => self.skipWaiting())
 
