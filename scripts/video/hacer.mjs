@@ -9,8 +9,10 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { writeFileSync } from 'node:fs'
 import { capturar } from './capturar.mjs'
 import { componer } from './componer.mjs'
+import { construirGuion } from './guion.mjs'
 import { hoja } from './hoja.mjs'
 import { AQUI, SALIDA, TMP } from './rutas.mjs'
 
@@ -21,7 +23,10 @@ mkdirSync(TMP, { recursive: true })
 
 if (toca('capturar')) await capturar()
 if (toca('componer')) await componer()
-if (toca('sonido')) correr('python3', [join(AQUI, 'sonido.py'), join(TMP, 'guion.json'), join(TMP, 'sonido.wav')])
+if (toca('sonido')) {
+  writeFileSync(join(TMP, 'guion.json'), JSON.stringify(construirGuion(), null, 1))
+  correr('python3', [join(AQUI, 'sonido.py'), join(TMP, 'guion.json'), join(TMP, 'sonido.wav')])
+}
 if (toca('unir')) {
   const destino = join(SALIDA, 'nada-abu-me-recibi.mp4')
   correr('ffmpeg', [
