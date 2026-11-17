@@ -124,10 +124,11 @@ export function construirGuion() {
     else sonido.push({ t: r3(t), tipo: 'marca' }) // final o cursando: apenas un roce
   }
   const idx = (m) => PASOS.filter((p) => p.momento === m).map((p) => p.n)
-  /** Un par de burbujas: pregunta de la abuela y respuesta. */
+  /** Un par de burbujas: la abuela y la respuesta. La etiqueta "Abu" va solo en
+   *  la primera: después ya se sabe de quién es la burbuja blanca. */
   const par = (tAbu, tYo, tFin, pregunta, respuesta) => {
     const id = burbujas.length
-    burbujas.push({ t0: tAbu, t1: tFin, quien: 'abu', texto: pregunta, par: id })
+    burbujas.push({ t0: tAbu, t1: tFin, quien: 'abu', texto: pregunta, par: id, etiqueta: id === 0 })
     burbujas.push({ t0: tYo, t1: tFin, quien: 'yo', texto: respuesta, par: id })
     sonido.push({ t: tAbu, tipo: 'pop_abu' }, { t: tYo, tipo: 'pop_yo' })
   }
@@ -140,25 +141,26 @@ export function construirGuion() {
   // 0 · Marzo de 1° año: el plan vacío.
   fechas.push({ t0: M.m0, t1: M.m1, texto: 'Marzo · 1° año' })
   toma(0, top(0))
-  par(0.3, 2.0, 3.8, '¿Y? ¿Cuánto te falta para recibirte?', '52, abu.')
+  par(0.3, 2.0, 3.8, '¿Y? ¿Cuánto te falta para recibirte?', 'Recién empiezo. Me faltan 52.')
 
   // 1 · Diciembre de 1° año: diez casilleros, de a uno.
   fechas.push({ t0: M.m1, t1: M.m2, texto: 'Diciembre · 1° año' })
   idx('m1').forEach((n, i) => paso(M.m1 + 0.4 + i * 0.24, n))
-  par(7.0, 7.8, 8.8, '¿Y? ¿Cuánto te falta?', '42.')
+  par(7.0, 7.8, 8.8, '¿Y, mi amor? ¿Cuánto te falta?', '42. Metí diez este año.')
 
   // 2 · Diciembre de 2° año: diez más.
   fechas.push({ t0: M.m2, t1: M.m3, texto: 'Diciembre · 2° año' })
   idx('m2').forEach((n, i) => paso(M.m2 + 0.4 + i * 0.24, n))
-  par(12.0, 12.8, 13.8, '¿Y?', '32.')
+  par(12.0, 12.8, 13.8, 'Contame. ¿Cuánto te falta ahora?', '32. Voy bien.')
 
   // 3 · Diciembre de 3° año: lento. Cinco notas graves con mucho aire entre una
-  // y otra, y la respuesta que tarda en llegar.
+  // y otra. Es el único año en que la abuela no pregunta: se da cuenta sola.
+  // Y hace lo que hace una abuela cuando no sabe cómo ayudar: darte de comer.
   fechas.push({ t0: M.m3, t1: M.m4, texto: 'Diciembre · 3° año' })
   titulos.push({ t0: 14.5, t1: 21.3, texto: 'Este año costó.' })
   const t3 = [15.0, 15.8, 16.6, 17.4, 17.85, 18.3, 18.75, 18.75]
   idx('m3').forEach((n, i) => paso(t3[i], n, { grave: true }))
-  par(19.4, 20.3, 21.3, '¿Y…?', 'No preguntes, abu.')
+  par(19.4, 20.3, 21.3, 'Este año no te pregunto. ¿Comiste?', 'Gracias, abu.')
 
   // 4 · Diciembre de 4° año: vuelve el ritmo, y llega el primer título.
   fechas.push({ t0: M.m4, t1: M.m5, texto: 'Diciembre · 4° año' })
@@ -173,7 +175,7 @@ export function construirGuion() {
   const vuelta = 25.4
   toma(vuelta, top(m4a[6])) // vuelta al mapa: faltan 20
   idx('m4b').forEach((n, i) => paso(25.7 + i * 0.17, n))
-  par(27.1, 27.8, 28.8, '¿Y?', '13, abu. Y ya soy analista.')
+  par(27.1, 27.8, 28.8, '¿Ahora sí puedo preguntar?', '13. Y ya soy analista.')
 
   // 5 · 5° año: cuenta regresiva. 13, 9, 5, 3, 2, 1, cada vez más seguido, y
   // el 1 se queda un rato largo en pantalla.
@@ -219,10 +221,11 @@ export function construirGuion() {
     t0: R + 2 * B,
     abu: { t: R + 2 * B + 0.6, texto: '¿Y? ¿Cuánto te falta?' },
     yo: { t: R + 3 * B, texto: 'Nada, abu. Me recibí.' },
+    abu2: { t: R + 3 * B + 1.3, texto: 'Yo sabía, mi amor.' }, // la última palabra es de ella
     url: { t: R + 4 * B, texto: 'cuantomefalta.app' },
     chico: { t: R + 4 * B + 0.5, texto: 'Gratis · sin cuenta · hecha por una estudiante de UADE · no es oficial de UADE' },
   }
-  sonido.push({ t: cierre.abu.t, tipo: 'pop_abu' }, { t: cierre.yo.t, tipo: 'pop_yo' })
+  sonido.push({ t: cierre.abu.t, tipo: 'pop_abu' }, { t: cierre.yo.t, tipo: 'pop_yo' }, { t: cierre.abu2.t, tipo: 'pop_abu' })
 
   // Un cuadro por momento para la hoja de revisión, con el número que tiene
   // que decir el titular de la app en ese instante.

@@ -134,6 +134,9 @@
         letter-spacing: 0.01em;
         color: var(--azul);
       }
+      .burbuja.abu.sin-etiqueta {
+        padding-top: 22px;
+      }
       .burbuja.yo {
         align-self: flex-end;
         margin-right: 130px; /* borde derecho en x = 950 */
@@ -185,7 +188,7 @@
       #c-marca {
         left: 0;
         width: 1080px;
-        top: 318px;
+        top: 292px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -201,7 +204,7 @@
       #c-chat {
         left: 0;
         width: 1080px;
-        top: 640px;
+        top: 600px;
         display: flex;
         flex-direction: column;
         gap: 18px;
@@ -214,7 +217,7 @@
       #c-url {
         left: 0;
         width: 1080px;
-        top: 1080px;
+        top: 1078px;
         text-align: center;
       }
       #c-url b {
@@ -231,7 +234,7 @@
       #c-chico {
         left: 150px;
         width: 780px;
-        top: 1240px;
+        top: 1236px;
         text-align: center;
         font-size: 31px;
         line-height: 44px;
@@ -260,6 +263,7 @@
         <div id="c-chat">
           <div class="burbuja abu" id="c-abu"><small>Abu</small><span></span></div>
           <div class="burbuja yo" id="c-yo"></div>
+          <div class="burbuja abu sin-etiqueta" id="c-abu2"></div>
         </div>
         <div id="c-url"><b></b></div>
         <div id="c-chico"></div>
@@ -303,6 +307,7 @@
         $('#c-trazo').setAttribute('d', G.trazo)
         $('#c-abu span').textContent = G.cierre.abu.texto
         $('#c-yo').textContent = G.cierre.yo.texto
+        $('#c-abu2').textContent = G.cierre.abu2.texto
         $('#c-url b').textContent = G.cierre.url.texto
         $('#c-chico').textContent = G.cierre.chico.texto
         // Un contenedor por par de burbujas: la respuesta ocupa su lugar desde el
@@ -316,8 +321,8 @@
             pares.set(b.par, c)
           }
           const el = document.createElement('div')
-          el.className = `burbuja ${b.quien}`
-          if (b.quien === 'abu') el.innerHTML = '<small>Abu</small>'
+          el.className = `burbuja ${b.quien}${b.quien === 'abu' && !b.etiqueta ? ' sin-etiqueta' : ''}`
+          if (b.etiqueta) el.innerHTML = '<small>Abu</small>'
           el.appendChild(document.createTextNode(b.texto))
           pares.get(b.par).appendChild(el)
           b.el = el
@@ -414,6 +419,7 @@
             ['#c-marca', vida(t, C.t0, hasta, 0.4, 0.2, 18)],
             ['#c-abu', vida(t, C.abu.t, hasta)],
             ['#c-yo', vida(t, C.yo.t, hasta)],
+            ['#c-abu2', vida(t, C.abu2.t, hasta)],
             ['#c-url', vida(t, C.url.t, hasta, 0.32)],
             ['#c-chico', vida(t, C.chico.t, hasta, 0.32, 0.2, 14)],
           ]
