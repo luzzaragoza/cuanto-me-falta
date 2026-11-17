@@ -56,7 +56,7 @@ export async function componer() {
       // Colores declarados (BT.709): si no, cada reproductor adivina y el papel vira.
       '-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p',
       '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-r', String(g.fps),
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-r', String(g.fps),
       salida,
     ],
     { stdio: ['pipe', 'inherit', 'inherit'] },
