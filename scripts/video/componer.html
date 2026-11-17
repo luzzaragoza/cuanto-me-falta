@@ -7,14 +7,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..112,400..800&display=block"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..112,400..800&family=Caveat:wght@500;700&display=block"
     />
     <style>
       /* El lienzo: 1080×1920. Nada se anima con CSS: `render(t)` calcula cada
          cuadro a partir del tiempo, así el mismo instante da siempre la misma
          imagen. Las capas, de atrás para adelante:
-           papel → celular (canvas) → viñeta → fecha y frase → burbujas → número
-           → cierre → papel picado (canvas) → destello */
+           papel → celular (canvas) → velos → fecha y frase → burbujas → número
+           → cierre (la libreta) → papel picado (canvas) → destello */
       :root {
         --papel: #f6f5f1;
         --tinta: #151b33;
@@ -63,12 +63,8 @@
          de pelearse con la app que tienen detrás. */
       #velo-abajo {
         inset: auto 0 0 0;
-        height: 900px;
-        background: linear-gradient(rgba(246, 245, 241, 0) 0, rgba(246, 245, 241, 0.96) 170px, var(--papel) 230px);
-      }
-      #vineta {
-        inset: 0;
-        background: radial-gradient(ellipse 80% 66% at 46% 46%, rgba(21, 27, 51, 0) 52%, rgba(21, 27, 51, 0.8) 100%);
+        height: 930px;
+        background: linear-gradient(rgba(246, 245, 241, 0) 0, rgba(246, 245, 241, 0.96) 150px, var(--papel) 200px);
       }
       #destello {
         inset: 0;
@@ -99,15 +95,18 @@
       #titulo {
         top: 322px;
       }
-      #titulo span {
+      #titulo span,
+      #c-url b {
         display: inline-block;
-        padding: 4px 22px 8px;
         border-radius: 10px;
-        /* El resaltador se "pasa" de izquierda a derecha: el ancho del fondo lo pone render(). */
+        /* El resaltador se "pasa" de izquierda a derecha: el ancho lo pone render(). */
         background: linear-gradient(var(--resalta), var(--resalta)) no-repeat left center;
+        font-weight: 800;
+      }
+      #titulo span {
+        padding: 4px 22px 8px;
         font-size: 56px;
         line-height: 64px;
-        font-weight: 800;
         letter-spacing: -0.02em;
       }
 
@@ -122,7 +121,7 @@
         bottom: 430px; /* el borde de abajo queda en y = 1490 */
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 13px;
       }
       .hueco {
         position: relative;
@@ -137,9 +136,9 @@
         margin-right: 130px; /* borde derecho en x = 950 */
       }
       .burbuja {
-        max-width: 820px; /* la pregunta más larga entra en un renglón */
-        padding: 20px 32px 24px;
-        border-radius: 30px;
+        max-width: 820px;
+        padding: 17px 30px 20px;
+        border-radius: 28px;
         font-size: 44px;
         line-height: 1.18;
         font-weight: 600;
@@ -152,43 +151,32 @@
         background: #fff;
         border: 2px solid var(--linea);
         border-bottom-left-radius: 8px;
-        transform-origin: 0 100%;
       }
       .abu > .burbuja small {
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
         font-size: 25px;
         line-height: 30px;
         font-weight: 700;
         letter-spacing: 0.01em;
         color: var(--azul);
       }
-      .abu > .burbuja.sin-etiqueta {
-        padding-top: 22px;
-      }
-      .yo > .burbuja,
-      .yo > .puntos {
-        padding-top: 22px;
+      .yo > .burbuja {
         background: var(--azul);
         color: #fff;
         border-bottom-right-radius: 8px;
-        transform-origin: 100% 100%;
       }
-      /* "Escribiendo…": tres puntos, en el lugar donde va a caer la burbuja. */
+      /* "Escribiendo…": solo en el final, donde la espera importa. */
       .puntos {
         position: absolute;
-        bottom: 0;
+        left: 0;
+        top: 0;
         display: flex;
         gap: 11px;
         padding: 30px 30px;
-        border-radius: 30px;
-        box-shadow: 0 6px 18px rgba(21, 27, 51, 0.14);
-      }
-      .abu > .puntos {
-        left: 0;
-      }
-      .yo > .puntos {
-        right: 0;
+        border-radius: 28px;
+        color: var(--suave);
+        box-shadow: 0 10px 28px rgba(21, 27, 51, 0.2);
       }
       .puntos i {
         width: 17px;
@@ -196,11 +184,8 @@
         border-radius: 50%;
         background: currentColor;
       }
-      .abu > .puntos {
-        color: var(--suave);
-      }
 
-      /* ── Momento 5: el número, grande ── */
+      /* ── La cuenta regresiva: el número, grande ── */
       #numero {
         left: 0;
         width: 1080px;
@@ -216,7 +201,6 @@
         border: 2px solid var(--linea);
         box-shadow: 0 10px 30px rgba(21, 27, 51, 0.22);
         text-align: center;
-        transform-origin: 50% 100%;
       }
       #numero b {
         display: inline-block;
@@ -232,7 +216,7 @@
         font-variant-numeric: tabular-nums;
       }
 
-      /* ── Cierre ── */
+      /* ── El final ── */
       #cierre {
         inset: 0;
         background: var(--papel);
@@ -240,26 +224,10 @@
       #cierre > * {
         position: absolute;
       }
-      #c-marca {
-        left: 0;
-        width: 1080px;
-        top: 292px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 22px;
-      }
-      #c-marca span {
-        font-size: 54px;
-        line-height: 60px;
-        font-weight: 800;
-        font-stretch: 108%;
-        letter-spacing: -0.02em;
-      }
       #c-chat {
         left: 0;
         width: 1080px;
-        top: 600px;
+        top: 540px;
         display: flex;
         flex-direction: column;
         gap: 18px;
@@ -267,29 +235,160 @@
       #c-chat .burbuja {
         font-size: 50px;
         max-width: 700px;
+        padding: 20px 32px 24px;
         box-shadow: 0 4px 14px rgba(21, 27, 51, 0.1);
       }
-      #c-url {
+      #c-chat .hueco.foto {
+        height: 346px; /* el lugar de la foto */
+      }
+      #c-marco {
+        left: 130px;
+        top: 822px;
+        width: 266px;
+        height: 346px;
+        border-radius: 26px 26px 26px 8px;
+        background: #fff;
+        border: 2px solid var(--linea);
+        box-shadow: 0 4px 14px rgba(21, 27, 51, 0.1);
+      }
+
+      /* La libreta de la abuela. Papel rayado, birome azul, letra de ella. */
+      #libreta {
+        left: 0;
+        top: 0;
+        width: 800px;
+        height: 1060px;
+        transform-origin: 0 0;
+        border-radius: 8px;
+        background:
+          linear-gradient(90deg, transparent 138px, rgba(217, 99, 15, 0.35) 138px, rgba(217, 99, 15, 0.35) 141px, transparent 141px),
+          repeating-linear-gradient(transparent 0, transparent 105px, #c7d3ee 105px, #c7d3ee 108px),
+          #fffdf5;
+        background-position: 0 0, 0 108px, 0 0;
+        box-shadow: 0 14px 40px rgba(21, 27, 51, 0.22);
+        font-family: 'Caveat', cursive;
+        color: var(--azul);
+      }
+      #libreta .cinta {
+        position: absolute;
+        left: 310px;
+        top: -26px;
+        width: 180px;
+        height: 56px;
+        background: rgba(255, 228, 92, 0.78);
+        transform: rotate(-3deg);
+      }
+      #libreta h3 {
+        position: absolute;
+        left: 170px;
+        top: 108px;
+        margin: 0;
+        font-size: 78px;
+        line-height: 100px;
+        font-weight: 700;
+        border-bottom: 5px solid var(--azul);
+        border-radius: 0 0 40% 60% / 0 0 8px 6px;
+      }
+      #libreta .renglon {
+        position: absolute;
+        left: 170px;
+        right: 30px;
+        height: 108px;
+        display: flex;
+        align-items: flex-end;
+        gap: 34px;
+        padding-bottom: 2px;
+      }
+      #libreta .cuando {
+        width: 200px;
+        font-size: 56px;
+        line-height: 80px;
+        font-weight: 500;
+        opacity: 0.8;
+      }
+      #libreta .valor {
+        position: relative;
+        font-size: 92px;
+        line-height: 92px;
+        font-weight: 700;
+      }
+      #libreta .valor.texto {
+        font-size: 70px;
+        line-height: 84px;
+      }
+      /* Tachado a mano: una raya que no es del todo recta. */
+      #libreta .valor.tachado::after {
+        content: '';
+        position: absolute;
+        left: -16px;
+        right: -18px;
+        top: 50%;
+        height: 6px;
+        border-radius: 6px;
+        background: var(--azul);
+        transform: rotate(-7deg);
+      }
+      #libreta .extra {
+        font-size: 54px;
+        line-height: 74px;
+        font-weight: 700;
+        transform: rotate(-4deg);
+      }
+      #libreta .valor.cero {
+        font-size: 120px;
+        line-height: 100px;
+        padding: 0 16px;
+      }
+      #libreta svg {
+        position: absolute;
+        left: -34px;
+        top: -24px;
+        width: 150px;
+        height: 150px;
+        overflow: visible;
+      }
+      #libreta .firma {
+        position: absolute;
+        right: 70px;
+        bottom: 64px;
+        font-size: 110px;
+        line-height: 110px;
+        font-weight: 700;
+        transform: rotate(-3deg);
+      }
+
+      #c-tarjeta {
         left: 0;
         width: 1080px;
-        top: 1078px;
-        text-align: center;
+        top: 832px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #c-llamado {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-size: 62px;
+        line-height: 76px;
+        font-weight: 800;
+        font-stretch: 108%;
+        letter-spacing: -0.02em;
+      }
+      #c-url {
+        margin-top: 26px;
       }
       #c-url b {
-        display: inline-block;
         padding: 6px 26px 10px;
         border-radius: 12px;
-        background: linear-gradient(var(--resalta), var(--resalta)) no-repeat left center;
         font-size: 78px;
         line-height: 90px;
-        font-weight: 800;
         font-stretch: 108%;
         letter-spacing: -0.025em;
       }
       #c-chico {
-        left: 150px;
+        margin-top: 40px;
         width: 780px;
-        top: 1236px;
         text-align: center;
         font-size: 31px;
         line-height: 44px;
@@ -304,22 +403,29 @@
       <canvas id="escena" width="1080" height="1920"></canvas>
       <div id="velo"></div>
       <div id="velo-abajo"></div>
-      <div id="vineta"></div>
       <div id="fecha"><span></span></div>
       <div id="titulo"><span></span></div>
       <div id="pares"></div>
       <div id="numero"><div class="tarjeta"><b></b></div></div>
       <div id="cierre">
-        <div id="c-marca">
-          <svg viewBox="0 0 100 100" width="170" height="170" aria-hidden="true">
-            <rect x="4" y="4" width="92" height="92" rx="22" fill="#ffe45c" />
-            <path id="c-trazo" transform="translate(21.95 64.73) scale(0.083)" fill="#151b33" />
-          </svg>
-          <span>¿Cuánto me falta?</span>
-        </div>
         <div id="c-chat"></div>
-        <div id="c-url"><b></b></div>
-        <div id="c-chico"></div>
+        <div id="c-marco"></div>
+        <div id="libreta">
+          <div class="cinta"></div>
+          <h3></h3>
+          <div class="firma"></div>
+        </div>
+        <div id="c-tarjeta">
+          <div id="c-llamado">
+            <svg viewBox="0 0 100 100" width="84" height="84" aria-hidden="true">
+              <rect x="4" y="4" width="92" height="92" rx="22" fill="#ffe45c" />
+              <path id="c-trazo" transform="translate(21.95 64.73) scale(0.083)" fill="#151b33" />
+            </svg>
+            <span></span>
+          </div>
+          <div id="c-url"><b></b></div>
+          <div id="c-chico"></div>
+        </div>
       </div>
       <canvas id="confeti" width="1080" height="1920"></canvas>
       <div id="destello"></div>
@@ -329,9 +435,16 @@
       const $ = (s) => document.querySelector(s)
       const COLOR = { aprobada: '#1d8a57', final: '#d9630f', cursando: '#7c4dc9' }
       const PAPELITOS = ['#1d8a57', '#ffe45c', '#24388a', '#d9630f', '#7c4dc9']
+      // La libreta, chica (como foto en el chat), abierta (protagonista) y arriba
+      // (cuando deja lugar a la invitación): { x, y, escala, giro en grados }.
+      const LIBRETA = {
+        foto: { x: 143, y: 836, e: 0.3, g: -2 },
+        abierta: { x: 86, y: 290, e: 1.03, g: -1.5 },
+        arriba: { x: 310, y: 262, e: 0.5, g: -2.5 },
+      }
       let G = null
       const imgs = new Map()
-      const globos = [] // todas las burbujas (las de la app y las del cierre)
+      const globos = [] // todas las burbujas (las de la app y las del final)
       let papelitos = []
 
       // ── Curvas ──
@@ -341,10 +454,9 @@
         lineal: (p) => p,
         sale: (p) => 1 - Math.pow(1 - p, 3),
         suave: (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
-        rebote: (p) => 1 + 2.4 * Math.pow(p - 1, 3) + 1.4 * Math.pow(p - 1, 2), // se pasa y vuelve
       }
       const sale = (x) => CURVA.sale(clamp(x))
-      const rebote = (x) => CURVA.rebote(clamp(x))
+      const suave = (x) => CURVA.suave(clamp(x))
       const r = (x) => Math.round(x * 1000) / 1000
       /** Valor de una pista [[t, v], …] en el instante t, interpolando en línea recta. */
       function pista(claves, t) {
@@ -369,7 +481,7 @@
       }
 
       /** Entrada y salida de algo que vive entre t0 y t1: opacidad y un corrimiento corto. */
-      function vida(t, t0, t1, entra = 0.26, seVa = 0.18, sube = 26) {
+      function vida(t, t0, t1, entra = 0.26, seVa = 0.18, sube = 22) {
         if (t < t0 || t >= t1) return { o: 0, y: 0 }
         const a = sale((t - t0) / entra)
         const b = clamp((t1 - t) / seVa)
@@ -381,7 +493,7 @@
       }
 
       /** Las capturas se cargan cuando hacen falta y se sueltan después: son
-       *  casi doscientas y, abiertas todas juntas, no entran en memoria. */
+       *  más de cuatrocientas y, abiertas todas juntas, no entran en memoria. */
       async function imagen(id) {
         let p = imgs.get(id)
         if (p) imgs.delete(id)
@@ -406,112 +518,44 @@
         const p = CURVA[b.e](clamp((t - a.t) / (b.t - a.t)))
         return { k: lerp(a.k, b.k, p), tx: lerp(a.tx, b.tx, p), ty: lerp(a.ty, b.ty, p) }
       }
-      /** Sacudón: un temblor que se apaga rápido después de cada golpe. */
-      function sacudon(t) {
-        let x = 0
-        let y = 0
-        for (const s of G.efectos.sacudidas) {
-          const d = t - s.t
-          if (d < 0 || d > 0.5) continue
-          const fuerza = s.amp * Math.exp(-d / 0.11)
-          x += fuerza * Math.sin(d * 71 + s.t)
-          y += fuerza * Math.cos(d * 59 + s.t * 2)
-        }
-        return { x, y }
-      }
 
       // ── Burbujas ──
-      function crearGlobo(contenedor, b, anterior) {
+      function crearGlobo(contenedor, b) {
         const hueco = document.createElement('div')
         hueco.className = `hueco ${b.quien}`
-        const puntos = document.createElement('div')
-        puntos.className = 'puntos'
-        puntos.innerHTML = '<i></i><i></i><i></i>'
         const el = document.createElement('div')
-        el.className = `burbuja${b.quien === 'abu' && !b.etiqueta ? ' sin-etiqueta' : ''}`
+        el.className = 'burbuja'
         if (b.etiqueta) el.innerHTML = '<small>Abu</small>'
         el.appendChild(document.createTextNode(b.texto))
-        hueco.append(puntos, el)
+        hueco.appendChild(el)
         contenedor.appendChild(hueco)
-        // Cuánto antes aparecen los puntos: lo que haya de aire, hasta 0,75 s.
-        const aire = anterior == null ? 0.55 : b.t0 - anterior - 0.2
-        globos.push({ ...b, el, puntos, desde: b.t0 - Math.max(0, Math.min(0.75, aire, b.t0)) })
+        globos.push({ ...b, el })
       }
       function dibujarGlobo(b, t, firma) {
-        // Los puntos de "escribiendo…".
-        const escribe = t >= b.desde && t < b.t0
-        const oP = escribe ? r(sale((t - b.desde) / 0.14)) : 0
-        b.puntos.style.opacity = oP
-        b.puntos.style.transform = `scale(${r(0.7 + 0.3 * oP)})`
-        if (escribe)
-          [...b.puntos.children].forEach((p, i) => {
-            const ola = Math.max(0, Math.sin((t - b.desde) * 9 - i * 0.9))
-            p.style.opacity = r(0.35 + 0.65 * ola)
-            p.style.transform = `translateY(${r(-7 * ola)}px)`
-          })
-        // La burbuja: entra con rebote desde su esquina.
-        let o = 0
-        let e = 1
-        let y = 0
-        if (t >= b.t0 && t < b.t1) {
-          const sal = clamp((b.t1 - t) / 0.18)
-          o = r(clamp((t - b.t0) / 0.08) * sal)
-          e = r(0.55 + 0.45 * rebote((t - b.t0) / 0.34))
-          y = r((1 - sal) * 12)
-        }
-        b.el.style.opacity = o
-        b.el.style.transform = `translateY(${y}px) scale(${e})`
-        if (o || oP) firma.push(b.texto, o, e, y, oP, escribe ? r(t) : 0)
+        const v = vida(t, b.t0, b.t1)
+        pon(b.el, v)
+        if (v.o) firma.push(b.texto, v.o, v.y)
       }
 
-      // ── Papel picado: casilleros de colores, como los de la app ──
+      // ── Papel picado: casilleros de colores, como los de la app. Una sola vez. ──
       function crearPapelitos() {
         const rnd = azar(1621)
         const entre = (a, b) => a + (b - a) * rnd()
         const lista = []
-        for (const tanda of G.efectos.confeti) {
-          if (tanda.tipo === 'canones') {
-            for (const lado of [-1, 1])
-              for (let i = 0; i < 95; i++) {
-                const ang = (entre(48, 84) * Math.PI) / 180
-                const vel = entre(1500, 3300)
-                lista.push({
-                  t0: tanda.t + entre(0, 0.12), x0: lado < 0 ? -30 : 1110, y0: entre(1250, 1420),
-                  vx: -lado * vel * Math.cos(ang), vy: -vel * Math.sin(ang),
-                  tau: entre(0.34, 0.5), cae: entre(260, 430), vida: 7, lado: entre(16, 30),
-                })
-              }
-          } else if (tanda.tipo === 'lluvia') {
-            for (let i = 0; i < 80; i++)
+        for (const tanda of G.efectos.confeti)
+          for (const lado of [-1, 1])
+            for (let i = 0; i < 95; i++) {
+              const ang = (entre(48, 84) * Math.PI) / 180
+              const vel = entre(1500, 3300)
               lista.push({
-                t0: tanda.t + entre(0, 1.5), x0: entre(-20, 1100), y0: entre(-260, -40),
-                vx: entre(-60, 60), vy: entre(0, 200), tau: 0.4, cae: entre(430, 640), vida: 5, lado: entre(14, 26),
-              })
-          } else {
-            // 'chico': sale del lugar del título, en verde y amarillo.
-            const cam = camara(tanda.t)
-            const s = G.escala * cam.k
-            const [px, py] = G.camara.luces.confetiDesde
-            for (let i = 0; i < 46; i++) {
-              const ang = entre(-Math.PI, 0)
-              const vel = entre(500, 1500)
-              lista.push({
-                t0: tanda.t, x0: cam.tx + px * s + entre(-250, 250), y0: cam.ty + py * s,
-                vx: vel * Math.cos(ang), vy: vel * Math.sin(ang) * 1.2, tau: entre(0.25, 0.4),
-                cae: entre(420, 620), vida: 2.6, lado: entre(12, 22), color: rnd() < 0.6 ? '#1d8a57' : '#ffe45c',
+                t0: tanda.t + entre(0, 0.12), x0: lado < 0 ? -30 : 1110, y0: entre(1250, 1420),
+                vx: -lado * vel * Math.cos(ang), vy: -vel * Math.sin(ang),
+                tau: entre(0.34, 0.5), cae: entre(260, 430), vida: 7, lado: entre(16, 30),
+                color: PAPELITOS[Math.floor(rnd() * PAPELITOS.length)],
+                giro0: entre(0, 6.28), giro: entre(-7, 7), vuelta0: entre(0, 6.28), vuelta: entre(3, 9),
+                vaiven: entre(10, 46), vaivenF: entre(1.2, 2.6),
               })
             }
-          }
-        }
-        for (const p of lista) {
-          p.color ??= PAPELITOS[Math.floor(rnd() * PAPELITOS.length)]
-          p.giro0 = entre(0, 6.28)
-          p.giro = entre(-7, 7)
-          p.vuelta0 = entre(0, 6.28)
-          p.vuelta = entre(3, 9)
-          p.vaiven = entre(10, 46)
-          p.vaivenF = entre(1.2, 2.6)
-        }
         return lista
       }
       function dibujarPapelitos(t) {
@@ -541,52 +585,75 @@
         return vivos
       }
 
+      /** Arma la libreta: un renglón por año, con lo que ella fue anotando. */
+      function armarLibreta(L) {
+        const hoja = $('#libreta')
+        hoja.querySelector('h3').textContent = L.titulo
+        hoja.querySelector('.firma').textContent = L.firma
+        L.renglones.forEach((ren, i) => {
+          const fila = document.createElement('div')
+          fila.className = 'renglon'
+          fila.style.top = `${216 + i * 108}px`
+          const clase = ren.tachado ? 'tachado' : ren.texto ? 'texto' : ren.cero ? 'cero' : ''
+          fila.innerHTML =
+            `<span class="cuando">${ren.cuando}</span><span class="valor ${clase}">${ren.valor}` +
+            (ren.cero
+              ? '<svg viewBox="0 0 150 150"><path id="circulo" d="M112 24C74 4 22 18 12 64c-10 48 38 80 82 68 40-11 56-58 30-92C108 20 78 12 54 22" fill="none" stroke="#24388a" stroke-width="6" stroke-linecap="round"/></svg>'
+              : '') +
+            `</span>${ren.extra ? `<span class="extra">${ren.extra}</span>` : ''}`
+          hoja.appendChild(fila)
+        })
+        const c = $('#circulo')
+        c.style.strokeDasharray = c.getTotalLength()
+      }
+
       async function init(guion) {
         G = guion
+        const C = G.cierre
         $('#c-trazo').setAttribute('d', G.trazo)
-        $('#c-url b').textContent = G.cierre.url.texto
-        $('#c-chico').textContent = G.cierre.chico.texto
-        // Un contenedor por par de burbujas: la respuesta ocupa su lugar desde el
-        // principio (invisible), así la pregunta no salta cuando llega.
+        $('#c-llamado span').textContent = C.llamado
+        $('#c-url b').textContent = C.url
+        $('#c-chico').textContent = C.chico
+        // Un contenedor por intercambio: cada burbuja ocupa su lugar desde el
+        // principio (invisible), así las de arriba no saltan cuando llega otra.
         const pares = new Map()
-        let anterior = null
         for (const b of G.burbujas) {
           if (!pares.has(b.par)) {
             const c = document.createElement('div')
             c.className = 'par'
             $('#pares').appendChild(c)
             pares.set(b.par, c)
-            anterior = null
           }
-          crearGlobo(pares.get(b.par), { ...b, cont: pares.get(b.par) }, anterior)
-          anterior = b.t0
+          crearGlobo(pares.get(b.par), { ...b, cont: pares.get(b.par) })
         }
-        const C = G.cierre
         const fin = G.dur + 1
-        crearGlobo($('#c-chat'), { quien: 'abu', etiqueta: true, texto: C.abu.texto, t0: C.abu.t, t1: fin }, null)
-        crearGlobo($('#c-chat'), { quien: 'yo', texto: C.yo.texto, t0: C.yo.t, t1: fin }, C.abu.t)
-        crearGlobo($('#c-chat'), { quien: 'abu', texto: C.abu2.texto, t0: C.abu2.t, t1: fin }, C.yo.t)
+        crearGlobo($('#c-chat'), { quien: 'abu', etiqueta: true, texto: C.abu.texto, t0: C.abu.t, t1: fin })
+        crearGlobo($('#c-chat'), { quien: 'yo', texto: C.yo.texto, t0: C.yo.t, t1: fin })
+        // El tercer lugar del chat: primero los puntos de "escribiendo", después la foto.
+        const lugar = document.createElement('div')
+        lugar.className = 'hueco abu foto'
+        lugar.innerHTML = '<div class="puntos" id="c-puntos"><i></i><i></i><i></i></div>'
+        $('#c-chat').appendChild(lugar)
+        armarLibreta(C.libreta)
         papelitos = crearPapelitos()
         for (const w of [500, 600, 700, 800]) await document.fonts.load(`${w} 40px Archivo`)
+        for (const w of [500, 700]) await document.fonts.load(`${w} 40px Caveat`)
         await document.fonts.ready
       }
 
-      /** El celular, con todo lo que pasa sobre su pantalla. */
+      /** El celular, con lo poco que pasa sobre su pantalla. */
       async function dibujarCelular(t, toma, firma) {
         const ctx = $('#escena').getContext('2d')
         const cam = camara(t)
-        const sac = sacudon(t)
         const s = G.escala * cam.k
-        const x0 = cam.tx + sac.x
-        const y0 = cam.ty + sac.y
         const sat = r(pista(G.efectos.saturacion, t))
-        firma.push(toma, r(s), r(x0), r(y0), sat)
+        firma.push(toma, r(s), r(cam.tx), r(cam.ty), sat)
         // El velo de arriba aparece cuando el celular sube por encima de su lugar.
         $('#velo').style.opacity = r(clamp((388 - cam.ty) / 70))
 
         ctx.setTransform(1, 0, 0, 1, 0, 0)
         ctx.clearRect(0, 0, 1080, 1920)
-        ctx.setTransform(s, 0, 0, s, x0, y0) // desde acá, las medidas son las del celular
+        ctx.setTransform(s, 0, 0, s, cam.tx, cam.ty) // desde acá, las medidas son las del celular
         const cuerpo = () => (ctx.beginPath(), ctx.roundRect(0, 0, 390, 844, 26.5))
 
         ctx.save()
@@ -606,74 +673,31 @@
         ctx.drawImage(await imagen(toma), 0, 0, 390, 844)
         ctx.filter = 'none'
 
-        // Cada casillero que se pinta: un fogonazo y un anillo que se abre.
+        // El casillero que acaba de cambiar: un anillo fino que se abre y se va.
+        // Es lo único que se marca; sin él no se ve cuál de los 52 cambió.
         const mapa = G.cajas.mapaEn[toma]
         if (mapa)
           for (const p of G.pintadas) {
             const d = t - p.t
-            if (d < 0 || d > 0.5) continue
+            if (d < 0 || d > 0.4) continue
             const c = G.cajas.celdas[p.cod]
-            const x = mapa.x + c.x
-            const y = mapa.y + c.y
-            const a = d / 0.5
-            const crece = 9 * sale(a)
-            ctx.globalAlpha = 0.85 * (1 - clamp(d / 0.16))
-            ctx.fillStyle = '#fff'
-            ctx.beginPath()
-            ctx.roundRect(x, y, c.w, c.h, 3)
-            ctx.fill()
+            const a = d / 0.4
+            const crece = 6 * sale(a)
             ctx.globalAlpha = 1 - a
             ctx.strokeStyle = COLOR[p.estado]
-            ctx.lineWidth = 2.2 * (1 - a) + 0.4
+            ctx.lineWidth = 1.6
             ctx.beginPath()
-            ctx.roundRect(x - crece, y - crece, c.w + 2 * crece, c.h + 2 * crece, 3 + crece * 0.6)
+            ctx.roundRect(mapa.x + c.x - crece, mapa.y + c.y - crece, c.w + 2 * crece, c.h + 2 * crece, 3 + crece * 0.6)
             ctx.stroke()
             firma.push(r(d))
           }
-        // Anillos alrededor de una fila o de la banda del título.
-        for (const an of G.camara.luces.anillos) {
-          const d = t - an.t
-          if (d < 0 || d > 0.7) continue
-          const a = d / 0.7
-          const crece = 16 * sale(a)
-          const c = an.caja
-          ctx.globalAlpha = 1 - a
-          ctx.strokeStyle = an.color
-          ctx.lineWidth = 3 * (1 - a) + 0.5
-          ctx.beginPath()
-          ctx.roundRect(c.x - crece, c.y - crece, c.w + 2 * crece, c.h + 2 * crece, 10 + crece * 0.5)
-          ctx.stroke()
-          firma.push(r(d))
-        }
-        // Brillo que cruza la banda del título.
-        for (const br of G.camara.luces.brillos) {
-          const d = t - br.t
-          if (d < 0 || d > 0.75) continue
-          const c = br.caja
-          const xb = c.x - 90 + (c.w + 180) * CURVA.suave(d / 0.75)
-          ctx.save()
-          ctx.beginPath()
-          ctx.roundRect(c.x, c.y, c.w, c.h, 10)
-          ctx.clip()
-          const g = ctx.createLinearGradient(xb - 60, c.y, xb + 60, c.y + 20)
-          g.addColorStop(0, 'rgba(255,255,255,0)')
-          g.addColorStop(0.5, 'rgba(255,255,255,0.85)')
-          g.addColorStop(1, 'rgba(255,255,255,0)')
-          ctx.globalAlpha = 1
-          ctx.fillStyle = g
-          ctx.fillRect(c.x - 100, c.y, c.w + 200, c.h)
-          ctx.restore()
-          firma.push(r(d))
-        }
-        // El toque del dedo.
+        // El toque del dedo. Dura hasta un instante después: ahí la pantalla ya cambió.
         for (const q of G.toques) {
-          // Dura hasta un instante después del toque: ahí la pantalla ya cambió.
           const d = t - (q.t - 0.14)
           if (d < 0 || d > 0.3) continue
           ctx.globalAlpha = sale(d / 0.1) * clamp((0.3 - d) / 0.1)
-          const radio = 26 * (0.7 + 0.3 * sale(d / 0.14)) + 10 * clamp((d - 0.14) / 0.16)
           ctx.beginPath()
-          ctx.arc(q.x, q.y, radio, 0, 6.2832)
+          ctx.arc(q.x, q.y, 26, 0, 6.2832)
           ctx.fillStyle = 'rgba(36, 56, 138, 0.2)'
           ctx.fill()
           ctx.lineWidth = 1.8
@@ -690,6 +714,54 @@
         ctx.stroke()
       }
 
+      /** El final: la última pregunta, la foto, la libreta y la invitación. */
+      function dibujarCierre(t, firma) {
+        const C = G.cierre
+        const abre = suave((t - C.abre) / 0.8) //      la foto se abre
+        const sube = suave((t - C.tarjeta) / 0.8) //   y después deja lugar a la invitación
+        // El chat se va cuando la foto se abre.
+        $('#c-chat').style.opacity = r(1 - abre)
+        // Ella escribe… y tarda.
+        const escribe = t >= C.escribe && t < C.foto
+        const puntos = $('#c-puntos')
+        puntos.style.opacity = escribe ? r(sale((t - C.escribe) / 0.15)) : 0
+        if (escribe)
+          [...puntos.children].forEach((p, i) => {
+            const ola = Math.max(0, Math.sin((t - C.escribe) * 8 - i * 0.9))
+            p.style.opacity = r(0.35 + 0.65 * ola)
+            p.style.transform = `translateY(${r(-7 * ola)}px)`
+          })
+        // La foto llega como una burbuja más; después se abre y ocupa la pantalla.
+        const llega = vida(t, C.foto, G.dur + 1)
+        $('#c-marco').style.opacity = r(llega.o * (1 - abre))
+        $('#c-marco').style.transform = `translateY(${llega.y}px)`
+        const a = LIBRETA.foto
+        const b = LIBRETA.abierta
+        const c = LIBRETA.arriba
+        const mezcla = (k) => lerp(lerp(a[k], b[k], abre), c[k], sube)
+        const hoja = $('#libreta')
+        hoja.style.opacity = llega.o
+        hoja.style.transform = `translate(${r(mezcla('x'))}px, ${r(mezcla('y') + llega.y)}px) rotate(${r(mezcla('g'))}deg) scale(${r(mezcla('e'))})`
+        // El círculo alrededor del cero se dibuja; "Yo sabía." se escribe.
+        const circ = $('#circulo')
+        const largo = circ.getTotalLength()
+        const pC = suave((t - C.circulo) / 0.7)
+        circ.style.strokeDashoffset = r(largo * (1 - pC))
+        circ.style.opacity = pC > 0 ? 1 : 0
+        const pF = suave((t - C.firma) / 0.8)
+        hoja.querySelector('.firma').style.clipPath = `inset(-20% ${r(100 - 104 * pF)}% -20% -4%)`
+        // La invitación.
+        const vL = vida(t, C.tarjeta + 0.35, G.dur + 1, 0.35)
+        pon($('#c-llamado'), vL)
+        const vU = vida(t, C.tarjeta + 0.8, G.dur + 1, 0.3)
+        const trazo = r(100 * suave((t - C.tarjeta - 0.85) / 0.5))
+        $('#c-url b').style.backgroundSize = `${trazo}% 100%`
+        pon($('#c-url'), vU)
+        const vCh = vida(t, C.tarjeta + 1.3, G.dur + 1, 0.35, 0.2, 14)
+        pon($('#c-chico'), vCh)
+        firma.push('c', r(abre), r(sube), escribe ? r(t) : 0, llega.o, llega.y, r(pC), r(pF), vL.o, vL.y, vU.o, vU.y, trazo, vCh.o, vCh.y)
+      }
+
       /** Dibuja el instante `t`. Devuelve una firma: si no cambia, el cuadro es igual. */
       async function render(t) {
         const firma = []
@@ -701,29 +773,27 @@
         const oC = r(clamp((t - C.t0) / 0.35))
         if (oC < 1) await dibujarCelular(t, toma, firma)
 
-        // Luz: los bordes que se cierran y el fogonazo.
-        const oV = r(pista(G.efectos.vineta, t))
-        $('#vineta').style.opacity = oV
+        // El fogonazo de la revelación.
         let oD = 0
         for (const d of G.efectos.destellos) if (t >= d.t && t < d.t + d.dur) oD = d.a * Math.pow(1 - (t - d.t) / d.dur, 2)
         $('#destello').style.opacity = r(oD)
-        firma.push(oV, r(oD))
+        firma.push(r(oD))
 
         // La frase del momento: el resaltador se pasa de izquierda a derecha.
         const tit = G.titulos.find((x) => t >= x.t0 && t < x.t1)
         const vTit = tit ? vida(t, tit.t0, tit.t1, 0.2, 0.2, 10) : { o: 0, y: 0 }
-        const trazo = tit ? r(100 * CURVA.suave(clamp((t - tit.t0 - 0.05) / 0.42))) : 0
+        const trazo = tit ? r(100 * suave((t - tit.t0 - 0.05) / 0.42)) : 0
         if (tit) $('#titulo span').textContent = tit.texto
         if (tit) $('#titulo span').style.fontSize = tit.chico ? '46px' : '' // las frases largas, más chicas
         $('#titulo span').style.backgroundSize = `${trazo}% 100%`
         pon($('#titulo'), vTit)
         // La fecha, que le hace lugar.
         const fe = G.fechas.find((x) => t >= x.t0 && t < x.t1)
-        const vFe = fe ? vida(t, fe.t0, fe.t1, 0.3, 0.14, 34) : { o: 0, y: 0 }
+        const vFe = fe ? vida(t, fe.t0, fe.t1, 0.25, 0.14, 16) : { o: 0, y: 0 }
         if (fe) $('#fecha span').textContent = fe.texto
         const lugar = tit ? sale((t - tit.t0) / 0.3) * clamp((tit.t1 - t) / 0.2) : 0
         $('#fecha').style.top = `${r(262 - 22 * lugar)}px`
-        pon($('#fecha'), vFe, fe ? `scale(${r(0.9 + 0.1 * rebote((t - fe.t0) / 0.36))})` : '')
+        pon($('#fecha'), vFe)
         firma.push(tit?.texto, vTit.o, vTit.y, trazo, fe?.texto, vFe.o, vFe.y, r(lugar))
 
         // Las burbujas, y el velo de abajo que les hace lugar: sube un instante
@@ -731,46 +801,30 @@
         let oB = 0
         for (const b of globos) {
           if (b.cont) {
-            b.cont.style.display = t >= b.desde - 0.1 && t < b.t1 + 0.1 ? 'flex' : 'none'
-            oB = Math.max(oB, sale((t - (b.desde - 0.35)) / 0.35) * clamp((b.t1 + 0.1 - t) / 0.3))
+            b.cont.style.display = t >= b.t0 - 0.5 && t < b.t1 + 0.1 ? 'flex' : 'none'
+            oB = Math.max(oB, sale((t - (b.t0 - 0.35)) / 0.35) * clamp((b.t1 + 0.1 - t) / 0.3))
           }
           dibujarGlobo(b, t, firma)
         }
         $('#velo-abajo').style.opacity = r(oB)
         firma.push(r(oB))
 
-        // El número del momento 5: late con cada cambio y crece a medida que baja.
+        // El número de la cuenta regresiva: cambia y nada más.
         const N = G.numero
         const ini = N.puntos[0].t
         const vN = vida(t, ini, N.hasta, 0.28, 0.12)
         let valor = N.puntos[0].valor
-        let desde = ini
-        for (const p of N.puntos) if (p.t <= t + 1e-6) ((valor = p.valor), (desde = p.t))
-        const golpe = t > ini + 0.25 ? 0.14 * (1 - sale((t - desde) / 0.2)) : 0
-        const tamano = r((1 + 0.05 * (1 - valor / N.puntos[0].valor)) * (1 + golpe) * (0.6 + 0.4 * rebote((t - ini) / 0.4)))
+        for (const p of N.puntos) if (p.t <= t + 1e-6) valor = p.valor
         $('#numero b').textContent = valor
-        $('#numero .tarjeta').style.transform = `scale(${tamano})`
         pon($('#numero'), vN)
-        if (vN.o) firma.push('n', valor, vN.o, vN.y, tamano)
+        if (vN.o) firma.push('n', valor, vN.o, vN.y)
 
-        // El cierre.
+        // El final.
         $('#cierre').style.opacity = oC
         $('#cierre').style.display = oC ? 'block' : 'none'
-        if (oC) {
-          const hasta = G.dur + 1
-          const marca = rebote((t - C.t0 - 0.1) / 0.5)
-          const vM = vida(t, C.t0 + 0.1, hasta, 0.2, 0.2, 0)
-          pon($('#c-marca'), vM, `scale(${r(0.6 + 0.4 * marca)}) rotate(${r(-10 * (1 - marca))}deg)`)
-          const vU = vida(t, C.url.t, hasta, 0.2, 0.2, 16)
-          const trazoU = r(100 * CURVA.suave(clamp((t - C.url.t) / 0.5)))
-          $('#c-url b').style.backgroundSize = `${trazoU}% 100%`
-          pon($('#c-url'), vU, `scale(${r(0.92 + 0.08 * rebote((t - C.url.t) / 0.4))})`)
-          const vCh = vida(t, C.chico.t, hasta, 0.32, 0.2, 14)
-          pon($('#c-chico'), vCh)
-          firma.push('c', oC, vM.o, r(marca), vU.o, vU.y, trazoU, vCh.o, vCh.y)
-        }
+        if (oC) (dibujarCierre(t, firma), firma.push(oC))
 
-        // El papel picado, por encima de todo.
+        // El papel picado de la revelación, por encima de todo.
         if (dibujarPapelitos(t)) firma.push('p', r(t))
         return firma.join('|')
       }

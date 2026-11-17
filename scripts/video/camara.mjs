@@ -19,7 +19,8 @@ const centro = (c) => [c.x + c.w / 2, c.y + c.h / 2]
  * @param cajas  dónde está cada cosa en la pantalla del celular (de la captura)
  * @returns claves { t, k, tx, ty, e }: a cada clave se llega desde la anterior
  *          con la curva `e` ('corte' salta; 'suave' acelera y frena; 'sale'
- *          frena; 'rebote' se pasa un poco y vuelve; 'lineal' deriva pareja).
+ *          frena; 'lineal' deriva pareja). Nada de rebotes ni sacudones: la
+ *          cámara acompaña, no hace piruetas.
  */
 export function construirCamara(g, cajas) {
   const M = g.marcas
@@ -54,11 +55,6 @@ export function construirCamara(g, cajas) {
 
   const claves = []
   const a = (t, p, e = 'suave') => claves.push({ t, ...p, e })
-  /** Un respiro en el cambio de año: se aleja apenas y vuelve. */
-  const respiro = (t, k = 1.47) => {
-    a(t + 0.22, tablero(k - 0.07), 'sale')
-    a(t + 0.7, tablero(k))
-  }
 
   // 0 · Arranca pegado al titular: "Te faltan 52 materias". Después se aleja.
   a(0, TITULAR(1.9), 'corte')
@@ -69,19 +65,15 @@ export function construirCamara(g, cajas) {
   // 1 y 2 · Se acerca al tablero: el mapa se pinta de violeta y después de verde.
   a(M.m1 + 0.6, tablero(1.44))
   a(M.dic1, tablero(1.47), 'lineal')
-  respiro(M.dic1)
   a(M.m2 - 0.01, tablero(1.52), 'lineal')
-  respiro(M.m2)
   a(M.dic2, tablero(1.49), 'lineal')
-  respiro(M.dic2)
   a(M.m3 - 0.01, tablero(1.52), 'lineal')
 
   // 3 · El año que costó. En marzo, normal; en diciembre, un acercamiento muy
   // lento al bloque de 3° año mientras las notas tardan en llegar.
-  respiro(M.m3)
   a(M.dic3 + 0.3, tablero(1.49), 'lineal')
-  a(27.9, TERCERO, 'suave')
-  a(28.8, tablero(1.47)) // vuelve para la abuela
+  a(M.abu3 - 0.4, TERCERO, 'suave')
+  a(M.abu3 + 0.5, tablero(1.47)) // vuelve para la abuela
   a(M.nudo - 0.01, tablero(1.5), 'lineal')
 
   // El nudo · La lista bajando, el panel de correlativas y el árbol.
@@ -97,13 +89,11 @@ export function construirCamara(g, cajas) {
   a(M.m4 - 0.01, tablero(1.47), 'lineal')
 
   // 4 · Vuelve el ritmo. Corte a la banda de Analista, y golpe de zoom cuando se pone verde.
-  respiro(M.m4)
   a(M.dic4, tablero(1.49), 'lineal')
-  respiro(M.dic4)
   a(M.analista - 0.81, tablero(1.5), 'lineal')
   a(M.analista - 0.8, analista(1.2), 'corte')
   a(M.analista, analista(1.27), 'lineal')
-  a(M.analista + 0.4, analista(1.58), 'rebote')
+  a(M.analista + 0.4, analista(1.58), 'sale')
   a(M.vuelta - 0.01, analista(1.64), 'lineal')
   a(M.vuelta, tablero(1.47), 'corte')
   a(M.m5 - 0.01, tablero(1.52), 'lineal')
@@ -111,14 +101,13 @@ export function construirCamara(g, cajas) {
   // 5 · Marzo: todo lo que queda, en violeta. Después la cuenta regresiva: con
   // cada golpe, un paso más cerca. Hasta 1,63: más que eso y los casilleros de
   // 4° y 5° quedan tapados por el número grande.
-  respiro(M.m5)
   let k = 1.42
   a(M.cuenta + 0.5, tablero(k))
   let antes = M.cuenta + 0.5
   for (const golpe of M.golpes) {
     a(Math.max(antes + 0.01, golpe.cae - 0.02), tablero(k + 0.005), 'lineal')
     k += 0.038
-    a(golpe.cae + 0.28, tablero(k), 'rebote')
+    a(golpe.cae + 0.28, tablero(k), 'sale')
     antes = golpe.cae + 0.28
   }
   a(M.m6 - 0.01, tablero(k + 0.025), 'lineal') // el "1" queda en pantalla y la cámara sigue entrando
@@ -137,12 +126,12 @@ export function construirCamara(g, cajas) {
   a(M.tIng - 0.01, tablero(1.38), 'lineal')
   // La vuelta olímpica: el título, el árbol entero y el promedio.
   a(M.tIng, ingeniero(1.25), 'corte')
-  a(M.tIng + 0.45, ingeniero(1.55), 'rebote')
+  a(M.tIng + 0.45, ingeniero(1.55), 'sale')
   a(M.tVerde - 0.01, ingeniero(1.62), 'lineal')
   a(M.tVerde, verde(1.4), 'corte')
   a(M.tNotas - 0.01, verde(1.54), 'lineal')
   a(M.tNotas, promedio(1.2), 'corte')
-  a(M.tNotas + 0.45, promedio(1.45), 'rebote')
+  a(M.tNotas + 0.45, promedio(1.45), 'sale')
   a(M.cierre + 0.6, promedio(1.54), 'lineal')
 
   // Las claves tienen que quedar en orden: si no, la cámara salta a cualquier lado.
@@ -150,23 +139,7 @@ export function construirCamara(g, cajas) {
     if (i && c.t < claves[i - 1].t) throw new Error(`Cámara desordenada en t = ${c.t} (viene de ${claves[i - 1].t})`)
   })
 
-  // Lo que brilla o pulsa en un lugar de la pantalla (en píxeles del celular).
-  const VERDE = '#1d8a57'
-  const luces = {
-    brillos: [
-      { t: M.analista, caja: cajas.analista },
-      { t: M.tIng + 0.3, caja: cajas.ingeniero },
-      { t: M.tNotas + 0.3, caja: cajas.promedio },
-    ],
-    anillos: [
-      { t: M.analista, caja: cajas.analista, color: VERDE },
-      { t: M.corte + 0.2, caja: cajas.fila, color: VERDE },
-      { t: M.tIng + 0.3, caja: cajas.ingeniero, color: VERDE },
-      { t: M.arbol + 0.1, caja: cajas.arbolFoco, color: '#24388a' },
-      { t: M.tNotas + 0.3, caja: cajas.promedio, color: '#f2cc1c' },
-    ],
-    // De dónde sale el papel picado chico del título de Analista.
-    confetiDesde: centro(cajas.analista),
-  }
+  // Sin brillos ni anillos: lo único que se marca es el casillero que cambia.
+  const luces = { brillos: [], anillos: [] }
   return { claves, luces }
 }

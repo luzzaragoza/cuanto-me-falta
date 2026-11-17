@@ -10,11 +10,14 @@
 import { ingInformatica as plan } from '../../src/data/planes/ing-informatica.ts'
 
 export const FPS = 30
-// La música del final va en compases: el acorde cambia cada COMPAS segundos, y
-// los cortes de imagen y las burbujas del cierre caen justo en esos cambios.
-export const COMPAS = 2.4
-export const REVELACION = 67.4 // "Ya no te falta nada"
-export const DUR = REVELACION + 9 * COMPAS + 3.9 // segundos
+// Todo el video va sobre una grilla musical: 100 pulsos por minuto, cuatro
+// tiempos por compás. Los cortes, las burbujas y cada materia que se pinta caen
+// en un tiempo o en una fracción exacta, así la imagen y la música van juntas.
+export const COMPAS = 2.4 // segundos (cuatro tiempos de 0,6)
+/** El instante en que empieza un compás (y, si se pide, uno de sus cuatro tiempos). */
+export const T = (compas, tiempo = 0) => Math.round((compas * COMPAS + tiempo * (COMPAS / 4)) * 1000) / 1000
+export const REVELACION = T(32) // "Ya no te falta nada"
+export const DUR = T(46) // segundos
 export const PERFIL = 'Juli' // nombre provisorio de la cabecera (pendiente de Luz)
 
 const A = 'aprobada'
@@ -136,6 +139,8 @@ export function validar() {
 const top = (n) => `top-${String(n).padStart(3, '0')}`
 const cuadro = (base, i) => `${base}-${String(i).padStart(3, '0')}`
 const r3 = (x) => Math.round(x * 1000) / 1000
+const SEMI = COMPAS / 16 // una semicorchea: 0,15 s
+const CORCHEA = COMPAS / 8 // 0,3 s
 
 export function construirGuion() {
   validar()
@@ -146,7 +151,7 @@ export function construirGuion() {
   const titulos = []
   const toques = [] //   { t, id }  → la posición sale de la captura
   const numero = [] //   { t, valor } el número grande de la cuenta regresiva
-  const pintadas = [] // { t, cod, estado }  cada casillero que cambia, para animarlo
+  const pintadas = [] // { t, cod, estado }  cada casillero que cambia, para marcarlo
   let nota = 0 // cuántas notas de la melodía ya sonaron
 
   const toma = (t, img) => tomas.push({ t: r3(t), img })
@@ -156,23 +161,21 @@ export function construirGuion() {
     const p = PASOS[n - 1]
     pintadas.push({ t: r3(t), cod: p.cod, estado: p.estado })
     if (p.estado === A) sonido.push({ t: r3(t), tipo: 'nota', n: nota++, ...opts })
-    else if (p.estado === C) sonido.push({ t: r3(t), tipo: 'cursa', i: opts.i ?? 0 }) // violeta: un punteo suave
+    else if (p.estado === C) sonido.push({ t: r3(t), tipo: 'cursa', i: opts.i ?? 0 })
     else sonido.push({ t: r3(t), tipo: 'marca' }) // final pendiente: apenas un roce
   }
   const idx = (m) => PASOS.filter((p) => p.momento === m).map((p) => p.n)
-  /** Varios pasos seguidos, uno cada `cada` segundos. Devuelve cuándo termina. */
-  const tanda = (t, momento, cada, opts) => {
-    const ns = idx(momento)
-    ns.forEach((n, i) => paso(t + i * cada, n, { ...opts, i }))
-    return t + (ns.length - 1) * cada
-  }
-  /** Un par de burbujas: la abuela y la respuesta. La etiqueta "Abu" va solo en
-   *  la primera: después ya se sabe de quién es la burbuja blanca. */
-  const par = (tAbu, tYo, tFin, pregunta, respuesta) => {
+  /** Varios pasos seguidos, uno cada `cada` segundos. */
+  const tanda = (t, momento, cada, opts) => idx(momento).forEach((n, i) => paso(t + i * cada, n, { ...opts, i }))
+  /** Un intercambio: la abuela pregunta, le contestan, y ella anota. La
+   *  etiqueta "Abu" va solo en la primera burbuja del video. */
+  const charla = (tAbu, tYo, tAnota, tFin, pregunta, respuesta, anota) => {
     const id = burbujas.length
     burbujas.push({ t0: tAbu, t1: tFin, quien: 'abu', texto: pregunta, par: id, etiqueta: id === 0 })
     burbujas.push({ t0: tYo, t1: tFin, quien: 'yo', texto: respuesta, par: id })
-    sonido.push({ t: tAbu, tipo: 'pop_abu' }, { t: tYo, tipo: 'pop_yo' })
+    burbujas.push({ t0: tAnota, t1: tFin, quien: 'abu', texto: anota, par: id })
+    sonido.push({ t: tAbu, tipo: 'pop_abu' }, { t: tYo, tipo: 'pop_yo' }, { t: tAnota, tipo: 'pop_abu' })
+    sonido.push({ t: r3(tAnota + 0.25), tipo: 'lapiz' }) // se la oye anotar
   }
   /** Un toque del dedo sobre la pantalla. */
   const toque = (t, id) => {
@@ -182,56 +185,47 @@ export function construirGuion() {
   /** Un recorrido de pantalla: una captura por cuadro, desde t. Devuelve cuándo termina. */
   const recorrido = (t, base) => {
     for (let i = 1; i <= CUADROS[base]; i++) toma(t + (i - 1) / FPS, cuadro(base, i))
-    return t + CUADROS[base] / FPS
+    return r3(t + CUADROS[base] / FPS)
   }
-  // Los cambios de plano suenan: aire que pasa.
-  const aire = (t, sube = true, fuerza = 1) => sonido.push({ t: r3(t), tipo: 'whoosh', sube, fuerza })
+  const corteDePlano = (t) => sonido.push({ t: r3(t - 0.1), tipo: 'whoosh' })
   const fecha = (t0, t1, texto) => fechas.push({ t0, t1, texto })
 
   const R = REVELACION
-  const B = COMPAS
-  // Dónde empieza cada parte. La cámara y la música se guían por estas marcas.
+  // Dónde empieza cada parte, en compases. La cámara y la música se guían por esto.
   const M = {
-    m1: 4.5, dic1: 6.6, m2: 12.8, dic2: 14.8, m3: 20.8, dic3: 22.8,
-    nudo: 31.2, feb: 41.2, m4: 43.0, dic4: 45.0, m5: 54.0, cuenta: 56.2, m6: 63.2,
+    m1: T(2), dic1: T(3), m2: T(6), dic2: T(7), m3: T(10), dic3: T(11),
+    nudo: T(15), feb: T(19), m4: T(20), dic4: T(21), m5: T(26), cuenta: T(27), m6: T(30),
   }
 
-  // 0 · Marzo de 1° año: el plan vacío, y la pregunta.
+  // 0 · Marzo de 1° año: el plan vacío, y la pregunta. Ella anota: se oye el lápiz.
   fecha(0, M.dic1, 'Marzo · 1° año')
   toma(0, top(0))
-  par(0.3, 2.0, 4.2, '¿Y? ¿Cuánto te falta para recibirte?', 'Recién empiezo. Me faltan 52.')
-  aire(0.95, false, 0.6)
+  charla(0.3, T(0, 3), T(1, 1.5), M.m1 - 0.2, '¿Cuánto te falta para recibirte?', 'Empecé hoy, abu. 52 materias.', '52. Anotado.')
 
   // 1 · 1° año. Marzo: se anota en todo (violeta). Diciembre: diez aprobadas.
-  aire(M.m1 - 0.1)
-  tanda(M.m1 + 0.6, 'm1a', 0.11)
+  tanda(M.m1 + 0.3, 'm1a', SEMI)
   fecha(M.dic1, M.m2, 'Diciembre · 1° año')
-  aire(M.dic1 - 0.1, true, 0.7)
-  tanda(M.dic1 + 0.4, 'm1b', 0.26)
-  par(10.3, 11.2, 12.5, '¿Y, mi amor? ¿Cuánto te falta?', '42. Metí diez este año.')
+  tanda(M.dic1 + 0.3, 'm1b', CORCHEA)
+  charla(T(4, 2.5), T(5, 0.5), T(5, 2.5), M.m2 - 0.2, '¿Y ahora cuánto te falta?', '42.', '42. Anotado.')
 
   // 2 · 2° año, igual: violeta en marzo, verde en diciembre.
   fecha(M.m2, M.dic2, 'Marzo · 2° año')
-  aire(M.m2 - 0.1)
-  tanda(M.m2 + 0.4, 'm2a', 0.11)
+  tanda(M.m2 + 0.3, 'm2a', SEMI)
   fecha(M.dic2, M.m3, 'Diciembre · 2° año')
-  aire(M.dic2 - 0.1, true, 0.7)
-  tanda(M.dic2 + 0.4, 'm2b', 0.26)
-  par(18.2, 19.1, 20.5, 'Contame. ¿Cuánto te falta ahora?', '32. Voy bien.')
+  tanda(M.dic2 + 0.3, 'm2b', CORCHEA)
+  charla(T(8, 2), T(9), T(9, 2), M.m3 - 0.2, '¿Y ahora?', '32. Voy bien.', 'Anotado.')
 
   // 3 · 3° año. No hay frase: el tiempo se frena solo. Menos materias, cada
-  // nota tarda en llegar, y el reloj se oye. Es el único año en que la abuela
-  // no pregunta: se da cuenta sola, y hace lo que hace una abuela: darte de comer.
+  // nota tarda en llegar, y el reloj se oye. La abuela no insiste con el
+  // número: anota otra cosa.
   fecha(M.m3, M.dic3, 'Marzo · 3° año')
-  aire(M.m3 - 0.1, false, 1.0)
-  tanda(M.m3 + 0.5, 'm3a', 0.17)
+  tanda(M.m3 + 0.3, 'm3a', CORCHEA)
   fecha(M.dic3, M.nudo, 'Diciembre · 3° año')
-  const t3 = [23.5, 24.4, 25.3, 26.2, 26.9, 27.6]
+  const t3 = [T(11, 1), T(11, 3), T(12, 1), T(12, 3), T(13), T(13, 1)]
   idx('m3b').forEach((n, i) => paso(t3[i], n, { grave: true }))
-  // El reloj: cada tic llega un poco más tarde que el anterior.
-  for (let t = M.dic3 + 0.3, cada = 0.5; t < 28.0; t += cada, cada += 0.045) sonido.push({ t: r3(t), tipo: 'reloj' })
-  aire(27.95, true, 0.5)
-  par(28.4, 29.5, 30.9, 'Este año no te pregunto. ¿Comiste?', 'Gracias, abu.')
+  // El reloj: un tic por tiempo, y después cada vez más espaciados.
+  for (const t of [T(11), T(11, 1), T(11, 2), T(11, 3), T(12), T(12, 1.5), T(12, 3), T(13, 1), T(13, 3)]) sonido.push({ t, tipo: 'reloj' })
+  charla(T(13, 2), T(14), T(14, 2), M.nudo - 0.2, '¿Y este año?', 'Mejor no preguntes.', 'Entonces anoto que venís a comer.')
 
   // El nudo · Febrero. Mira qué puede hacer: en la lista se ve lo que cursa
   // (violeta), el final que debe (naranja) y lo que ya está disponible
@@ -239,159 +233,160 @@ export function construirGuion() {
   // correlativas le muestra la cadena entera.
   const N = M.nudo
   fecha(N, M.m4, 'Febrero · finales')
-  aire(N - 0.1, false, 0.9)
+  corteDePlano(N)
   toma(N, cuadro('lista', 0)) //        la lista de 3° año
-  const finLista = recorrido(N + 0.5, 'lista') // baja hasta Probabilidad y Estadística
-  toque(N + 3.1, 'corr')
-  toma(N + 3.15, 'nudo-corr') //        "Habilita después": tres materias
-  titulos.push({ t0: N + 3.5, t1: M.feb - 0.2, texto: 'Un final trababa tres materias.', chico: true })
-  toque(N + 5.3, 'verArbol')
-  const arbol = N + 5.42
+  const finLista = recorrido(N + 0.3, 'lista') // baja hasta Probabilidad y Estadística
+  toque(T(16), 'corr')
+  toma(T(16) + 0.05, 'nudo-corr') //    "Habilita después": tres materias
+  titulos.push({ t0: T(16) + 0.4, t1: M.feb - 0.2, texto: 'Un final trababa tres materias.', chico: true })
+  toque(T(17) - 0.15, 'verArbol')
+  const arbol = T(17)
   toma(arbol, cuadro('arbol', 0)) //    el árbol, con la cadena iluminada
-  aire(arbol - 0.12, true, 1)
-  const recorreNudo = arbol + 0.9
+  corteDePlano(arbol)
+  const recorreNudo = arbol + 0.6
   const finArbol = recorrido(recorreNudo, 'arbol')
   // Las tres materias trabadas pasan por la pantalla: tres notas sordas.
   for (let i = 0; i < 3; i++) sonido.push({ t: r3(recorreNudo + 0.6 + i * 0.75), tipo: 'trabada', i })
   // Y rinde: los dos finales colgados se ponen verdes.
-  aire(M.feb - 0.1, true, 0.9)
+  corteDePlano(M.feb)
   toma(M.feb, top(idx('m3b').at(-1)))
-  tanda(M.feb + 0.5, 'feb', 0.65)
+  tanda(M.feb + 0.6, 'feb', 0.6)
 
   // 4 · 4° año: vuelve el ritmo, y llega el primer título.
   fecha(M.m4, M.dic4, 'Marzo · 4° año')
-  aire(M.m4 - 0.1)
-  tanda(M.m4 + 0.4, 'm4a', 0.1)
+  tanda(M.m4 + 0.3, 'm4a', SEMI)
   fecha(M.dic4, M.m5, 'Diciembre · 4° año')
-  aire(M.dic4 - 0.1, true, 0.7)
   const m4b = idx('m4b')
-  m4b.slice(0, 4).forEach((n, i) => paso(M.dic4 + 0.4 + i * 0.22, n))
-  const analista = M.dic4 + 2.4
-  aire(analista - 0.9, true, 0.8)
-  toma(analista - 0.8, 'analista-antes') // corte a la lista: la banda del título, todavía punteada
+  m4b.slice(0, 4).forEach((n, i) => paso(M.dic4 + 0.3 + i * CORCHEA, n))
+  const analista = T(22)
+  toma(analista - 0.6, 'analista-antes') // corte a la lista: la banda del título, todavía punteada
   toma(analista, 'analista-despues') // la última de 3° se aprueba y la banda se pone verde
-  sonido.push({ t: analista - 0.32, tipo: 'escalera' }, { t: analista, tipo: 'acorde_analista' }, { t: analista, tipo: 'destello' })
+  sonido.push({ t: analista, tipo: 'titulo' })
   nota++ // esa materia no toca su nota: suena el acorde
   titulos.push({ t0: analista, t1: M.m5 - 0.3, texto: 'El primer título.' })
-  const vuelta = analista + 1.9
-  aire(vuelta - 0.1, true, 0.8)
+  const vuelta = T(23)
   toma(vuelta, top(m4b[4])) // vuelta al mapa: faltan 20
-  tanda(vuelta + 0.3, 'm4c', 0.2)
-  par(51.4, 52.2, 53.7, '¿Ahora sí puedo preguntar?', '13. Y ya soy analista.')
+  tanda(vuelta + 0.3, 'm4c', CORCHEA)
+  charla(T(24, 0.5), T(24, 2.5), T(25, 0.5), M.m5 - 0.3, '¿Ahora sí puedo preguntar?', '13. Y ya soy analista.', 'Anotado. Las dos cosas.')
 
   // 5 · 5° año. Marzo: se anota en todo lo que queda. Después, la cuenta
   // regresiva: 13, 9, 5, 3, 2, 1, cada vez más seguido, y el 1 se queda un
   // rato largo en pantalla. La única violeta que queda es el Proyecto Final.
   fecha(M.m5, M.cuenta, 'Marzo · 5° año')
-  aire(M.m5 - 0.1)
-  tanda(M.m5 + 0.4, 'm5a', 0.1)
+  tanda(M.m5 + 0.3, 'm5a', SEMI)
   fecha(M.cuenta, M.m6, '5° año')
-  aire(M.cuenta - 0.1, true, 1.1)
   const m5 = idx('m5b')
   const rafagas = [
-    { en: M.cuenta + 1.1, cuantos: 4 }, // 13 → 9
-    { en: M.cuenta + 2.3, cuantos: 4 }, // 9 → 5
-    { en: M.cuenta + 3.4, cuantos: 2 }, // 5 → 3
-    { en: M.cuenta + 4.3, cuantos: 1 }, // 3 → 2
-    { en: M.cuenta + 5.1, cuantos: 1 }, // 2 → 1
+    { en: T(27, 1.5), cuantos: 4 }, // 13 → 9
+    { en: T(27, 3.5), cuantos: 4 }, // 9 → 5
+    { en: T(28, 1.5), cuantos: 2 }, // 5 → 3
+    { en: T(28, 3), cuantos: 1 }, //   3 → 2
+    { en: T(29), cuantos: 1 }, //      2 → 1
   ]
   numero.push({ t: M.cuenta + 0.2, valor: 13 })
   let k = 0
-  // Cada ráfaga termina en un golpe: tambor, sacudón y la cámara un paso más cerca.
-  const golpes = rafagas.map((r, i) => ({ t: r.en, cae: r3(r.en + (r.cuantos - 1) * (3 / FPS)), i }))
+  // Cada ráfaga termina en un golpe: un tambor, y la cámara un paso más cerca.
+  const golpes = rafagas.map((r, i) => ({ t: r.en, cae: r3(r.en + (r.cuantos - 1) * SEMI), i }))
   for (const g of golpes) sonido.push({ t: g.cae, tipo: 'impacto', fuerza: 0.5 + 0.12 * g.i })
   for (const r of rafagas)
     for (let i = 0; i < r.cuantos; i++) {
-      const t = r.en + i * (3 / FPS)
+      const t = r.en + i * SEMI
       const n = m5[k++]
       paso(t, n, { rapida: true })
       numero.push({ t: r3(t), valor: faltanTras(n) })
     }
-  const uno = M.cuenta + 5.1
+  const uno = T(29)
 
   // 6 · Diciembre de 5° año: la última, que venía cursando. Se abre el
   // selector, el dedo duda, toca "Aprobada"… y silencio. Después, la revelación.
-  fecha(M.m6, R + 2 * B - 0.05, 'Diciembre · 5° año')
-  aire(M.m6 - 0.12, false, 1.2)
+  fecha(M.m6, T(34) - 0.05, 'Diciembre · 5° año')
+  corteDePlano(M.m6)
   toma(M.m6, 'final-fila') //   la lista, con el Proyecto Final en violeta
-  toque(M.m6 + 1.1, 'fila')
-  toma(M.m6 + 1.15, 'final-menu') //  se abre el selector: está en "Cursando"
-  const corte = M.m6 + 2.7
+  toque(T(30, 2), 'fila')
+  toma(T(30, 2) + 0.05, 'final-menu') //  se abre el selector: está en "Cursando"
+  const corte = T(31, 1)
   toque(corte, 'aprobada')
   toma(corte + 0.18, 'final-aprobada') // elegida "Aprobada". Pausa.
   sonido.push({ t: corte + 0.12, tipo: 'silencio', hasta: R })
   // El corazón, antes del toque: cuatro latidos, cada vez más juntos.
-  for (const d of [0.3, 1.25, 1.95, 2.4]) sonido.push({ t: r3(M.m6 + d), tipo: 'latido' })
+  for (const t of [T(30, 0.5), T(30, 2.5), T(30, 3.75), T(31, 0.5)]) sonido.push({ t, tipo: 'latido' })
   // Y después del silencio, medio segundo de aire que se junta antes del golpe.
   sonido.push({ t: R - 0.55, tipo: 'inversa', dur: 0.55 }, { t: R, tipo: 'boom' })
   toma(R, top(PASOS.length + 1)) // corte al inicio: "Ya no te falta nada"
 
-  // La vuelta olímpica. La música va en compases y cada cosa entra con uno.
-  const tIng = R + 2 * B //   el título de Ingeniero            (1 compás)
-  const tVerde = R + 3 * B // el árbol entero, aprobado         (2 compases)
-  const tNotas = R + 5 * B // las notas y el promedio           (2 compases)
-  const C0 = R + 7 * B //     el cierre                         (3 compases)
-  aire(tIng - 0.12, true, 0.9)
+  // La vuelta: un plano por cosa, cada uno en su compás.
+  const tIng = T(34) //   el título de Ingeniero       (1 compás)
+  const tVerde = T(35) // el árbol entero, aprobado    (2 compases)
+  const tNotas = T(37) // las notas y el promedio      (2 compases)
+  const C0 = T(39) //     el final con la abuela
+  corteDePlano(tIng)
   toma(tIng, 'ingeniero')
   fecha(tIng, tVerde - 0.05, 'El título.')
-  aire(tVerde - 0.12, true, 0.9)
+  corteDePlano(tVerde)
   toma(tVerde, cuadro('verde', 0))
   recorrido(tVerde + 0.4, 'verde')
   fecha(tVerde, tNotas - 0.05, 'Toda la carrera.')
-  aire(tNotas - 0.12, true, 0.9)
+  corteDePlano(tNotas)
   toma(tNotas, cuadro('notas', 0))
   const bajaNotas = tNotas + 1.9
   recorrido(bajaNotas, 'notas')
   fecha(tNotas, C0 - 0.05, 'Y el promedio.')
 
-  // Lo que no es ni la app ni el texto: luz, color y papel picado.
+  // Luz y color: lo mínimo. Un fogonazo y papel picado, una sola vez, en la
+  // revelación; y la app desteñida mientras 3° año no avanza.
   const efectos = {
-    // Un fogonazo blanco que se apaga.
-    destellos: [
-      { t: analista, a: 0.3, dur: 0.45 },
-      { t: R, a: 0.95, dur: 0.7 },
-    ],
-    // Sacudones de cámara, en píxeles.
-    sacudidas: [...golpes.map((g) => ({ t: g.cae, amp: 4 + 2.2 * g.i })), { t: analista, amp: 5 }, { t: R, amp: 20 }],
-    // Bordes oscuros: 0 = nada. Se cierran un poco en 3° año y antes del final.
-    vineta: [[0, 0], [M.dic3, 0], [M.dic3 + 1.5, 0.38], [M.nudo - 0.2, 0.38], [M.nudo + 0.3, 0.2], [M.feb - 0.2, 0.2], [M.feb + 0.3, 0], [M.cuenta, 0], [M.m6, 0.42], [M.m6 + 0.7, 0.62], [R - 0.01, 0.72], [R, 0], [DUR, 0]],
-    // Color de la app: 1 = normal. En diciembre de 3° año se destiñe. Vuelve
-    // en febrero, porque en la lista y en el árbol el color es el significado.
+    destellos: [{ t: R, a: 0.9, dur: 0.6 }],
     saturacion: [[0, 1], [M.dic3, 1], [M.dic3 + 1.8, 0.45], [M.nudo - 0.01, 0.45], [M.nudo, 1], [DUR, 1]],
-    confeti: [
-      { t: analista + 0.05, tipo: 'chico' },
-      { t: R + 0.02, tipo: 'canones' },
-      { t: C0 + B + 0.1, tipo: 'lluvia' },
-    ],
+    confeti: [{ t: R + 0.02, tipo: 'canones' }],
   }
 
-  // 7 · Cierre sobre papel. Cada cosa entra con un cambio de acorde.
-  aire(C0 - 0.15, false, 0.8)
+  // 7 · El final. Sobre papel, la última vez que pregunta. Y la respuesta de
+  // ella no es un mensaje: es una foto de su libreta. Todos los números que le
+  // fueron diciendo, tachados uno por uno, y el cero con un círculo.
   const cierre = {
     t0: C0,
-    abu: { t: C0 + 0.6, texto: '¿Y? ¿Cuánto te falta?' },
-    yo: { t: C0 + B, texto: 'Nada, abu. Me recibí.' },
-    abu2: { t: C0 + B + 1.3, texto: 'Yo sabía, mi amor.' }, // la última palabra es de ella
-    url: { t: C0 + 2 * B, texto: 'cuantomefalta.app' },
-    chico: { t: C0 + 2 * B + 0.5, texto: 'Gratis · sin cuenta · hecha por una estudiante de UADE · no es oficial de UADE' },
+    abu: { t: C0 + 0.5, texto: '¿Y? ¿Cuánto te falta?' },
+    yo: { t: T(40), texto: 'Nada, abu. Me recibí.' },
+    escribe: T(40, 1.5), //  ella empieza a contestar… y tarda
+    foto: T(41) - 0.2, //    llega una foto
+    abre: T(41, 2), //       la foto se abre: es su libreta
+    circulo: T(42, 1), //    el círculo alrededor del cero
+    firma: T(42, 3), //      "Yo sabía."
+    libreta: {
+      titulo: `Lo que le falta a ${PERFIL}`,
+      renglones: [
+        { cuando: 'empezó', valor: '52', tachado: true },
+        { cuando: '1° año', valor: '42', tachado: true },
+        { cuando: '2° año', valor: '32', tachado: true },
+        { cuando: '3° año', valor: 'vino a comer', texto: true },
+        { cuando: '4° año', valor: '13', tachado: true, extra: '¡analista!' },
+        { cuando: '5° año', valor: '0', cero: true },
+      ],
+      firma: 'Yo sabía.',
+    },
+    tarjeta: T(44), //       la invitación
+    llamado: 'Anotalo vos también.',
+    url: 'cuantomefalta.app',
+    chico: 'Gratis · sin cuenta · hecha por una estudiante de UADE · no es oficial de UADE',
   }
-  sonido.push({ t: cierre.abu.t, tipo: 'pop_abu' }, { t: cierre.yo.t, tipo: 'pop_yo' }, { t: cierre.abu2.t, tipo: 'pop_abu' })
+  sonido.push({ t: cierre.abu.t, tipo: 'pop_abu' }, { t: cierre.yo.t, tipo: 'pop_yo' }, { t: cierre.foto, tipo: 'pop_abu' })
+  sonido.push({ t: cierre.circulo, tipo: 'lapiz', largo: true }, { t: cierre.firma, tipo: 'lapiz' })
 
   // Un cuadro por momento para la hoja de revisión, con el número que tiene
   // que decir el titular de la app en ese instante.
   const hoja = [
-    { momento: '0', t: 3.4, faltan: 52 },
+    { momento: '0', t: T(1, 3), faltan: 52 },
     { momento: '1', t: M.dic1 - 0.4, faltan: 52, nota: 'marzo: cursando' },
-    { momento: '1', t: 12.0, faltan: 42 },
-    { momento: '2', t: 20.0, faltan: 32 },
+    { momento: '1', t: T(5, 3.4), faltan: 42 },
+    { momento: '2', t: T(9, 3.4), faltan: 32 },
     { momento: '3', t: M.dic3 - 0.3, faltan: 32, nota: 'marzo: cursando' },
-    { momento: '3', t: 30.3, faltan: 27 },
-    { momento: 'El nudo', t: finLista + 0.6, faltan: 27, nota: 'qué puede hacer' },
-    { momento: 'El nudo', t: N + 4.6, faltan: 27, nota: 'lo que traba un final' },
+    { momento: '3', t: T(14, 3.4), faltan: 27 },
+    { momento: 'El nudo', t: finLista + 0.3, faltan: 27, nota: 'qué puede hacer' },
+    { momento: 'El nudo', t: T(16, 3), faltan: 27, nota: 'lo que traba un final' },
     { momento: 'El nudo', t: finArbol + 1.0, faltan: 27, nota: 'árbol de correlativas' },
     { momento: 'El nudo', t: M.m4 - 0.2, faltan: 25, nota: 'los finales, rendidos' },
-    { momento: '4', t: analista + 0.9, faltan: 20, nota: 'banda de Analista' },
-    { momento: '4', t: 53.0, faltan: 13 },
+    { momento: '4', t: analista + 1.2, faltan: 20, nota: 'banda de Analista' },
+    { momento: '4', t: T(25, 3), faltan: 13 },
     { momento: '5', t: M.cuenta - 0.3, faltan: 13, nota: 'marzo: cursando' },
     { momento: '5', t: M.m6 - 0.5, faltan: 1 },
     { momento: '6', t: corte - 0.3, faltan: 1, nota: 'de "Cursando" a "Aprobada"' },
@@ -399,8 +394,9 @@ export function construirGuion() {
     { momento: '6', t: tIng + 1.5, faltan: 0, nota: 'banda de Ingeniero' },
     { momento: '6', t: tVerde + 2.4, faltan: 0, nota: 'el árbol, todo aprobado' },
     { momento: '6', t: tNotas + 1.5, faltan: 0, nota: 'notas y promedio' },
-    { momento: '7', t: C0 + B + 0.9, faltan: null },
-    { momento: '7', t: DUR - 1.5, faltan: null },
+    { momento: '7', t: cierre.foto + 0.9, faltan: null, nota: 'llega una foto' },
+    { momento: '7', t: T(44) - 0.3, faltan: null, nota: 'la libreta de la abuela' },
+    { momento: '7', t: DUR - 1.2, faltan: null, nota: 'la invitación' },
   ]
 
   tomas.sort((a, b) => a.t - b.t)
@@ -410,8 +406,8 @@ export function construirGuion() {
     dur: DUR,
     notas: nota,
     marcas: {
-      ...M, finLista, arbol, recorreNudo, finArbol, analista, vuelta, uno, corte,
-      revelacion: R, compas: B, golpes, tIng, tVerde, tNotas, bajaNotas, cierre: C0,
+      ...M, abu3: T(13, 2), finLista, arbol, recorreNudo, finArbol, analista, vuelta, uno, corte,
+      revelacion: R, compas: COMPAS, golpes, tIng, tVerde, tNotas, bajaNotas, cierre: C0, tarjeta: cierre.tarjeta,
     },
     tomas,
     fechas,
