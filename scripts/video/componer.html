@@ -10,9 +10,11 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..112,400..800&display=block"
     />
     <style>
-      /* El lienzo: 1080×1920, todo en posiciones absolutas. Nada se anima con
-         CSS: `render(t)` calcula cada cuadro a partir del tiempo, así el mismo
-         instante da siempre la misma imagen. */
+      /* El lienzo: 1080×1920. Nada se anima con CSS: `render(t)` calcula cada
+         cuadro a partir del tiempo, así el mismo instante da siempre la misma
+         imagen. Las capas, de atrás para adelante:
+           papel → celular (canvas) → viñeta → fecha y frase → burbujas → número
+           → cierre → papel picado (canvas) → destello */
       :root {
         --papel: #f6f5f1;
         --tinta: #151b33;
@@ -44,8 +46,29 @@
       #lienzo > * {
         position: absolute;
       }
+      canvas {
+        left: 0;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+      }
+      /* Cuando la cámara se acerca, la parte de arriba de la app se funde con el
+         papel: así la fecha y la frase quedan sobre limpio, sin pisar nada. */
+      #velo {
+        inset: 0 0 auto 0;
+        height: 460px;
+        background: linear-gradient(var(--papel) 0, var(--papel) 318px, rgba(246, 245, 241, 0) 446px);
+      }
+      #vineta {
+        inset: 0;
+        background: radial-gradient(ellipse 80% 66% at 46% 46%, rgba(21, 27, 51, 0) 52%, rgba(21, 27, 51, 0.8) 100%);
+      }
+      #destello {
+        inset: 0;
+        background: #fff;
+      }
 
-      /* ── Cabecera: la fecha y, a veces, una frase ── */
+      /* ── Cabecera: la fecha en una ficha, y a veces una frase resaltada ── */
       #fecha,
       #titulo {
         left: 0;
@@ -54,44 +77,31 @@
         font-stretch: 108%;
         white-space: nowrap;
       }
-      #fecha {
-        font-size: 42px;
-        line-height: 50px;
+      #fecha span {
+        display: inline-block;
+        padding: 9px 26px 11px;
+        border-radius: 14px;
+        background: #fff;
+        border: 2px solid var(--linea);
+        box-shadow: 0 6px 16px rgba(21, 27, 51, 0.12);
+        font-size: 40px;
+        line-height: 48px;
         font-weight: 700;
         color: var(--azul);
       }
       #titulo {
-        top: 312px;
+        top: 322px;
+      }
+      #titulo span {
+        display: inline-block;
+        padding: 4px 22px 8px;
+        border-radius: 10px;
+        /* El resaltador se "pasa" de izquierda a derecha: el ancho del fondo lo pone render(). */
+        background: linear-gradient(var(--resalta), var(--resalta)) no-repeat left center;
         font-size: 56px;
         line-height: 64px;
         font-weight: 800;
         letter-spacing: -0.02em;
-      }
-
-      /* ── El celular: la app real, sin marco de marca ── */
-      #cel {
-        left: 199px;
-        width: 682px;
-        height: 1476px;
-        border-radius: 46px;
-        overflow: hidden;
-        background: var(--papel);
-        box-shadow:
-          0 0 0 2px var(--linea),
-          0 10px 26px rgba(21, 27, 51, 0.13);
-      }
-      #cel canvas {
-        display: block;
-        width: 682px;
-        height: 1476px;
-      }
-      #toque {
-        width: 92px;
-        height: 92px;
-        margin: -46px 0 0 -46px;
-        border-radius: 50%;
-        background: rgba(36, 56, 138, 0.2);
-        border: 3px solid rgba(36, 56, 138, 0.55);
       }
 
       /* ── Burbujas: genéricas, con los colores de la app ── */
@@ -107,6 +117,18 @@
         flex-direction: column;
         gap: 16px;
       }
+      .hueco {
+        position: relative;
+        display: flex;
+      }
+      .hueco.abu {
+        justify-content: flex-start;
+        margin-left: 130px;
+      }
+      .hueco.yo {
+        justify-content: flex-end;
+        margin-right: 130px; /* borde derecho en x = 950 */
+      }
       .burbuja {
         max-width: 820px; /* la pregunta más larga entra en un renglón */
         padding: 20px 32px 24px;
@@ -118,14 +140,14 @@
         text-wrap: balance;
         box-shadow: 0 6px 18px rgba(21, 27, 51, 0.14);
       }
-      .burbuja.abu {
-        align-self: flex-start;
-        margin-left: 130px;
+      .abu > .burbuja,
+      .abu > .puntos {
         background: #fff;
         border: 2px solid var(--linea);
         border-bottom-left-radius: 8px;
+        transform-origin: 0 100%;
       }
-      .burbuja.abu small {
+      .abu > .burbuja small {
         display: block;
         margin-bottom: 4px;
         font-size: 25px;
@@ -134,16 +156,41 @@
         letter-spacing: 0.01em;
         color: var(--azul);
       }
-      .burbuja.abu.sin-etiqueta {
+      .abu > .burbuja.sin-etiqueta {
         padding-top: 22px;
       }
-      .burbuja.yo {
-        align-self: flex-end;
-        margin-right: 130px; /* borde derecho en x = 950 */
+      .yo > .burbuja,
+      .yo > .puntos {
         padding-top: 22px;
         background: var(--azul);
         color: #fff;
         border-bottom-right-radius: 8px;
+        transform-origin: 100% 100%;
+      }
+      /* "Escribiendo…": tres puntos, en el lugar donde va a caer la burbuja. */
+      .puntos {
+        position: absolute;
+        bottom: 0;
+        display: flex;
+        gap: 11px;
+        padding: 30px 30px;
+        border-radius: 30px;
+        box-shadow: 0 6px 18px rgba(21, 27, 51, 0.14);
+      }
+      .abu > .puntos {
+        left: 0;
+      }
+      .yo > .puntos {
+        right: 0;
+      }
+      .puntos i {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .abu > .puntos {
+        color: var(--suave);
       }
 
       /* ── Momento 5: el número, grande ── */
@@ -160,8 +207,9 @@
         border-radius: 34px;
         background: #fff;
         border: 2px solid var(--linea);
-        box-shadow: 0 6px 18px rgba(21, 27, 51, 0.14);
+        box-shadow: 0 10px 30px rgba(21, 27, 51, 0.22);
         text-align: center;
+        transform-origin: 50% 100%;
       }
       #numero b {
         display: inline-block;
@@ -224,7 +272,7 @@
         display: inline-block;
         padding: 6px 26px 10px;
         border-radius: 12px;
-        background: var(--resalta);
+        background: linear-gradient(var(--resalta), var(--resalta)) no-repeat left center;
         font-size: 78px;
         line-height: 90px;
         font-weight: 800;
@@ -246,10 +294,11 @@
   </head>
   <body>
     <div id="lienzo">
-      <div id="fecha"></div>
-      <div id="titulo"></div>
-      <div id="cel"><canvas width="682" height="1476"></canvas></div>
-      <div id="toque"></div>
+      <canvas id="escena" width="1080" height="1920"></canvas>
+      <div id="velo"></div>
+      <div id="vineta"></div>
+      <div id="fecha"><span></span></div>
+      <div id="titulo"><span></span></div>
       <div id="pares"></div>
       <div id="numero"><div class="tarjeta"><b></b></div></div>
       <div id="cierre">
@@ -260,26 +309,56 @@
           </svg>
           <span>¿Cuánto me falta?</span>
         </div>
-        <div id="c-chat">
-          <div class="burbuja abu" id="c-abu"><small>Abu</small><span></span></div>
-          <div class="burbuja yo" id="c-yo"></div>
-          <div class="burbuja abu sin-etiqueta" id="c-abu2"></div>
-        </div>
+        <div id="c-chat"></div>
         <div id="c-url"><b></b></div>
         <div id="c-chico"></div>
       </div>
+      <canvas id="confeti" width="1080" height="1920"></canvas>
+      <div id="destello"></div>
     </div>
 
     <script>
       const $ = (s) => document.querySelector(s)
-      const CEL = { x: 199, y: 392, w: 682, h: 1476, s: 682 / 390 }
+      const COLOR = { aprobada: '#1d8a57', final: '#d9630f', cursando: '#7c4dc9' }
+      const PAPELITOS = ['#1d8a57', '#ffe45c', '#24388a', '#d9630f', '#7c4dc9']
       let G = null
       const imgs = new Map()
-      let tomaDibujada = null
+      const globos = [] // todas las burbujas (las de la app y las del cierre)
+      let papelitos = []
 
+      // ── Curvas ──
       const clamp = (x) => Math.max(0, Math.min(1, x))
-      const sale = (x) => 1 - Math.pow(1 - clamp(x), 3) // ease-out cúbico
+      const lerp = (a, b, p) => a + (b - a) * p
+      const CURVA = {
+        lineal: (p) => p,
+        sale: (p) => 1 - Math.pow(1 - p, 3),
+        suave: (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+        rebote: (p) => 1 + 2.4 * Math.pow(p - 1, 3) + 1.4 * Math.pow(p - 1, 2), // se pasa y vuelve
+      }
+      const sale = (x) => CURVA.sale(clamp(x))
+      const rebote = (x) => CURVA.rebote(clamp(x))
       const r = (x) => Math.round(x * 1000) / 1000
+      /** Valor de una pista [[t, v], …] en el instante t, interpolando en línea recta. */
+      function pista(claves, t) {
+        let v = claves[0][1]
+        for (let i = 1; i < claves.length; i++) {
+          const [t0, v0] = claves[i - 1]
+          const [t1, v1] = claves[i]
+          if (t >= t1) v = v1
+          else if (t > t0) return lerp(v0, v1, (t - t0) / (t1 - t0))
+        }
+        return v
+      }
+      /** Azar repetible: la misma semilla da siempre los mismos papelitos. */
+      function azar(semilla) {
+        let a = semilla
+        return () => {
+          a = (a + 0x6d2b79f5) | 0
+          let x = Math.imul(a ^ (a >>> 15), 1 | a)
+          x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x
+          return ((x ^ (x >>> 14)) >>> 0) / 4294967296
+        }
+      }
 
       /** Entrada y salida de algo que vive entre t0 y t1: opacidad y un corrimiento corto. */
       function vida(t, t0, t1, entra = 0.26, seVa = 0.18, sube = 26) {
@@ -288,144 +367,396 @@
         const b = clamp((t1 - t) / seVa)
         return { o: r(a * b), y: r((1 - a) * sube - (1 - b) * 10) }
       }
-      const pon = (el, v) => {
+      const pon = (el, v, extra = '') => {
         el.style.opacity = v.o
-        el.style.transform = `translateY(${v.y}px)`
+        el.style.transform = `translateY(${v.y}px) ${extra}`
       }
 
+      /** Las capturas se cargan cuando hacen falta y se sueltan después: son
+       *  casi doscientas y, abiertas todas juntas, no entran en memoria. */
       async function imagen(id) {
-        if (!imgs.has(id)) {
+        let p = imgs.get(id)
+        if (p) imgs.delete(id)
+        else {
           const im = new Image()
           im.src = `${G.base}/${id}.png`
-          imgs.set(id, im.decode().then(() => im))
+          p = im.decode().then(() => im)
         }
-        return imgs.get(id)
+        imgs.set(id, p) // la más reciente, al final
+        if (imgs.size > 6) imgs.delete(imgs.keys().next().value)
+        return p
+      }
+
+      // ── La cámara ──
+      function camara(t) {
+        const K = G.camara.claves
+        let i = 0
+        while (i + 1 < K.length && K[i + 1].t <= t) i++
+        const a = K[i]
+        const b = K[i + 1]
+        if (!b || b.e === 'corte') return { k: a.k, tx: a.tx, ty: a.ty }
+        const p = CURVA[b.e](clamp((t - a.t) / (b.t - a.t)))
+        return { k: lerp(a.k, b.k, p), tx: lerp(a.tx, b.tx, p), ty: lerp(a.ty, b.ty, p) }
+      }
+      /** Sacudón: un temblor que se apaga rápido después de cada golpe. */
+      function sacudon(t) {
+        let x = 0
+        let y = 0
+        for (const s of G.efectos.sacudidas) {
+          const d = t - s.t
+          if (d < 0 || d > 0.5) continue
+          const fuerza = s.amp * Math.exp(-d / 0.11)
+          x += fuerza * Math.sin(d * 71 + s.t)
+          y += fuerza * Math.cos(d * 59 + s.t * 2)
+        }
+        return { x, y }
+      }
+
+      // ── Burbujas ──
+      function crearGlobo(contenedor, b, anterior) {
+        const hueco = document.createElement('div')
+        hueco.className = `hueco ${b.quien}`
+        const puntos = document.createElement('div')
+        puntos.className = 'puntos'
+        puntos.innerHTML = '<i></i><i></i><i></i>'
+        const el = document.createElement('div')
+        el.className = `burbuja${b.quien === 'abu' && !b.etiqueta ? ' sin-etiqueta' : ''}`
+        if (b.etiqueta) el.innerHTML = '<small>Abu</small>'
+        el.appendChild(document.createTextNode(b.texto))
+        hueco.append(puntos, el)
+        contenedor.appendChild(hueco)
+        // Cuánto antes aparecen los puntos: lo que haya de aire, hasta 0,75 s.
+        const aire = anterior == null ? 0.55 : b.t0 - anterior - 0.2
+        globos.push({ ...b, el, puntos, desde: b.t0 - Math.max(0, Math.min(0.75, aire, b.t0)) })
+      }
+      function dibujarGlobo(b, t, firma) {
+        // Los puntos de "escribiendo…".
+        const escribe = t >= b.desde && t < b.t0
+        const oP = escribe ? r(sale((t - b.desde) / 0.14)) : 0
+        b.puntos.style.opacity = oP
+        b.puntos.style.transform = `scale(${r(0.7 + 0.3 * oP)})`
+        if (escribe)
+          [...b.puntos.children].forEach((p, i) => {
+            const ola = Math.max(0, Math.sin((t - b.desde) * 9 - i * 0.9))
+            p.style.opacity = r(0.35 + 0.65 * ola)
+            p.style.transform = `translateY(${r(-7 * ola)}px)`
+          })
+        // La burbuja: entra con rebote desde su esquina.
+        let o = 0
+        let e = 1
+        let y = 0
+        if (t >= b.t0 && t < b.t1) {
+          const sal = clamp((b.t1 - t) / 0.18)
+          o = r(clamp((t - b.t0) / 0.08) * sal)
+          e = r(0.55 + 0.45 * rebote((t - b.t0) / 0.34))
+          y = r((1 - sal) * 12)
+        }
+        b.el.style.opacity = o
+        b.el.style.transform = `translateY(${y}px) scale(${e})`
+        if (o || oP) firma.push(b.texto, o, e, y, oP, escribe ? r(t) : 0)
+      }
+
+      // ── Papel picado: casilleros de colores, como los de la app ──
+      function crearPapelitos() {
+        const rnd = azar(1621)
+        const entre = (a, b) => a + (b - a) * rnd()
+        const lista = []
+        for (const tanda of G.efectos.confeti) {
+          if (tanda.tipo === 'canones') {
+            for (const lado of [-1, 1])
+              for (let i = 0; i < 95; i++) {
+                const ang = (entre(48, 84) * Math.PI) / 180
+                const vel = entre(1500, 3300)
+                lista.push({
+                  t0: tanda.t + entre(0, 0.12), x0: lado < 0 ? -30 : 1110, y0: entre(1250, 1420),
+                  vx: -lado * vel * Math.cos(ang), vy: -vel * Math.sin(ang),
+                  tau: entre(0.34, 0.5), cae: entre(260, 430), vida: 7, lado: entre(16, 30),
+                })
+              }
+          } else if (tanda.tipo === 'lluvia') {
+            for (let i = 0; i < 80; i++)
+              lista.push({
+                t0: tanda.t + entre(0, 1.5), x0: entre(-20, 1100), y0: entre(-260, -40),
+                vx: entre(-60, 60), vy: entre(0, 200), tau: 0.4, cae: entre(430, 640), vida: 5, lado: entre(14, 26),
+              })
+          } else {
+            // 'chico': sale del lugar del título, en verde y amarillo.
+            const cam = camara(tanda.t)
+            const s = G.escala * cam.k
+            const [px, py] = G.camara.luces.confetiDesde
+            for (let i = 0; i < 46; i++) {
+              const ang = entre(-Math.PI, 0)
+              const vel = entre(500, 1500)
+              lista.push({
+                t0: tanda.t, x0: cam.tx + px * s + entre(-250, 250), y0: cam.ty + py * s,
+                vx: vel * Math.cos(ang), vy: vel * Math.sin(ang) * 1.2, tau: entre(0.25, 0.4),
+                cae: entre(420, 620), vida: 2.6, lado: entre(12, 22), color: rnd() < 0.6 ? '#1d8a57' : '#ffe45c',
+              })
+            }
+          }
+        }
+        for (const p of lista) {
+          p.color ??= PAPELITOS[Math.floor(rnd() * PAPELITOS.length)]
+          p.giro0 = entre(0, 6.28)
+          p.giro = entre(-7, 7)
+          p.vuelta0 = entre(0, 6.28)
+          p.vuelta = entre(3, 9)
+          p.vaiven = entre(10, 46)
+          p.vaivenF = entre(1.2, 2.6)
+        }
+        return lista
+      }
+      function dibujarPapelitos(t) {
+        const ctx = $('#confeti').getContext('2d')
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, 1080, 1920)
+        let vivos = 0
+        for (const p of papelitos) {
+          const d = t - p.t0
+          if (d < 0 || d > p.vida) continue
+          const e = 1 - Math.exp(-d / p.tau)
+          const x = p.x0 + p.vx * p.tau * e + p.vaiven * Math.sin(p.vaivenF * d + p.giro0)
+          const y = p.y0 + p.vy * p.tau * e + p.cae * (d - p.tau * e)
+          if (y > 1960) continue
+          vivos++
+          ctx.save()
+          ctx.translate(x, y)
+          ctx.rotate(p.giro0 + p.giro * d)
+          ctx.scale(1, Math.cos(p.vuelta0 + p.vuelta * d)) // gira en el aire: se ve de canto
+          ctx.globalAlpha = clamp((p.vida - d) / 0.6)
+          ctx.fillStyle = p.color
+          ctx.beginPath()
+          ctx.roundRect(-p.lado / 2, -p.lado / 2, p.lado, p.lado, p.lado * 0.22)
+          ctx.fill()
+          ctx.restore()
+        }
+        return vivos
       }
 
       async function init(guion) {
         G = guion
         $('#c-trazo').setAttribute('d', G.trazo)
-        $('#c-abu span').textContent = G.cierre.abu.texto
-        $('#c-yo').textContent = G.cierre.yo.texto
-        $('#c-abu2').textContent = G.cierre.abu2.texto
         $('#c-url b').textContent = G.cierre.url.texto
         $('#c-chico').textContent = G.cierre.chico.texto
         // Un contenedor por par de burbujas: la respuesta ocupa su lugar desde el
         // principio (invisible), así la pregunta no salta cuando llega.
         const pares = new Map()
+        let anterior = null
         for (const b of G.burbujas) {
           if (!pares.has(b.par)) {
             const c = document.createElement('div')
             c.className = 'par'
             $('#pares').appendChild(c)
             pares.set(b.par, c)
+            anterior = null
           }
-          const el = document.createElement('div')
-          el.className = `burbuja ${b.quien}${b.quien === 'abu' && !b.etiqueta ? ' sin-etiqueta' : ''}`
-          if (b.etiqueta) el.innerHTML = '<small>Abu</small>'
-          el.appendChild(document.createTextNode(b.texto))
-          pares.get(b.par).appendChild(el)
-          b.el = el
+          crearGlobo(pares.get(b.par), { ...b, cont: pares.get(b.par) }, anterior)
+          anterior = b.t0
         }
+        const C = G.cierre
+        const fin = G.dur + 1
+        crearGlobo($('#c-chat'), { quien: 'abu', etiqueta: true, texto: C.abu.texto, t0: C.abu.t, t1: fin }, null)
+        crearGlobo($('#c-chat'), { quien: 'yo', texto: C.yo.texto, t0: C.yo.t, t1: fin }, C.abu.t)
+        crearGlobo($('#c-chat'), { quien: 'abu', texto: C.abu2.texto, t0: C.abu2.t, t1: fin }, C.yo.t)
+        papelitos = crearPapelitos()
         for (const w of [500, 600, 700, 800]) await document.fonts.load(`${w} 40px Archivo`)
         await document.fonts.ready
-        await Promise.all([...new Set(G.tomas.map((x) => x.img))].map(imagen))
+      }
+
+      /** El celular, con todo lo que pasa sobre su pantalla. */
+      async function dibujarCelular(t, toma, firma) {
+        const ctx = $('#escena').getContext('2d')
+        const cam = camara(t)
+        const sac = sacudon(t)
+        const s = G.escala * cam.k
+        const x0 = cam.tx + sac.x
+        const y0 = cam.ty + sac.y
+        const sat = r(pista(G.efectos.saturacion, t))
+        firma.push(toma, r(s), r(x0), r(y0), sat)
+        // El velo de arriba aparece cuando el celular sube por encima de su lugar.
+        $('#velo').style.opacity = r(clamp((388 - cam.ty) / 70))
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, 1080, 1920)
+        ctx.setTransform(s, 0, 0, s, x0, y0) // desde acá, las medidas son las del celular
+        const cuerpo = () => (ctx.beginPath(), ctx.roundRect(0, 0, 390, 844, 26.5))
+
+        ctx.save()
+        ctx.shadowColor = 'rgba(21, 27, 51, 0.2)'
+        ctx.shadowBlur = 30
+        ctx.shadowOffsetY = 12
+        ctx.fillStyle = '#f6f5f1'
+        cuerpo()
+        ctx.fill()
+        ctx.restore()
+
+        ctx.save()
+        cuerpo()
+        ctx.clip()
+        ctx.imageSmoothingQuality = 'high'
+        if (sat < 1) ctx.filter = `saturate(${sat})`
+        ctx.drawImage(await imagen(toma), 0, 0, 390, 844)
+        ctx.filter = 'none'
+
+        // Cada casillero que se pinta: un fogonazo y un anillo que se abre.
+        const mapa = G.cajas.mapaEn[toma]
+        if (mapa)
+          for (const p of G.pintadas) {
+            const d = t - p.t
+            if (d < 0 || d > 0.5) continue
+            const c = G.cajas.celdas[p.cod]
+            const x = mapa.x + c.x
+            const y = mapa.y + c.y
+            const a = d / 0.5
+            const crece = 9 * sale(a)
+            ctx.globalAlpha = 0.85 * (1 - clamp(d / 0.16))
+            ctx.fillStyle = '#fff'
+            ctx.beginPath()
+            ctx.roundRect(x, y, c.w, c.h, 3)
+            ctx.fill()
+            ctx.globalAlpha = 1 - a
+            ctx.strokeStyle = COLOR[p.estado]
+            ctx.lineWidth = 2.2 * (1 - a) + 0.4
+            ctx.beginPath()
+            ctx.roundRect(x - crece, y - crece, c.w + 2 * crece, c.h + 2 * crece, 3 + crece * 0.6)
+            ctx.stroke()
+            firma.push(r(d))
+          }
+        // Anillos alrededor de una fila o de la banda del título.
+        for (const an of G.camara.luces.anillos) {
+          const d = t - an.t
+          if (d < 0 || d > 0.7) continue
+          const a = d / 0.7
+          const crece = 16 * sale(a)
+          const c = an.caja
+          ctx.globalAlpha = 1 - a
+          ctx.strokeStyle = an.color
+          ctx.lineWidth = 3 * (1 - a) + 0.5
+          ctx.beginPath()
+          ctx.roundRect(c.x - crece, c.y - crece, c.w + 2 * crece, c.h + 2 * crece, 10 + crece * 0.5)
+          ctx.stroke()
+          firma.push(r(d))
+        }
+        // Brillo que cruza la banda del título.
+        for (const br of G.camara.luces.brillos) {
+          const d = t - br.t
+          if (d < 0 || d > 0.75) continue
+          const c = br.caja
+          const xb = c.x - 90 + (c.w + 180) * CURVA.suave(d / 0.75)
+          ctx.save()
+          ctx.beginPath()
+          ctx.roundRect(c.x, c.y, c.w, c.h, 10)
+          ctx.clip()
+          const g = ctx.createLinearGradient(xb - 60, c.y, xb + 60, c.y + 20)
+          g.addColorStop(0, 'rgba(255,255,255,0)')
+          g.addColorStop(0.5, 'rgba(255,255,255,0.85)')
+          g.addColorStop(1, 'rgba(255,255,255,0)')
+          ctx.globalAlpha = 1
+          ctx.fillStyle = g
+          ctx.fillRect(c.x - 100, c.y, c.w + 200, c.h)
+          ctx.restore()
+          firma.push(r(d))
+        }
+        // El toque del dedo.
+        for (const q of G.toques) {
+          // Dura hasta un instante después del toque: ahí la pantalla ya cambió.
+          const d = t - (q.t - 0.14)
+          if (d < 0 || d > 0.3) continue
+          ctx.globalAlpha = sale(d / 0.1) * clamp((0.3 - d) / 0.1)
+          const radio = 26 * (0.7 + 0.3 * sale(d / 0.14)) + 10 * clamp((d - 0.14) / 0.16)
+          ctx.beginPath()
+          ctx.arc(q.x, q.y, radio, 0, 6.2832)
+          ctx.fillStyle = 'rgba(36, 56, 138, 0.2)'
+          ctx.fill()
+          ctx.lineWidth = 1.8
+          ctx.strokeStyle = 'rgba(36, 56, 138, 0.6)'
+          ctx.stroke()
+          firma.push(r(d))
+        }
+        ctx.restore()
+
+        ctx.globalAlpha = 1
+        ctx.lineWidth = 2 / s
+        ctx.strokeStyle = '#e3e1da'
+        cuerpo()
+        ctx.stroke()
       }
 
       /** Dibuja el instante `t`. Devuelve una firma: si no cambia, el cuadro es igual. */
       async function render(t) {
         const firma = []
+        const C = G.cierre
 
-        // La app: la última toma que empezó antes de t.
+        // La app: la última toma que empezó antes de t. Con el cierre encima ya no se dibuja.
         let toma = G.tomas[0].img
         for (const x of G.tomas) if (x.t <= t + 1e-6) toma = x.img
-        if (toma !== tomaDibujada) {
-          const ctx = $('#cel canvas').getContext('2d')
-          ctx.imageSmoothingQuality = 'high'
-          ctx.drawImage(await imagen(toma), 0, 0, CEL.w, CEL.h)
-          tomaDibujada = toma
-        }
-        firma.push(toma)
+        const oC = r(clamp((t - C.t0) / 0.35))
+        if (oC < 1) await dibujarCelular(t, toma, firma)
 
-        // La cámara: el celular sube cuando lo que importa está al pie de la página.
-        let dy = 0
-        for (const c of G.camara) if (t >= c.t0 && t < c.t1) dy = c.dy * sale((t - c.t0) / 0.3)
-        const celY = r(CEL.y + dy)
-        $('#cel').style.top = `${celY}px`
-        firma.push(celY)
+        // Luz: los bordes que se cierran y el fogonazo.
+        const oV = r(pista(G.efectos.vineta, t))
+        $('#vineta').style.opacity = oV
+        let oD = 0
+        for (const d of G.efectos.destellos) if (t >= d.t && t < d.t + d.dur) oD = d.a * Math.pow(1 - (t - d.t) / d.dur, 2)
+        $('#destello').style.opacity = r(oD)
+        firma.push(oV, r(oD))
 
-        // El toque sobre la pantalla.
-        let tq = { o: 0, e: 1, x: 0, y: 0 }
-        for (const q of G.toques) {
-          const d = t - (q.t - 0.14)
-          if (d >= 0 && d < 0.42) {
-            tq = {
-              o: r(sale(d / 0.1) * clamp((0.42 - d) / 0.16)),
-              e: r(0.72 + 0.28 * sale(d / 0.14)),
-              x: CEL.x + q.x * CEL.s,
-              y: celY + q.y * CEL.s,
-            }
-          }
-        }
-        const elT = $('#toque')
-        elT.style.opacity = tq.o
-        elT.style.left = `${tq.x}px`
-        elT.style.top = `${tq.y}px`
-        elT.style.transform = `scale(${tq.e})`
-        firma.push(tq.o, tq.e)
-
-        // La frase del momento, y la fecha, que le hace lugar.
+        // La frase del momento: el resaltador se pasa de izquierda a derecha.
         const tit = G.titulos.find((x) => t >= x.t0 && t < x.t1)
-        const vTit = tit ? vida(t, tit.t0, tit.t1, 0.3, 0.2, 14) : { o: 0, y: 0 }
-        if (tit) $('#titulo').textContent = tit.texto
+        const vTit = tit ? vida(t, tit.t0, tit.t1, 0.2, 0.2, 10) : { o: 0, y: 0 }
+        const trazo = tit ? r(100 * CURVA.suave(clamp((t - tit.t0 - 0.05) / 0.42))) : 0
+        if (tit) $('#titulo span').textContent = tit.texto
+        if (tit) $('#titulo span').style.fontSize = tit.chico ? '46px' : '' // las frases largas, más chicas
+        $('#titulo span').style.backgroundSize = `${trazo}% 100%`
         pon($('#titulo'), vTit)
+        // La fecha, que le hace lugar.
         const fe = G.fechas.find((x) => t >= x.t0 && t < x.t1)
-        const vFe = fe ? vida(t, fe.t0, fe.t1, 0.22, 0.12, 12) : { o: 0, y: 0 }
-        if (fe) $('#fecha').textContent = fe.texto
+        const vFe = fe ? vida(t, fe.t0, fe.t1, 0.3, 0.14, 34) : { o: 0, y: 0 }
+        if (fe) $('#fecha span').textContent = fe.texto
         const lugar = tit ? sale((t - tit.t0) / 0.3) * clamp((tit.t1 - t) / 0.2) : 0
-        $('#fecha').style.top = `${r(288 - 36 * lugar)}px`
-        pon($('#fecha'), vFe)
-        firma.push(tit?.texto, vTit.o, vTit.y, fe?.texto, vFe.o, vFe.y, r(lugar))
+        $('#fecha').style.top = `${r(262 - 22 * lugar)}px`
+        pon($('#fecha'), vFe, fe ? `scale(${r(0.9 + 0.1 * rebote((t - fe.t0) / 0.36))})` : '')
+        firma.push(tit?.texto, vTit.o, vTit.y, trazo, fe?.texto, vFe.o, vFe.y, r(lugar))
 
         // Las burbujas.
-        for (const b of G.burbujas) {
-          const v = vida(t, b.t0, b.t1)
-          pon(b.el, v)
-          b.el.parentElement.style.display = t >= b.t0 - 0.5 && t < b.t1 + 0.1 ? 'flex' : 'none'
-          if (v.o) firma.push(b.texto, v.o, v.y)
+        for (const b of globos) {
+          if (b.cont) b.cont.style.display = t >= b.desde - 0.1 && t < b.t1 + 0.1 ? 'flex' : 'none'
+          dibujarGlobo(b, t, firma)
         }
 
-        // El número del momento 5.
+        // El número del momento 5: late con cada cambio y crece a medida que baja.
         const N = G.numero
         const ini = N.puntos[0].t
-        const vN = vida(t, ini, N.hasta, 0.28, 0.18)
+        const vN = vida(t, ini, N.hasta, 0.28, 0.12)
         let valor = N.puntos[0].valor
         let desde = ini
         for (const p of N.puntos) if (p.t <= t + 1e-6) ((valor = p.valor), (desde = p.t))
-        const golpe = r(1 + 0.07 * (1 - sale((t - desde) / 0.14)))
+        const golpe = t > ini + 0.25 ? 0.14 * (1 - sale((t - desde) / 0.2)) : 0
+        const tamano = r((1 + 0.05 * (1 - valor / N.puntos[0].valor)) * (1 + golpe) * (0.6 + 0.4 * rebote((t - ini) / 0.4)))
         $('#numero b').textContent = valor
-        $('#numero b').style.transform = `scale(${t > ini + 0.2 ? golpe : 1})`
+        $('#numero .tarjeta').style.transform = `scale(${tamano})`
         pon($('#numero'), vN)
-        if (vN.o) firma.push('n', valor, vN.o, vN.y, golpe)
+        if (vN.o) firma.push('n', valor, vN.o, vN.y, tamano)
 
         // El cierre.
-        const C = G.cierre
-        const oC = r(clamp((t - C.t0) / 0.3))
         $('#cierre').style.opacity = oC
         $('#cierre').style.display = oC ? 'block' : 'none'
         if (oC) {
           const hasta = G.dur + 1
-          const partes = [
-            ['#c-marca', vida(t, C.t0, hasta, 0.4, 0.2, 18)],
-            ['#c-abu', vida(t, C.abu.t, hasta)],
-            ['#c-yo', vida(t, C.yo.t, hasta)],
-            ['#c-abu2', vida(t, C.abu2.t, hasta)],
-            ['#c-url', vida(t, C.url.t, hasta, 0.32)],
-            ['#c-chico', vida(t, C.chico.t, hasta, 0.32, 0.2, 14)],
-          ]
-          for (const [sel, v] of partes) (pon($(sel), v), firma.push(v.o, v.y))
-          firma.push('c', oC)
+          const marca = rebote((t - C.t0 - 0.1) / 0.5)
+          const vM = vida(t, C.t0 + 0.1, hasta, 0.2, 0.2, 0)
+          pon($('#c-marca'), vM, `scale(${r(0.6 + 0.4 * marca)}) rotate(${r(-10 * (1 - marca))}deg)`)
+          const vU = vida(t, C.url.t, hasta, 0.2, 0.2, 16)
+          const trazoU = r(100 * CURVA.suave(clamp((t - C.url.t) / 0.5)))
+          $('#c-url b').style.backgroundSize = `${trazoU}% 100%`
+          pon($('#c-url'), vU, `scale(${r(0.92 + 0.08 * rebote((t - C.url.t) / 0.4))})`)
+          const vCh = vida(t, C.chico.t, hasta, 0.32, 0.2, 14)
+          pon($('#c-chico'), vCh)
+          firma.push('c', oC, vM.o, r(marca), vU.o, vU.y, trazoU, vCh.o, vCh.y)
         }
+
+        // El papel picado, por encima de todo.
+        if (dibujarPapelitos(t)) firma.push('p', r(t))
         return firma.join('|')
       }
     </script>

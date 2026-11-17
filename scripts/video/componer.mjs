@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { construirGuion } from './guion.mjs'
+import { construirCamara, ESCALA } from './camara.mjs'
 import { AQUI, ROOT, TMP, CHROMIUM } from './rutas.mjs'
 
 /** El guion, completado con lo que solo se sabe después de grabar la app. */
@@ -19,6 +20,9 @@ export function guionCompleto() {
   const g = construirGuion()
   const cap = JSON.parse(readFileSync(join(TMP, 'capturas.json'), 'utf8'))
   g.toques = g.toques.map((q) => ({ ...q, ...cap.toques[q.id] }))
+  g.cajas = cap.cajas
+  g.escala = ESCALA
+  g.camara = construirCamara(g, cap.cajas)
   g.base = pathToFileURL(join(TMP, 'app')).href
   // El "¿" de la marca: el mismo trazo que usa la app, leído de su componente.
   g.trazo = readFileSync(join(ROOT, 'src/components/Logo.tsx'), 'utf8').match(/TRAZO_PREGUNTA =\s*'([^']+)'/)[1]

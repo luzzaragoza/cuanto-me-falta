@@ -161,6 +161,48 @@ def aire(dur, f_min, f_max, forma):
     return s / np.max(np.abs(s)) * forma(np.arange(n) / SR)
 
 
+def bandas(n):
+    """Ruido partido en cuatro franjas, de grave a aguda, para armar un whoosh."""
+    espectro = np.fft.rfft(rng.standard_normal(n))
+    f = np.fft.rfftfreq(n, 1 / SR)
+    cortes = [(250, 600), (600, 1400), (1400, 3200), (3200, 8000)]
+    out = []
+    for lo, hi in cortes:
+        e = espectro.copy()
+        e[(f < lo) | (f > hi)] = 0
+        b = np.fft.irfft(e, n)
+        out.append(b / np.max(np.abs(b)))
+    return out
+
+
+def whoosh(dur=0.5, sube=True):
+    """Aire que pasa: el ruido "barre" de grave a agudo (o al revés) mientras crece y se va."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    pos = (t / dur if sube else 1 - t / dur) * 3  # por cuál de las cuatro franjas va
+    s = np.zeros(n)
+    for i, b in enumerate(bandas(n)):
+        s += b * np.exp(-((pos - i) ** 2) / 0.6)
+    return s * np.sin(np.pi * t / dur) ** 2
+
+
+def tambor(f0=150, f1=60, tau=0.22, dur=0.9):
+    """Un golpe grave. Los armónicos están para que se oiga en un celular."""
+    t = np.arange(int(dur * SR)) / SR
+    f = f1 + (f0 - f1) * np.exp(-t / 0.035)
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    s = (np.sin(fase) + 0.5 * np.sin(2 * fase) + 0.3 * np.sin(3 * fase) + 0.15 * np.sin(5 * fase)) * np.exp(-t / tau)
+    chas = rng.standard_normal(len(t)) * np.exp(-t / 0.012)
+    s += 0.35 * np.convolve(chas, np.ones(16) / 16, mode="same")
+    s[: int(0.002 * SR)] *= np.linspace(0, 1, int(0.002 * SR))
+    return s
+
+
+def tic(f):
+    t = np.arange(int(0.06 * SR)) / SR
+    return (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * 2.7 * f * t)) * np.exp(-t / 0.007)
+
+
 antes, despues = Capa(), Capa()  # antes y después del silencio
 t_corte = M["corte"] + 0.12
 
@@ -189,6 +231,35 @@ for e in guion["sonido"]:
             capa.poner(kalimba(frec(g), 1.6), t + i * 0.05, 0.62, pan=-0.3 + 0.3 * i, rev=0.45)
         capa.poner(kalimba(frec(0), 1.6), t, 0.42, rev=0.4)
         capa.poner(campana(hz("C6")), t + 0.15, 0.16, rev=0.6)
+    elif tipo == "trabada":  # una materia trabada: nota sorda, cada una más abajo
+        capa.poner(kalimba(hz(["A4", "G4", "E4"][e["i"]]), 0.4), t, 0.34, pan=-0.3 + 0.3 * e["i"], rev=0.45)
+    elif tipo == "escalera":  # una corrida hacia arriba que desemboca en el acorde
+        for i, g in enumerate([2, 3, 4, 5, 7, 8]):
+            capa.poner(kalimba(frec(g), 0.5), t + i * 0.05, 0.22 + 0.05 * i, pan=-0.5 + 0.2 * i, rev=0.3)
+    elif tipo == "destello":  # brillo: campanitas y un platillo chico
+        for i, nota in enumerate(["G6", "C7", "E7"]):
+            capa.poner(campana(hz(nota), 1.6), t + 0.08 + i * 0.07, 0.1, pan=-0.3 + 0.3 * i, rev=0.7)
+        capa.poner(aire(1.4, 4000, 11000, lambda t: np.clip(t / 0.02, 0, 1) * np.exp(-t / 0.35)), t, 0.07, rev=0.4)
+        capa.poner(tambor(140, 70, 0.14), t, 0.3, rev=0.15)
+    elif tipo == "impacto":  # cada golpe de la cuenta regresiva
+        capa.poner(tambor(165, 62, 0.2), t, 0.5 * e["fuerza"], rev=0.25)
+        capa.poner(aire(0.5, 1800, 7000, lambda t: np.exp(-t / 0.08)), t, 0.06 * e["fuerza"], rev=0.3)
+    elif tipo == "latido":  # dos golpes: pum-pum
+        capa.poner(tambor(95, 52, 0.09, 0.4), t, 0.42, rev=0.05)
+        capa.poner(tambor(110, 60, 0.07, 0.4), t + 0.17, 0.3, rev=0.05)
+    elif tipo == "reloj":
+        capa.poner(tic(2300 if round(t * 2) % 2 == 0 else 1750), t, 0.07, pan=0.25, rev=0.35)
+    elif tipo == "whoosh":
+        capa.poner(whoosh(0.55 if e["sube"] else 0.75, e["sube"]), t, 0.1 * e["fuerza"], pan=0.0, rev=0.25)
+    elif tipo == "inversa":  # aire que se junta antes del golpe
+        d = e["dur"]
+        capa.poner(aire(d, 1500, 10000, lambda t: (t / d) ** 3), t, 0.2, rev=0.1)
+        capa.poner(cuerdas(["G4", "D5", "G5"], d - 0.02, d * 0.95, 0.02, 1.5), t, 0.08, rev=0.1)
+    elif tipo == "boom":  # el golpe de la revelación
+        capa.poner(tambor(110, 42, 0.55, 2.2), t, 0.85, rev=0.3)
+        capa.poner(aire(0.6, 300, 6000, lambda t: np.exp(-t / 0.07)), t, 0.22, rev=0.3)
+        for lado in (-0.7, 0.7):  # los cañones de papel picado
+            capa.poner(aire(0.4, 900, 9000, lambda t: np.exp(-t / 0.035)), t + 0.02 + 0.03 * (lado > 0), 0.2, pan=lado, rev=0.3)
 
 # ── 2. La música que cuenta la historia ──────────────────────────────────────
 # El colchón de cada parte: (desde, hasta, notas, volumen, oscuro, ataque)
@@ -196,7 +267,8 @@ COLCHON = [
     (M["m0"], M["m1"], ["C3", "G3", "D4"], 0.045, 1.7, 1.6),  # apenas: recién empieza
     (M["m1"], M["m2"], ["C3", "G3", "E4", "G4"], 0.06, 1.6, 1.0),
     (M["m2"], M["m3"], ["F3", "C4", "G4", "A4"], 0.07, 1.6, 1.0),
-    (M["m3"], M["m4"], ["A2", "E3", "A3", "C4", "E4"], 0.085, 1.9, 1.4),  # La menor
+    (M["m3"], M["nudo"], ["A2", "E3", "A3", "C4", "E4"], 0.085, 1.9, 1.4),  # La menor
+    (M["nudo"], M["m4"], ["D3", "A3", "D4", "F4"], 0.075, 1.8, 0.8),  # Re menor: el nudo
     (M["m4"], M["analista"], ["F3", "C4", "F4", "A4"], 0.07, 1.6, 0.8),
     (M["analista"], M["vuelta"], ["C3", "G3", "E4", "G4", "C5"], 0.1, 1.5, 0.3),
     (M["vuelta"], M["m5"], ["G3", "D4", "G4", "A4", "D5"], 0.075, 1.5, 0.8),  # Sol sus
@@ -238,11 +310,14 @@ TIEMPO = B / 4  # cuatro tiempos por compás
 #          bajo  cuerdas                                      arpegio                              melodía (tiempo, nota)                    fuerza
 COMPASES = [
     ("C2", ["C3", "G3", "C4", "E4", "G4", "C5", "E5"], ["C4", "G4", "C5", "E5", "G5"], [(0, "E5"), (1, "G5"), (2, "C6")], 1.0),  # Ya no te falta nada
-    ("B2", ["B2", "G3", "D4", "G4", "B4", "D5"], ["B3", "G4", "B4", "D5", "G5"], [(0, "D6"), (2, "B5"), (3, "G5")], 0.85),  # el título
-    ("A2", ["A2", "E3", "A3", "C4", "E4", "A4"], ["A3", "E4", "A4", "C5", "E5"], [(0, "C6"), (2, "A5"), (3, "E5")], 0.6),  # ¿Y? ¿Cuánto te falta?
+    ("B2", ["B2", "G3", "D4", "G4", "B4", "D5"], ["B3", "G4", "B4", "D5", "G5"], [(0, "D6"), (2, "B5"), (3, "G5")], 0.85),  # el título de Ingeniero
+    ("A2", ["A2", "E3", "A3", "C4", "E4", "A4"], ["A3", "E4", "A4", "C5", "E5"], [(0, "C6"), (2, "A5"), (3, "E5")], 0.85),  # el árbol entero, aprobado
+    ("F2", ["F3", "C4", "F4", "A4", "C5"], ["F3", "C4", "F4", "A4", "C5"], [(0, "A5"), (2, "C6"), (3, "D6")], 0.8),  # las notas y el promedio
+    ("C2", ["C3", "G3", "C4", "E4", "G4", "C5"], ["C4", "G4", "C5", "E5", "G5"], [(0, "E5"), (2, "G5"), (3, "E5")], 0.55),  # ¿Y? ¿Cuánto te falta?
     ("F2", ["F3", "C4", "F4", "A4", "C5"], ["F3", "C4", "F4", "A4", "C5"], [(0, "A5"), (2, "C6"), (3, "A5")], 0.62),  # Nada, abu. Me recibí.
     ("C2", ["C3", "G3", "C4", "E4", "G4", "C5"], ["C4", "G4", "C5", "E5", "G5"], [(0, "C6"), (1, "E6"), (2, "G6")], 0.8),  # cuantomefalta.app
 ]
+FIN = R + (len(COMPASES) - 1) * B  # donde cae el último acorde
 ORDEN = [0, 1, 2, 3, 4, 3, 2, 1]  # el arpegio sube y baja, en corcheas
 for c, (nb, notas, arp, melodia, fuerza) in enumerate(COMPASES):
     t0 = R + c * B
@@ -262,6 +337,25 @@ for c, (nb, notas, arp, melodia, fuerza) in enumerate(COMPASES):
         despues.poner(campana(hz(nota)), t0 + tiempo * TIEMPO, 0.3 * fuerza, pan=0.15, rev=0.6)
         despues.poner(campana(hz(nota) / 2), t0 + tiempo * TIEMPO, 0.16 * fuerza, pan=-0.15, rev=0.5)
 
+# Batería: bombo en cada tiempo y un shaker en el medio. Fuerte en la revelación y
+# en el título; en el cierre baja para dejar hablar a las burbujas.
+BATERIA = [1.0, 0.9, 0.9, 0.8, 0.4, 0.5, 0.0]
+for c, nivel in enumerate(BATERIA):
+    for tiempo in range(4):
+        t0 = R + c * B + tiempo * TIEMPO
+        if nivel and not (c == 0 and tiempo == 0):  # el primer golpe ya es el boom
+            despues.poner(tambor(125, 50, 0.16, 0.6), t0, 0.42 * nivel * (1.0 if tiempo % 2 == 0 else 0.8), rev=0.12)
+        for medio in (0, 0.5):
+            fuerza = 0.035 * nivel * (0.6 if medio == 0 else 1.0)
+            if fuerza:
+                despues.poner(aire(0.09, 5000, 12000, lambda t: np.exp(-t / 0.02)), t0 + medio * TIEMPO, fuerza, pan=0.3, rev=0.2)
+# Un redoble corto que empuja hacia el título y otro hacia el último acorde.
+for c in (1, len(COMPASES) - 1):
+    for i in range(4):
+        despues.poner(tambor(180 + 25 * i, 90, 0.08, 0.3), R + c * B - (4 - i) * 0.075, 0.16 + 0.05 * i, pan=-0.3 + 0.2 * i, rev=0.2)
+despues.poner(tambor(110, 45, 0.4, 1.6), FIN, 0.5, rev=0.3)
+despues.poner(aire(2.6, 3500, 11000, lambda t: np.clip(t / 0.05, 0, 1) * np.exp(-t / 0.7)), FIN, 0.07, rev=0.5)
+
 # El golpe de la revelación: rasgueo de Do abierto, un brillo que sube y un platillo suave.
 for i, g in enumerate([0, 3, 5, 7, 8, 10]):
     despues.poner(kalimba(frec(g), 2.6, 5.0), R + i * 0.045, 0.6, pan=-0.5 + 0.2 * i, rev=0.5)
@@ -270,7 +364,7 @@ for i, nota in enumerate(["C6", "E6", "G6", "C7", "E7"]):
 despues.poner(aire(3.2, 3500, 11000, lambda t: np.clip(t / 0.05, 0, 1) * np.exp(-t / 0.8)), R, 0.12, rev=0.5)
 # Y un último destello, ya con la dirección de la app en pantalla.
 for i, nota in enumerate(["G6", "C7"]):
-    despues.poner(campana(hz(nota), 2.5), R + 4 * B + 1.8 + i * 0.3, 0.1, rev=0.7)
+    despues.poner(campana(hz(nota), 2.5), FIN + 1.8 + i * 0.3, 0.1, rev=0.7)
 
 
 # ── Mezcla ───────────────────────────────────────────────────────────────────
@@ -325,6 +419,6 @@ def rms(t0, t1):
 
 print(f"✓ sonido: {DUR:.1f} s · pico {db(np.max(np.abs(mix))):.1f} dB")
 print(f"  silencio {t_corte + 0.06:.2f}–{R:.2f} s: {rms(t_corte + 0.06, R):.0f} dB")
-partes = [("1° año", M["m1"], M["m2"]), ("3° año", M["m3"], M["m4"]), ("5° año", M["m5"], M["m6"]), ("la última", M["m6"], t_corte), ("revelación", R, R + B), ("título", R + B, R + 2 * B), ("cierre", R + 2 * B, R + 4 * B), ("final", R + 4 * B, DUR)]
+partes = [("1° año", M["m1"], M["m2"]), ("3° año", M["m3"], M["m4"]), ("5° año", M["m5"], M["m6"]), ("la última", M["m6"], t_corte), ("revelación", R, R + B), ("título", R + B, R + 2 * B), ("cierre", M["cierre"], FIN), ("final", FIN, DUR)]
 for nombre, t0, t1 in partes:
     print(f"  {nombre}: {rms(t0, t1):.1f} dB RMS")

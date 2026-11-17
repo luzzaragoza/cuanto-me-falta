@@ -55,8 +55,8 @@ ${celdas
   .map(
     (c) => `<figure>
   <div class="cuadro"><img src="${c.src}"><div class="z ar"></div><div class="z ab"></div><div class="z de"></div></div>
-  <figcaption><b>Momento ${c.momento}</b> <span>· ${mm(c.t)} s${c.nota ? ' · ' + c.nota : ''}</span><br>
-  ${c.faltan == null ? 'Cierre' : c.titular ? `Titular: «${c.titular}» <span class="ok">✓ faltan ${c.faltan}</span>` : `Faltan ${c.faltan} <span>(vista de la lista)</span>`}</figcaption>
+  <figcaption><b>${/^\d/.test(c.momento) ? 'Momento ' + c.momento : c.momento}</b> <span>· ${mm(c.t)} s${c.nota ? ' · ' + c.nota : ''}</span><br>
+  ${c.faltan == null ? 'Cierre' : c.titular ? `Titular: «${c.titular}» <span class="ok">✓ faltan ${c.faltan}</span>` : `Faltan ${c.faltan} <span>(otra pantalla de la app)</span>`}</figcaption>
 </figure>`,
   )
   .join('\n')}
