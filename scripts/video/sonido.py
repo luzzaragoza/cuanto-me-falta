@@ -218,6 +218,8 @@ for e in guion["sonido"]:
         if e.get("grave"):
             fuerza *= 0.8
         capa.poner(kalimba(frec(g), 1.6 if e.get("grave") else 1.0), t, fuerza, pan=0.45 * np.sin(n * 1.7), rev=0.5 if e.get("grave") else 0.28)
+    elif tipo == "cursa":  # se anota en una materia: un punteo suave que va subiendo
+        capa.poner(kalimba(frec(e["i"]) / 2, 0.32) + 0.4 * kalimba(frec(e["i"]), 0.25), t, 0.2, pan=-0.4 + 0.07 * e["i"], rev=0.35)
     elif tipo == "marca":  # final pendiente o cursando: casi nada
         capa.poner(pop(150, 120, 0.03), t, 0.1, rev=0.2)
     elif tipo == "pop_abu":  # en el cierre suenan sobre la música: van más fuertes
@@ -264,26 +266,32 @@ for e in guion["sonido"]:
 # ── 2. La música que cuenta la historia ──────────────────────────────────────
 # El colchón de cada parte: (desde, hasta, notas, volumen, oscuro, ataque)
 COLCHON = [
-    (M["m0"], M["m1"], ["C3", "G3", "D4"], 0.045, 1.7, 1.6),  # apenas: recién empieza
-    (M["m1"], M["m2"], ["C3", "G3", "E4", "G4"], 0.06, 1.6, 1.0),
-    (M["m2"], M["m3"], ["F3", "C4", "G4", "A4"], 0.07, 1.6, 1.0),
-    (M["m3"], M["nudo"], ["A2", "E3", "A3", "C4", "E4"], 0.085, 1.9, 1.4),  # La menor
-    (M["nudo"], M["m4"], ["D3", "A3", "D4", "F4"], 0.075, 1.8, 0.8),  # Re menor: el nudo
-    (M["m4"], M["analista"], ["F3", "C4", "F4", "A4"], 0.07, 1.6, 0.8),
+    (0, M["m1"], ["C3", "G3", "D4"], 0.045, 1.7, 1.6),  # apenas: recién empieza
+    (M["m1"], M["dic1"], ["C3", "G3", "D4", "G4"], 0.05, 1.6, 0.8),  # marzo: suspendido, a la espera
+    (M["dic1"], M["m2"], ["C3", "G3", "E4", "G4"], 0.06, 1.6, 0.8),  # diciembre: se resuelve
+    (M["m2"], M["dic2"], ["F3", "C4", "G4"], 0.055, 1.6, 0.8),
+    (M["dic2"], M["m3"], ["F3", "C4", "G4", "A4"], 0.07, 1.6, 0.8),
+    (M["m3"], M["dic3"], ["A2", "E3", "B3", "E4"], 0.06, 1.8, 0.9),
+    (M["dic3"], M["nudo"], ["A2", "E3", "A3", "C4", "E4"], 0.085, 1.9, 1.4),  # La menor
+    (M["nudo"], M["feb"], ["D3", "A3", "D4", "F4"], 0.075, 1.8, 0.8),  # Re menor: el nudo
+    (M["feb"], M["m4"], ["G3", "C4", "E4", "G4"], 0.08, 1.5, 0.4),  # rindió: aire
+    (M["m4"], M["dic4"], ["F3", "C4", "G4", "A4"], 0.065, 1.6, 0.8),
+    (M["dic4"], M["analista"], ["F3", "C4", "F4", "A4"], 0.07, 1.6, 0.6),
     (M["analista"], M["vuelta"], ["C3", "G3", "E4", "G4", "C5"], 0.1, 1.5, 0.3),
     (M["vuelta"], M["m5"], ["G3", "D4", "G4", "A4", "D5"], 0.075, 1.5, 0.8),  # Sol sus
+    (M["m5"], M["cuenta"], ["G3", "D4", "A4"], 0.065, 1.5, 0.6),
 ]
 for t0, t1, notas, vol, oscuro, ataque in COLCHON:
     antes.poner(cuerdas(notas, t1 - t0, ataque, 1.3, oscuro), t0, vol, rev=0.5)
 
 # 5° año: Sol suspendido que crece sin parar, con un pulso debajo.
-d5 = M["m6"] - M["m5"]
-antes.poner(cuerdas(["G3", "C4", "D4", "G4", "D5"], d5, 1.0, 0.25, 1.35, curva=lambda t: 0.3 + 0.7 * np.clip(t / d5, 0, 1) ** 1.6), M["m5"], 0.2, rev=0.5)
+d5 = M["m6"] - M["cuenta"]
+antes.poner(cuerdas(["G3", "C4", "D4", "G4", "D5"], d5, 1.0, 0.25, 1.35, curva=lambda t: 0.3 + 0.7 * np.clip(t / d5, 0, 1) ** 1.6), M["cuenta"], 0.2, rev=0.5)
 PULSO = 0.3
 i = 0
-t = M["m5"] + 0.3
+t = M["cuenta"] + 0.3
 while t < M["m6"] - 0.05:
-    avance = (t - M["m5"]) / d5
+    avance = (t - M["cuenta"]) / d5
     f = hz("G3") if i % 2 == 0 else hz("D4")
     fuerza = (0.07 + 0.3 * avance**1.4) * (1.0 if i % 4 == 0 else 0.7)
     antes.poner(kalimba(f, 0.3) + 0.5 * kalimba(2 * f, 0.25), t, fuerza, pan=0.2 * (-1) ** i, rev=0.2)
@@ -307,16 +315,28 @@ while t < M["corte"] - 0.2:
 # ── 3. La resolución ─────────────────────────────────────────────────────────
 R, B = M["revelacion"], M["compas"]
 TIEMPO = B / 4  # cuatro tiempos por compás
-#          bajo  cuerdas                                      arpegio                              melodía (tiempo, nota)                    fuerza
-COMPASES = [
-    ("C2", ["C3", "G3", "C4", "E4", "G4", "C5", "E5"], ["C4", "G4", "C5", "E5", "G5"], [(0, "E5"), (1, "G5"), (2, "C6")], 1.0),  # Ya no te falta nada
-    ("B2", ["B2", "G3", "D4", "G4", "B4", "D5"], ["B3", "G4", "B4", "D5", "G5"], [(0, "D6"), (2, "B5"), (3, "G5")], 0.85),  # el título de Ingeniero
-    ("A2", ["A2", "E3", "A3", "C4", "E4", "A4"], ["A3", "E4", "A4", "C5", "E5"], [(0, "C6"), (2, "A5"), (3, "E5")], 0.85),  # el árbol entero, aprobado
-    ("F2", ["F3", "C4", "F4", "A4", "C5"], ["F3", "C4", "F4", "A4", "C5"], [(0, "A5"), (2, "C6"), (3, "D6")], 0.8),  # las notas y el promedio
-    ("C2", ["C3", "G3", "C4", "E4", "G4", "C5"], ["C4", "G4", "C5", "E5", "G5"], [(0, "E5"), (2, "G5"), (3, "E5")], 0.55),  # ¿Y? ¿Cuánto te falta?
-    ("F2", ["F3", "C4", "F4", "A4", "C5"], ["F3", "C4", "F4", "A4", "C5"], [(0, "A5"), (2, "C6"), (3, "A5")], 0.62),  # Nada, abu. Me recibí.
-    ("C2", ["C3", "G3", "C4", "E4", "G4", "C5"], ["C4", "G4", "C5", "E5", "G5"], [(0, "C6"), (1, "E6"), (2, "G6")], 0.8),  # cuantomefalta.app
+# Los acordes: (bajo, cuerdas, notas del arpegio)
+DO = ("C2", ["C3", "G3", "C4", "E4", "G4", "C5", "E5"], ["C4", "G4", "C5", "E5", "G5"])
+SOL_SI = ("B2", ["B2", "G3", "D4", "G4", "B4", "D5"], ["B3", "G4", "B4", "D5", "G5"])
+LA_M = ("A2", ["A2", "E3", "A3", "C4", "E4", "A4"], ["A3", "E4", "A4", "C5", "E5"])
+FA = ("F2", ["F3", "C4", "F4", "A4", "C5"], ["F3", "C4", "F4", "A4", "C5"])
+SOL = ("G2", ["G2", "D3", "G3", "B3", "D4", "G4"], ["G3", "D4", "G4", "B4", "D5"])
+# Un compás por renglón: acorde, melodía (tiempo, nota), fuerza y batería.
+#   Do–Sol–La m–Fa dos veces (la vuelta olímpica) y Fa–Sol–Do para el cierre.
+PARTITURA = [
+    (DO, [(0, "E5"), (1, "G5"), (2, "C6")], 1.0, 1.0),  # Ya no te falta nada
+    (SOL_SI, [(0, "D6"), (2, "B5"), (3, "G5")], 0.9, 0.9),  # …
+    (LA_M, [(0, "C6"), (2, "A5"), (3, "E5")], 0.85, 0.9),  # el título de Ingeniero
+    (FA, [(0, "A5"), (2, "C6"), (3, "D6")], 0.85, 0.9),  # el árbol entero, aprobado
+    (DO, [(0, "E6"), (2, "C6"), (3, "G5")], 0.9, 0.9),  # …
+    (SOL_SI, [(0, "D6"), (2, "B5"), (3, "D6")], 0.85, 0.85),  # las notas y el promedio
+    (LA_M, [(0, "C6"), (2, "A5"), (3, "E5")], 0.8, 0.8),  # …
+    (FA, [(0, "A5"), (2, "F5")], 0.5, 0.3),  # ¿Y? ¿Cuánto te falta?
+    (SOL, [(0, "B5"), (2, "D6")], 0.58, 0.4),  # Nada, abu. Me recibí.
+    (DO, [(0, "C6"), (1, "E6"), (2, "G6")], 0.8, 0.0),  # cuantomefalta.app
 ]
+COMPASES = [(ac[0], ac[1], ac[2], mel, fuerza) for ac, mel, fuerza, _ in PARTITURA]
+BATERIA = [b for *_, b in PARTITURA]
 FIN = R + (len(COMPASES) - 1) * B  # donde cae el último acorde
 ORDEN = [0, 1, 2, 3, 4, 3, 2, 1]  # el arpegio sube y baja, en corcheas
 for c, (nb, notas, arp, melodia, fuerza) in enumerate(COMPASES):
@@ -339,7 +359,6 @@ for c, (nb, notas, arp, melodia, fuerza) in enumerate(COMPASES):
 
 # Batería: bombo en cada tiempo y un shaker en el medio. Fuerte en la revelación y
 # en el título; en el cierre baja para dejar hablar a las burbujas.
-BATERIA = [1.0, 0.9, 0.9, 0.8, 0.4, 0.5, 0.0]
 for c, nivel in enumerate(BATERIA):
     for tiempo in range(4):
         t0 = R + c * B + tiempo * TIEMPO
@@ -419,6 +438,6 @@ def rms(t0, t1):
 
 print(f"✓ sonido: {DUR:.1f} s · pico {db(np.max(np.abs(mix))):.1f} dB")
 print(f"  silencio {t_corte + 0.06:.2f}–{R:.2f} s: {rms(t_corte + 0.06, R):.0f} dB")
-partes = [("1° año", M["m1"], M["m2"]), ("3° año", M["m3"], M["m4"]), ("5° año", M["m5"], M["m6"]), ("la última", M["m6"], t_corte), ("revelación", R, R + B), ("título", R + B, R + 2 * B), ("cierre", M["cierre"], FIN), ("final", FIN, DUR)]
+partes = [("1° año", M["m1"], M["m2"]), ("3° año", M["dic3"], M["nudo"]), ("el nudo", M["nudo"], M["feb"]), ("cuenta regresiva", M["cuenta"], M["m6"]), ("la última", M["m6"], t_corte), ("revelación", R, R + B), ("vuelta olímpica", R + 2 * B, M["cierre"]), ("cierre", M["cierre"], FIN), ("final", FIN, DUR)]
 for nombre, t0, t1 in partes:
     print(f"  {nombre}: {rms(t0, t1):.1f} dB RMS")

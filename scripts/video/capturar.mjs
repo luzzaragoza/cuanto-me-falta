@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   PASOS, MATERIAS, ULTIMA, PERFIL, BANDA_ANALISTA, BANDA_INGENIERO, faltanTras,
-  notaDe, NOTA_ULTIMA, CUADROS_NUDO, CUADROS_VERDE,
+  notaDe, NOTA_ULTIMA, CUADROS,
 } from './guion.mjs'
 import { ROOT, TMP, CHROMIUM } from './rutas.mjs'
 
@@ -84,21 +84,26 @@ export async function capturar() {
       },
       [cod, estado, nota],
     )
-  const pad = (i) => String(i).padStart(2, '0')
+  const pad = (i) => String(i).padStart(3, '0')
   const suave = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
-  /** Recorre el árbol hacia la derecha, de verdad: mueve el scroll un poquito y
-   *  saca una foto, tantas veces como cuadros dure el recorrido en el video. */
-  const recorrer = async (base, cuadros, hasta) => {
+  /** Recorre una pantalla de verdad: mueve el scroll un poquito y saca una foto,
+   *  tantas veces como cuadros dure el recorrido en el video. `mover(p)` lleva
+   *  el scroll al punto p del camino (0 = donde está, 1 = el final). */
+  const recorrer = async (base, mover) => {
+    for (let i = 1; i <= CUADROS[base]; i++) {
+      await mover(suave(i / CUADROS[base]))
+      await foto(`${base}-${pad(i)}`)
+    }
+  }
+  /** Recorre el árbol hacia la derecha, hasta `hasta` (o hasta el final). */
+  const recorrerArbol = async (base, hasta) => {
     const lienzo = page.locator('.tv-lienzo')
     const desde = await lienzo.evaluate((l) => l.scrollLeft)
     const tope = await lienzo.evaluate((l) => l.scrollWidth - l.clientWidth)
     const fin = Math.min(tope, hasta ?? tope)
-    for (let i = 1; i <= cuadros; i++) {
-      const x = desde + (fin - desde) * suave(i / cuadros)
-      await lienzo.evaluate((l, left) => l.scrollTo({ left, behavior: 'instant' }), x)
-      await foto(`${base}-${pad(i)}`)
-    }
-    return fin - desde
+    await recorrer(base, (p) =>
+      lienzo.evaluate((l, left) => l.scrollTo({ left, behavior: 'instant' }), desde + (fin - desde) * p),
+    )
   }
   const cerrarArbol = async () => {
     await page.locator('.tv-volver').tap()
@@ -109,9 +114,13 @@ export async function capturar() {
    *  Es el camino real de la app: fila → "Ver correlativas" → "ver árbol". */
   const nudo = async () => {
     const fila = page.locator('[id="mat-3.1.049"]') // Probabilidad y Estadística
-    await llevarA(fila, 245)
+    // Primero la lista de 3° año, bajando despacio: se ven los estados y lo disponible.
+    await llevarA(page.locator('#plan .year').nth(2), 200)
+    await foto('lista-000')
+    const y0 = await page.evaluate(() => window.scrollY)
+    const y1 = y0 + (await fila.boundingBox()).y - 245
+    await recorrer('lista', (p) => page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y0 + (y1 - y0) * p))
     cajas.nudoFila = await caja(fila)
-    await foto('nudo-fila')
     const boton = fila.locator('.corr-btn')
     toques.corr = await centro(boton)
     await boton.tap()
@@ -132,11 +141,11 @@ export async function capturar() {
     const alturas = []
     for (const nom of cadena) alturas.push(await caja(page.locator('.tv-nodo', { hasText: new RegExp(`^${nom}$`) })))
     cajas.arbolCadena = { y0: Math.min(...alturas.map((c) => c.y)), y1: Math.max(...alturas.map((c) => c.y + c.h)) }
-    await foto('arbol-00')
+    await foto('arbol-000')
     // Hasta que la última de la cadena (Evaluación de Proyectos) quede bien adentro.
     const ultima = alturas.at(-1)
     const scroll = await page.locator('.tv-lienzo').evaluate((l) => l.scrollLeft)
-    await recorrer('arbol', CUADROS_NUDO, scroll + ultima.x + ultima.w - 390 + 60)
+    await recorrerArbol('arbol', scroll + ultima.x + ultima.w - 390 + 60)
     await cerrarArbol()
     await boton.tap() // se cierra el panel de correlativas
     await panel.waitFor({ state: 'detached' })
@@ -154,7 +163,7 @@ export async function capturar() {
     return { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) }
   }
   const banda = (nombre) => page.locator('.titulo-hito', { hasText: nombre })
-  const top = (n) => `top-${String(n).padStart(2, '0')}`
+  const top = (n) => `top-${String(n).padStart(3, '0')}`
 
   // Paso 0: el plan vacío.
   await comprobar(top(0), 52)
@@ -193,7 +202,7 @@ export async function capturar() {
     await comprobar(top(p.n), faltanTras(p.n))
     await foto(top(p.n))
     // Terminado 3° año, antes de seguir: el nudo.
-    if (p.momento === 'm3' && PASOS[p.n]?.momento !== 'm3') await nudo()
+    if (p.momento === 'm3b' && PASOS[p.n]?.momento !== 'm3b') await nudo()
   }
 
   // La última: Proyecto Final, con dos toques de verdad.
@@ -237,8 +246,8 @@ export async function capturar() {
   }
   const nodos = await page.$$eval('.tv-nodo', (els) => els.map((e) => e.getBoundingClientRect().toJSON()))
   cajas.verde = { y0: Math.min(...nodos.map((n) => n.top)), y1: Math.max(...nodos.map((n) => n.bottom)) }
-  await foto('verde-00')
-  await recorrer('verde', CUADROS_VERDE)
+  await foto('verde-000')
+  await recorrerArbol('verde')
   await cerrarArbol()
 
   // Las notas y el promedio.
@@ -247,7 +256,11 @@ export async function capturar() {
   await page.waitForTimeout(900)
   cajas.promedio = await caja(page.locator('.drawer-prom'))
   verificacion.push({ toma: 'notas', promedio: (await page.locator('.np-num').innerText()).trim() })
-  await foto('notas')
+  await foto('notas-000')
+  // Y la lista de notas, bajando (el promedio queda fijo arriba).
+  const cuerpo = page.locator('.drawer-body')
+  const baja = Math.min(430, await cuerpo.evaluate((c) => c.scrollHeight - c.clientHeight))
+  await recorrer('notas', (p) => cuerpo.evaluate((c, top) => c.scrollTo({ top, behavior: 'instant' }), baja * p))
 
   await browser.close()
   await server.close()
